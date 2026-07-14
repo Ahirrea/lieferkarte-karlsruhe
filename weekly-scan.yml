@@ -1,0 +1,84 @@
+name: Weekly Restaurant Scan
+
+on:
+  schedule:
+    # Jeden Sonntag um 06:00 UTC (07:00 MEZ / 08:00 MESZ)
+    - cron: '0 6 * * 0'
+  
+  # Manueller Trigger: über GitHub UI im "Actions"-Tab
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # ================================================================
+      # 1. Repo auschecken (mit kompletter History für die DB)
+      # ================================================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # komplette History, wichtig für die DB-Historie
+      
+      # ================================================================
+      # 2. Python 3.12 Setup
+      # ================================================================
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      
+      # ================================================================
+      # 3. Scanner ausführen (Places API Scan)
+      # ================================================================
+      - name: Run weekly scanner
+        env:
+          PLACES_API_KEY: ${{ secrets.PLACES_API_KEY }}
+        run: |
+          python3 scanner.py
+      
+      # ================================================================
+      # 4. Daten als JSON exportieren
+      # ================================================================
+      - name: Export to JSON
+        run: |
+          python3 export.py
+      
+      # ================================================================
+      # 5. Git konfigurieren & committen (nur wenn Änderungen da sind)
+      # ================================================================
+      - name: Commit changes
+        run: |
+          git config --local user.email "lieferkarte-bot@github.com"
+          git config --local user.name "🤖 Lieferkarte Scanner"
+          
+          # Nur committen, wenn echte Änderungen vorliegen
+          git add data/restaurants.db web/restaurants.json
+          git diff --cached --quiet || git commit -m "🤖 Weekly scan: $(date -I)"
+      
+      # ================================================================
+      # 6. Änderungen pushen
+      # ================================================================
+      - name: Push to repository
+        run: |
+          git push
+      
+      # ================================================================
+      # 7. Optional: Job-Summary für GitHub UI
+      # ================================================================
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 📍 Weekly Scan Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f web/restaurants.json ]; then
+            COUNT=$(jq '.count' web/restaurants.json)
+            UPDATED=$(jq '.generatedAt' web/restaurants.json)
+            echo "✅ **Restaurants found:** $COUNT" >> $GITHUB_STEP_SUMMARY
+            echo "📅 **Last updated:** $UPDATED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ restaurants.json not generated" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View on GitHub Pages](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }})" >> $GITHUB_STEP_SUMMARY
