@@ -1,0 +1,201 @@
+{
+  "count": 10,
+  "generatedAt": "2026-07-16T09:46:52.923301+00:00",
+  "lastScanAt": "2026-07-16T09:46:52.801421+00:00",
+  "lastScanMode": "mock",
+  "attribution": "Daten: Google Maps Platform · Karte: © OpenStreetMap-Mitwirkende",
+  "restaurants": [
+    {
+      "placeId": "mock_004",
+      "name": "Burger Bude Weststadt",
+      "address": "Sophienstraße 88, 76135 Karlsruhe",
+      "lat": 49.0068,
+      "lng": 8.3805,
+      "website": "https://burgerbude-ka.example",
+      "delivery": true,
+      "businessStatus": "OPERATIONAL",
+      "firstSeen": "2026-07-16T09:46:52.801421+00:00",
+      "lastSeen": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_003",
+      "name": "Curry House Südstadt",
+      "address": "Augartenstraße 12, 76137 Karlsruhe",
+      "lat": 48.9985,
+      "lng": 8.4051,
+      "website": "https://curryhouse-ka.example",
+      "delivery": true,
+      "businessStatus": "OPERATIONAL",
+      "firstSeen": "2026-07-16T09:46:52.801421+00:00",
+      "lastSeen": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_006",
+      "name": "Döner & More Mühlburg",
+      "address": "Rheinstraße 15, 76185 Karlsruhe",
+      "lat": 49.0126,
+      "lng": 8.3591,
+      "website": null,
+      "delivery": true,
+      "businessStatus": "OPERATIONAL",
+      "firstSeen": "2026-07-16T09:46:52.801421+00:00",
+      "lastSeen": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_009",
+      "name": "Falafel Palast Waldstadt",
+      "address": "Kanzlerstraße 8, 76139 Karlsruhe",
+      "lat": 49.0313,
+      "lng": 8.4384,
+      "website": "https://falafel-waldstadt.example",
+      "delivery": true,
+      "businessStatus": "OPERATIONAL",
+      "firstSeen": "2026-07-16T09:46:52.801421+00:00",
+      "lastSeen": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_010",
+      "name": "Pasta Fresca Südweststadt",
+      "address": "Ebertstraße 30, 76135 Karlsruhe",
+      "lat": 49.0002,
+      "lng": 8.3902,
+      "website": "https://pastafresca-ka.example",
+      "delivery": true,
+      "businessStatus": "OPERATIONAL",
+      "firstSeen": "2026-07-16T09:46:52.801421+00:00",
+      "lastSeen": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_001",
+      "name": "Pizzeria Bella Napoli",
+      "address": "Kaiserstraße 42, 76133 Karlsruhe",
+      "lat": 49.0094,
+      "lng": 8.4044,
+      "website": "https://bella-napoli-ka.example",
+      "delivery": true,
+      "businessStatus": "OPERATIONAL",
+      "firstSeen": "2026-07-16T09:46:52.801421+00:00",
+      "lastSeen": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_002",
+      "name": "Sushi Karlsruhe Express",
+      "address": "Ludwigsplatz 3, 76133 Karlsruhe",
+      "lat": 49.0075,
+      "lng": 8.3968,
+      "website": "https://sushi-ka.example",
+      "delivery": true,
+      "businessStatus": "OPERATIONAL",
+      "firstSeen": "2026-07-16T09:46:52.801421+00:00",
+      "lastSeen": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_005",
+      "name": "Thai Garden Durlach",
+      "address": "Pfinztalstraße 20, 76227 Karlsruhe",
+      "lat": 48.9977,
+      "lng": 8.4712,
+      "website": "https://thaigarden-ka.example",
+      "delivery": true,
+      "businessStatus": "OPERATIONAL",
+      "firstSeen": "2026-07-16T09:46:52.801421+00:00",
+      "lastSeen": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_007",
+      "name": "Trattoria Oststadt",
+      "address": "Gerwigstraße 5, 76131 Karlsruhe",
+      "lat": 49.0113,
+      "lng": 8.4287,
+      "website": "https://trattoria-ost.example",
+      "delivery": false,
+      "businessStatus": "OPERATIONAL",
+      "firstSeen": "2026-07-16T09:46:52.801421+00:00",
+      "lastSeen": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_008",
+      "name": "Vietnam Küche Neureut",
+      "address": "Neureuter Hauptstraße 100, 76149 Karlsruhe",
+      "lat": 49.0421,
+      "lng": 8.3768,
+      "website": "https://vietnam-neureut.example",
+      "delivery": true,
+      "businessStatus": "OPERATIONAL",
+      "firstSeen": "2026-07-16T09:46:52.801421+00:00",
+      "lastSeen": "2026-07-16T09:46:52.801421+00:00"
+    }
+  ],
+  "recentChanges": [
+    {
+      "placeId": "mock_010",
+      "type": "NEW",
+      "oldValue": null,
+      "newValue": "Pasta Fresca Südweststadt",
+      "detectedAt": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_009",
+      "type": "NEW",
+      "oldValue": null,
+      "newValue": "Falafel Palast Waldstadt",
+      "detectedAt": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_008",
+      "type": "NEW",
+      "oldValue": null,
+      "newValue": "Vietnam Küche Neureut",
+      "detectedAt": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_007",
+      "type": "NEW",
+      "oldValue": null,
+      "newValue": "Trattoria Oststadt",
+      "detectedAt": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_006",
+      "type": "NEW",
+      "oldValue": null,
+      "newValue": "Döner & More Mühlburg",
+      "detectedAt": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_005",
+      "type": "NEW",
+      "oldValue": null,
+      "newValue": "Thai Garden Durlach",
+      "detectedAt": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_004",
+      "type": "NEW",
+      "oldValue": null,
+      "newValue": "Burger Bude Weststadt",
+      "detectedAt": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_003",
+      "type": "NEW",
+      "oldValue": null,
+      "newValue": "Curry House Südstadt",
+      "detectedAt": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_002",
+      "type": "NEW",
+      "oldValue": null,
+      "newValue": "Sushi Karlsruhe Express",
+      "detectedAt": "2026-07-16T09:46:52.801421+00:00"
+    },
+    {
+      "placeId": "mock_001",
+      "type": "NEW",
+      "oldValue": null,
+      "newValue": "Pizzeria Bella Napoli",
+      "detectedAt": "2026-07-16T09:46:52.801421+00:00"
+    }
+  ]
+}

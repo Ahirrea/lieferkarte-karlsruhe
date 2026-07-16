@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lieferkarte Karlsruhe – Restaurants mit eigenem Lieferservice</title>
+  <meta name="description" content="Restaurants in Karlsruhe mit eigenem Lieferservice – direkt bestellen, ohne Provisions-Plattformen. Keine Cookies, kein Tracking.">
+
+  <!-- Leaflet (Kartenbibliothek, BSD-2-Clause) -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
+
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --panel: #ffffff;
+      --accent: #d64541;
+      --text: #1e1e1e;
+      --muted: #6b6b6b;
+      --ok: #2e8b4f;
+      --border: #e3e3df;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 1rem;
+      flex: 0 0 auto;
+    }
+    header h1 {
+      font-size: 1.15rem;
+      margin: 0 0 0.15rem;
+    }
+    header h1 .accent { color: var(--accent); }
+    header .sub { font-size: 0.8rem; color: var(--muted); }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+    .controls input[type="search"] {
+      flex: 1 1 200px;
+      min-width: 140px;
+      padding: 0.45rem 0.6rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .controls label {
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      white-space: nowrap;
+    }
+    .controls button {
+      padding: 0.45rem 0.7rem;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .controls button:hover { background: #f0f0ee; }
+    .controls .count { font-size: 0.85rem; color: var(--muted); margin-left: auto; }
+    #map { flex: 1 1 auto; }
+    .popup-name { font-weight: 600; font-size: 1rem; margin-bottom: 0.15rem; }
+    .popup-addr { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.4rem; }
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      margin-right: 0.3rem;
+    }
+    .badge-delivery { background: #e6f4ea; color: var(--ok); }
+    .badge-nodelivery { background: #f4e6e6; color: var(--accent); }
+    .badge-status { background: #fff3cd; color: #856404; }
+    .popup-link {
+      display: inline-block;
+      margin-top: 0.4rem;
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .popup-link:hover { text-decoration: underline; }
+    footer {
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      padding: 0.4rem 1rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      flex: 0 0 auto;
+    }
+    footer a { color: var(--muted); }
+    .loading {
+      position: absolute; inset: 0; display: flex;
+      align-items: center; justify-content: center;
+      font-size: 0.95rem; color: var(--muted);
+      z-index: 500; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🍽️ Lieferkarte <span class="accent">Karlsruhe</span></h1>
+    <div class="sub" id="meta">Restaurants mit eigenem Lieferservice – direkt bestellen, ohne Provisions-Plattformen.</div>
+    <div class="controls">
+      <input type="search" id="search" placeholder="Restaurant oder Adresse suchen …" autocomplete="off">
+      <label><input type="checkbox" id="onlyDelivery" checked> nur mit Lieferservice</label>
+      <button id="nearMe" type="button">📍 In meiner Nähe</button>
+      <span class="count" id="count"></span>
+    </div>
+  </header>
+
+  <div id="map">
+    <div class="loading" id="loading">Lade Restaurants …</div>
+  </div>
+
+  <footer>
+    Daten: © Google Maps Platform · Karte: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-Mitwirkende ·
+    Keine Cookies, kein Tracking · <a href="../IMPRESSUM.md" target="_blank" rel="noopener">Impressum &amp; Datenschutz</a>
+  </footer>
+
+  <script>
+    const KA = [49.0069, 8.4037];
+
+    const map = L.map("map", { zoomControl: true }).setView(KA, 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap-Mitwirkende",
+    }).addTo(map);
+
+    const layer = L.layerGroup().addTo(map);
+    let restaurants = [];
+    let meMarker = null;
+
+    const $search = document.getElementById("search");
+    const $onlyDelivery = document.getElementById("onlyDelivery");
+    const $count = document.getElementById("count");
+    const $meta = document.getElementById("meta");
+    const $loading = document.getElementById("loading");
+
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, c => (
+        { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+      ));
+    }
+
+    function popupHtml(r) {
+      let html = `<div class="popup-name">${esc(r.name)}</div>`;
+      html += `<div class="popup-addr">${esc(r.address)}</div>`;
+      if (r.delivery === true) {
+        html += `<span class="badge badge-delivery">✔ Lieferservice</span>`;
+      } else if (r.delivery === false) {
+        html += `<span class="badge badge-nodelivery">kein Lieferservice</span>`;
+      }
+      if (r.businessStatus && r.businessStatus !== "OPERATIONAL") {
+        const label = r.businessStatus === "CLOSED_TEMPORARILY"
+          ? "vorübergehend geschlossen" : "dauerhaft geschlossen";
+        html += `<span class="badge badge-status">${label}</span>`;
+      }
+      if (r.website) {
+        html += `<br><a class="popup-link" href="${esc(r.website)}" target="_blank" rel="noopener">Zur Website &amp; bestellen →</a>`;
+      }
+      return html;
+    }
+
+    function render() {
+      const q = $search.value.trim().toLowerCase();
+      const onlyDelivery = $onlyDelivery.checked;
+      layer.clearLayers();
+      let shown = 0;
+
+      for (const r of restaurants) {
+        if (r.lat == null || r.lng == null) continue;
+        if (onlyDelivery && r.delivery !== true) continue;
+        if (q) {
+          const hay = ((r.name || "") + " " + (r.address || "")).toLowerCase();
+          if (!hay.includes(q)) continue;
+        }
+        L.marker([r.lat, r.lng]).bindPopup(popupHtml(r)).addTo(layer);
+        shown++;
+      }
+      $count.textContent = `${shown} von ${restaurants.length} angezeigt`;
+    }
+
+    document.getElementById("nearMe").addEventListener("click", () => {
+      if (!navigator.geolocation) {
+        alert("Geolocation wird von deinem Browser nicht unterstützt.");
+        return;
+      }
+      // Position bleibt rein im Browser – wird nirgends gespeichert oder gesendet.
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const here = [pos.coords.latitude, pos.coords.longitude];
+          map.setView(here, 14);
+          if (meMarker) map.removeLayer(meMarker);
+          meMarker = L.circleMarker(here, {
+            radius: 8, color: "#d64541", fillColor: "#d64541", fillOpacity: 0.6,
+          }).addTo(map).bindPopup("Dein Standort").openPopup();
+        },
+        () => alert("Standort konnte nicht ermittelt werden (Erlaubnis verweigert?)."),
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    });
+
+    $search.addEventListener("input", render);
+    $onlyDelivery.addEventListener("change", render);
+
+    fetch("restaurants.json", { cache: "no-store" })
+      .then(res => {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        restaurants = data.restaurants || [];
+        $loading.remove();
+        if (data.lastScanAt) {
+          const d = new Date(data.lastScanAt);
+          const when = isNaN(d) ? data.lastScanAt : d.toLocaleDateString("de-DE");
+          $meta.textContent = `${data.count} Restaurants · zuletzt aktualisiert am ${when}`;
+        }
+        render();
+      })
+      .catch(err => {
+        $loading.textContent = "Konnte Restaurantdaten nicht laden (" + err.message + ").";
+      });
+  </script>
+</body>
+</html>
