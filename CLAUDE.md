@@ -2,17 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Current state: documentation-only, pre-implementation
+## Current state: implemented, running on mock data, pre-launch
 
-**The code described throughout the docs does not exist yet.** The repo currently contains only Markdown docs, `.gitignore`, and a workflow file. Do not assume the following exist until you have created them or verified they are present:
+**The full pipeline exists and works.** These files are all present and functional:
 
 - `scanner.py`, `export.py` — the Python pipeline
 - `web/index.html`, `web/restaurants.json` — the frontend and its data
-- `data/restaurants.db` — the SQLite store
+- `data/restaurants.db` — the SQLite store (three tables + 10 mock rows, `mock_001`–`mock_010`)
+- `.github/workflows/weekly-scan.yml`, MIT `LICENSE`
 
-The GitHub Actions workflow (`.github/workflows/weekly-scan.yml`) and the MIT `LICENSE` referenced by the docs do exist.
+What has **not** happened yet is the public launch. The repo is still **private**, running on mock data. The remaining work is launch prep (no code changes required) — tracked in `VOR-VEROEFFENTLICHUNG.md`: switch author email to a GitHub `noreply` address, fill in a real `IMPRESSUM.md`, set `PLACES_API_KEY` as a GitHub secret + a Google Cloud budget alarm, run a real scan to replace the mock data, then flip the repo public and enable GitHub Pages.
 
-`TECHNICAL.md` is the implementation spec — read it before writing pipeline code, since it defines the DB schema, field masks, change-detection rules, and cost model that the code must honor. When you implement a file, verify it matches the file structure and behavior documented there.
+`TECHNICAL.md` is the implementation spec — the DB schema, field masks, change-detection rules, and cost model that the code honors. Read it (and verify against the actual files) before changing pipeline code.
 
 ## Language
 
