@@ -92,8 +92,10 @@ MIT – du darfst den Code nutzen, ändern und weitergeben. Siehe [`LICENSE`](LI
 
 ## Roadmap (Karlsruhe)
 
+Details & Specs siehe [`IDEEN.md`](IDEEN.md).
+
 - [ ] Filter nach Küchenstil (Pizza, Thai, Burger, …)
-- [ ] Öffnungszeiten auf der Karte
+- [ ] Öffnungszeiten im Popup + „jetzt geöffnet"-Anzeige (siehe `IDEEN.md`)
 - [ ] "In meiner Nähe"-Filter
 - [ ] Änderungs-Feed ("Diese Woche neu …")
 - [ ] PWA (zum Homescreen hinzufügen)
