@@ -33,7 +33,7 @@ def export():
     try:
         restaurants = []
         for r in conn.execute(
-            "SELECT place_id, name, address, lat, lng, website, delivery,"
+            "SELECT place_id, name, address, lat, lng, website, delivery, takeaway,"
             " business_status, first_seen, last_seen"
             " FROM restaurants WHERE active = 1 ORDER BY name COLLATE NOCASE"
         ):
@@ -45,6 +45,7 @@ def export():
                 "lng": r["lng"],
                 "website": r["website"],
                 "delivery": None if r["delivery"] is None else bool(r["delivery"]),
+                "takeaway": None if r["takeaway"] is None else bool(r["takeaway"]),
                 "businessStatus": r["business_status"],
                 "firstSeen": r["first_seen"],
                 "lastSeen": r["last_seen"],

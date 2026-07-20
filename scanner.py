@@ -85,7 +85,8 @@ def init_db(conn):
             lat             REAL,
             lng             REAL,
             website         TEXT,
-            delivery        INTEGER,          -- 1/0/NULL (NULL = unbekannt / nicht getaggt)
+            delivery        INTEGER,          -- 1/0/NULL (NULL = unbekannt / nicht getaggt) -- Lieferung
+            takeaway        INTEGER,          -- 1/0/NULL (NULL = unbekannt / nicht getaggt) -- Abholung
             business_status TEXT,
             active          INTEGER NOT NULL DEFAULT 1,   -- 0 = als REMOVED markiert
             first_seen      TEXT NOT NULL,
@@ -110,6 +111,11 @@ def init_db(conn):
         );
         """
     )
+    # Migration: Spalte takeaway zu bestehenden DBs ergänzen (CREATE TABLE
+    # IF NOT EXISTS legt sie in Alt-DBs nicht nachträglich an).
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(restaurants)")}
+    if "takeaway" not in cols:
+        conn.execute("ALTER TABLE restaurants ADD COLUMN takeaway INTEGER")
     conn.commit()
 
 
@@ -179,6 +185,15 @@ def _osm_address(tags):
     return ", ".join(t for t in (street, city) if t) or None
 
 
+def _osm_yesno(val):
+    """OSM-Tag mit yes/only -> 1, no -> 0, sonst unbekannt (None)."""
+    if val in ("yes", "only"):
+        return 1
+    if val == "no":
+        return 0
+    return None
+
+
 def normalize_osm(el):
     """OSM-Element in ein flaches Dict umwandeln (Format wie MOCK_PLACES)."""
     tags = el.get("tags", {})
@@ -188,15 +203,6 @@ def normalize_osm(el):
     lat = el.get("lat", center.get("lat"))
     lng = el.get("lon", center.get("lon"))
 
-    # delivery=yes/only -> 1, no -> 0, sonst unbekannt (None).
-    d = tags.get("delivery")
-    if d in ("yes", "only"):
-        delivery = 1
-    elif d == "no":
-        delivery = 0
-    else:
-        delivery = None
-
     return {
         "place_id": f"{el['type']}/{el['id']}",
         "name": tags.get("name"),
@@ -204,7 +210,8 @@ def normalize_osm(el):
         "lat": lat,
         "lng": lng,
         "website": tags.get("website") or tags.get("contact:website"),
-        "delivery": delivery,
+        "delivery": _osm_yesno(tags.get("delivery")),   # Lieferung
+        "takeaway": _osm_yesno(tags.get("takeaway")),   # Abholung
         "business_status": None,   # OSM kennt kein Google-"businessStatus"
     }
 
@@ -215,9 +222,9 @@ def normalize_osm(el):
 
 MOCK_PLACES = [
     {"place_id": "mock_001", "name": "Pizzeria Bella Napoli", "address": "Kaiserstraße 42, 76133 Karlsruhe",
-     "lat": 49.0094, "lng": 8.4044, "website": "https://bella-napoli-ka.example", "delivery": 1, "business_status": "OPERATIONAL"},
+     "lat": 49.0094, "lng": 8.4044, "website": "https://bella-napoli-ka.example", "delivery": 1, "takeaway": 1, "business_status": "OPERATIONAL"},
     {"place_id": "mock_002", "name": "Sushi Karlsruhe Express", "address": "Ludwigsplatz 3, 76133 Karlsruhe",
-     "lat": 49.0075, "lng": 8.3968, "website": "https://sushi-ka.example", "delivery": 1, "business_status": "OPERATIONAL"},
+     "lat": 49.0075, "lng": 8.3968, "website": "https://sushi-ka.example", "delivery": 1, "takeaway": 1, "business_status": "OPERATIONAL"},
     {"place_id": "mock_003", "name": "Curry House Südstadt", "address": "Augartenstraße 12, 76137 Karlsruhe",
      "lat": 48.9985, "lng": 8.4051, "website": "https://curryhouse-ka.example", "delivery": 1, "business_status": "OPERATIONAL"},
     {"place_id": "mock_004", "name": "Burger Bude Weststadt", "address": "Sophienstraße 88, 76135 Karlsruhe",
@@ -227,7 +234,7 @@ MOCK_PLACES = [
     {"place_id": "mock_006", "name": "Döner & More Mühlburg", "address": "Rheinstraße 15, 76185 Karlsruhe",
      "lat": 49.0126, "lng": 8.3591, "website": None, "delivery": 1, "business_status": "OPERATIONAL"},
     {"place_id": "mock_007", "name": "Trattoria Oststadt", "address": "Gerwigstraße 5, 76131 Karlsruhe",
-     "lat": 49.0113, "lng": 8.4287, "website": "https://trattoria-ost.example", "delivery": 0, "business_status": "OPERATIONAL"},
+     "lat": 49.0113, "lng": 8.4287, "website": "https://trattoria-ost.example", "delivery": 0, "takeaway": 1, "business_status": "OPERATIONAL"},
     {"place_id": "mock_008", "name": "Vietnam Küche Neureut", "address": "Neureuter Hauptstraße 100, 76149 Karlsruhe",
      "lat": 49.0421, "lng": 8.3768, "website": "https://vietnam-neureut.example", "delivery": 1, "business_status": "OPERATIONAL"},
     {"place_id": "mock_009", "name": "Falafel Palast Waldstadt", "address": "Kanzlerstraße 8, 76139 Karlsruhe",
@@ -257,7 +264,7 @@ def sync_places(conn, places, mode, scan_ts):
         seen_ids.add(pid)
 
         row = conn.execute(
-            "SELECT name, address, delivery, business_status, active"
+            "SELECT name, address, delivery, takeaway, business_status, active"
             " FROM restaurants WHERE place_id = ?",
             (pid,),
         ).fetchone()
@@ -266,16 +273,16 @@ def sync_places(conn, places, mode, scan_ts):
             # Neues Restaurant
             conn.execute(
                 "INSERT INTO restaurants"
-                " (place_id, name, address, lat, lng, website, delivery,"
+                " (place_id, name, address, lat, lng, website, delivery, takeaway,"
                 "  business_status, active, first_seen, last_seen)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
                 (pid, p["name"], p["address"], p["lat"], p["lng"], p["website"],
-                 p["delivery"], p["business_status"], scan_ts, scan_ts),
+                 p["delivery"], p.get("takeaway"), p["business_status"], scan_ts, scan_ts),
             )
             log_change(conn, pid, "NEW", None, p["name"], scan_ts)
             continue
 
-        old_name, old_addr, old_delivery, old_status, old_active = row
+        old_name, old_addr, old_delivery, old_takeaway, old_status, old_active = row
 
         # Adressänderung
         if p["address"] and p["address"] != old_addr:
@@ -291,15 +298,21 @@ def sync_places(conn, places, mode, scan_ts):
             log_change(conn, pid, "DELIVERY_CHANGED",
                        _delivery_str(old_delivery), _delivery_str(p["delivery"]), scan_ts)
 
+        # Abholstatus (takeaway) – analog zu delivery.
+        new_takeaway = p.get("takeaway")
+        if new_takeaway is not None and new_takeaway != old_takeaway:
+            log_change(conn, pid, "TAKEAWAY_CHANGED",
+                       _delivery_str(old_takeaway), _delivery_str(new_takeaway), scan_ts)
+
         # Wiederauferstehung: war als REMOVED markiert, jetzt wieder da
         if old_active == 0:
             log_change(conn, pid, "NEW", None, p["name"], scan_ts)
 
         conn.execute(
             "UPDATE restaurants SET name=?, address=?, lat=?, lng=?, website=?,"
-            " delivery=?, business_status=?, active=1, last_seen=? WHERE place_id=?",
+            " delivery=?, takeaway=?, business_status=?, active=1, last_seen=? WHERE place_id=?",
             (p["name"], p["address"], p["lat"], p["lng"], p["website"],
-             p["delivery"], p["business_status"], scan_ts, pid),
+             p["delivery"], new_takeaway, p["business_status"], scan_ts, pid),
         )
 
     # REMOVED-Erkennung nur im Voll-Scan (mock zählt als voll).

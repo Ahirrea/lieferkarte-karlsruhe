@@ -31,7 +31,7 @@ scanner.py  ──> data/restaurants.db ──> export.py ──> web/restaurant
 ```
 
 - **scanner.py** — queries the Overpass API (OpenStreetMap) in a single request, upserts into SQLite keyed on `place_id` (an OSM `type/id`, e.g. `node/12345`), and detects changes vs. the previous scan.
-- **SQLite schema** — three tables: `restaurants` (current state, `place_id` = stable key), `changes` (append-only log: `NEW` / `REMOVED` / `ADDRESS_CHANGED` / `DELIVERY_CHANGED` / `STATUS_CHANGED`), `scan_runs` (per-scan timestamp + request count).
+- **SQLite schema** — three tables: `restaurants` (current state, `place_id` = stable key), `changes` (append-only log: `NEW` / `REMOVED` / `ADDRESS_CHANGED` / `DELIVERY_CHANGED` / `TAKEAWAY_CHANGED` / `STATUS_CHANGED`), `scan_runs` (per-scan timestamp + request count).
 - **export.py** — reads the DB, writes `web/restaurants.json` (`{count, generatedAt, ...}`); the workflow's summary step reads those fields via `jq`.
 - **web/** — static Leaflet + OpenStreetMap map. Both the map tiles and the restaurant data come from OpenStreetMap (ODbL), so a single "© OpenStreetMap-Mitwirkende" attribution covers everything.
 - **Deployment** — GitHub Pages serves from `main` at repo root, so `web/` assets and the JSON are committed into the repo. The DB is also committed (its history *is* the change log — see `fetch-depth: 0` in the workflow). Under ODbL this is fine; it would have breached Google's terms.
@@ -53,6 +53,6 @@ There is no test suite or linter configured yet.
 - **Free and republishable is the whole point.** The move off Google Places was to make a *public* repo licit (see top). Don't reintroduce a data source that forbids public redistribution or requires paid per-call SKUs. Overpass is free; be a good citizen (single request per scan, descriptive `User-Agent`, backoff on 429/5xx).
 - **Never let an empty/failed scan wipe the DB.** A full scan marks not-seen restaurants as REMOVED. `scanner.py` therefore aborts (leaves the DB untouched) if Overpass fails or returns zero usable places — preserve this guard in any refactor.
 - **`--light` mode intentionally does not mark REMOVED.** An incomplete Overpass response must not delete entries; removals are only trusted from the full scan. Preserve this asymmetry.
-- **`delivery` comes from the OSM `delivery` tag** (`yes`/`only` → true, `no` → false, untagged → unknown/`NULL`). Coverage is patchy — the frontend must handle `delivery === null` gracefully.
+- **`delivery` (Lieferung) and `takeaway` (Abholung) come from the OSM tags of the same name** (`yes`/`only` → true, `no` → false, untagged → unknown/`NULL`), parsed via `_osm_yesno`. Both are separate, independent tags. Coverage is patchy (most restaurants are untagged) — the frontend must handle `delivery === null` / `takeaway === null` gracefully. The default filter only acts on `delivery`; `takeaway` currently shows as a popup badge only.
 - **Attribution is mandatory (ODbL).** "© OpenStreetMap-Mitwirkende" must stay visible in the frontend footer, the JSON `attribution` field, and DATENSCHUTZ.md. Don't remove it.
 - **No cookies, no tracking, no analytics, no server-side data collection** is a hard product promise (README + DATENSCHUTZ.md). Geolocation stays browser-only. Don't add anything that breaks this.

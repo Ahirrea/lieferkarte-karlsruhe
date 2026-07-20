@@ -17,7 +17,7 @@ scanner.py  ──>  data/restaurants.db  ──>  export.py  ──>  web/resta
 ```
 
 - **restaurants**: aktueller Bestand, `place_id` als stabiler Schlüssel
-- **changes**: Änderungsprotokoll (NEW / REMOVED / ADDRESS_CHANGED / DELIVERY_CHANGED / STATUS_CHANGED)
+- **changes**: Änderungsprotokoll (NEW / REMOVED / ADDRESS_CHANGED / DELIVERY_CHANGED / TAKEAWAY_CHANGED / STATUS_CHANGED)
 - **scan_runs**: wann lief welcher Scan mit wie vielen API-Aufrufen (Kostenkontrolle)
 
 ## Schnellstart (ohne API-Key, mit Demodaten)

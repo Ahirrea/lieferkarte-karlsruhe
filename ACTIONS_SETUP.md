@@ -94,6 +94,7 @@ Die `changes`-Tabelle in der DB protokolliert alle Änderungen:
 - `REMOVED` – nicht mehr in OpenStreetMap
 - `ADDRESS_CHANGED` – Adresse geändert
 - `DELIVERY_CHANGED` – Lieferstatus hat sich geändert
+- `TAKEAWAY_CHANGED` – Abholstatus hat sich geändert
 - `STATUS_CHANGED` – z. B. jetzt geschlossen
 
 Du kannst diese später als "Diese Woche neu…" auf der Website anzeigen. Dafür `export.py` erweitern, um die letzten Changes mitzuexportieren:

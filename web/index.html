@@ -91,6 +91,7 @@
     }
     .badge-delivery { background: #e6f4ea; color: var(--ok); }
     .badge-nodelivery { background: #f4e6e6; color: var(--accent); }
+    .badge-takeaway { background: #e7eefc; color: #2b5bb5; }
     .badge-status { background: #fff3cd; color: #856404; }
     .popup-link {
       display: inline-block;
@@ -170,6 +171,9 @@
         html += `<span class="badge badge-delivery">✔ Lieferservice</span>`;
       } else if (r.delivery === false) {
         html += `<span class="badge badge-nodelivery">kein Lieferservice</span>`;
+      }
+      if (r.takeaway === true) {
+        html += `<span class="badge badge-takeaway">🥡 Abholung</span>`;
       }
       if (r.businessStatus && r.businessStatus !== "OPERATIONAL") {
         const label = r.businessStatus === "CLOSED_TEMPORARILY"
