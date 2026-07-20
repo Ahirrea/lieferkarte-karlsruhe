@@ -72,28 +72,38 @@ echte Karlsruher Restaurantdaten ersetzt (~883 Einträge in `main`).
 
 ---
 
-## 📝 Offene Entscheidung: `delivery`-Abdeckung prüfen (später)
+## 📝 Offene Entscheidung: Filter für Abdeckung anpassen (später)
 
-**Zu klären, sobald echte Daten sichtbar sind** (erster Scan lieferte ~883
-Restaurants in Karlsruhe):
+**Tatsächliche Abdeckung** (Voll-Scan, 883 aktive Restaurants):
 
-Das OSM-Tag `delivery` ist von der Community **lückenhaft** gepflegt. Aktuell
-zeigt die Karte per Default nur Restaurants mit `delivery=yes/only` (Frontend:
-Checkbox „nur mit Lieferservice", standardmäßig an). Wenn nur wenige Einträge
-das Tag gesetzt haben, wirkt die Karte fälschlich leer.
+| Tag | ja (`yes`/`only`) | nein (`no`) | ungetaggt |
+|---|---|---|---|
+| `delivery` (Lieferung) | 63 (7 %) | 47 (5 %) | 773 (87 %) |
+| `takeaway` (Abholung) | **237 (26 %)** | 8 (0 %) | 638 (72 %) |
 
-Zu entscheiden, wenn ich mir die tatsächliche Abdeckung angesehen habe:
+Aufschlüsselung getaggter Fälle: 43 bieten beides, 20 nur Lieferung,
+**194 nur Abholung**.
 
-- **Option A – so lassen:** nur sicher getaggte Lieferdienste zeigen (sauber,
-  aber evtl. sehr wenige Treffer).
-- **Option B – Filter lockern:** zusätzlich `takeaway=yes` einbeziehen oder
-  Restaurants mit ungetaggtem `delivery` als „Lieferung unbekannt" listen
-  (mehr Treffer, dafür unschärfer).
-- **Option C – zurück beitragen:** fehlende `delivery`-Tags selbst in OSM
-  ergänzen (verbessert die Datenlage für alle, aber Handarbeit).
+**Kernproblem:** Die Karte filtert per Default „nur mit Lieferservice"
+(`delivery=yes/only`) → es werden nur ~63 von 883 gezeigt. Die 773 ohne
+`delivery`-Tag sind „unbekannt", nicht „liefert nicht" – die Karte wirkt
+dadurch fälschlich leer. Abholung ist mit 26 % deutlich besser abgedeckt,
+wird aber aktuell **nur als Popup-Badge** angezeigt, nicht gefiltert.
 
-→ Bewusst noch **nicht umgesetzt**. Nach Sichtung der Daten hier entscheiden.
-Zum schnellen Zählen: `SELECT delivery, COUNT(*) FROM restaurants GROUP BY delivery;`
+Optionen (bewusst noch **nicht** umgesetzt):
+
+- **A – so lassen:** nur sicher getaggte Lieferdienste als Default (sauber,
+  aber sehr wenige Treffer).
+- **B – eigener „nur Abholung"-Filter:** die 237 Abhol-Restaurants gezielt
+  filterbar machen (Daten sind da, seit `takeaway` erfasst wird).
+- **C – Default entschärfen:** standardmäßig **alle** zeigen, Lieferung/
+  Abholung nur als Badges markieren; optionale Filter für beide. Behebt den
+  „fast leer"-Effekt am wirksamsten.
+- **D – zurück beitragen:** fehlende Tags selbst in OSM ergänzen (Handarbeit,
+  hilft allen).
+
+→ Zum schnellen Nachzählen:
+`SELECT delivery, takeaway, COUNT(*) FROM restaurants WHERE active=1 GROUP BY delivery, takeaway;`
 auf `data/restaurants.db`.
 
 ---
