@@ -34,51 +34,34 @@ public Repo hätte dagegen verstoßen.
 **Gelöst durch Wechsel der Datenquelle auf OpenStreetMap (Overpass API):**
 - OSM steht unter der **ODbL** → öffentliche Weitergabe ausdrücklich erlaubt.
 - Einzige Auflage: **Attribution** „© OpenStreetMap-Mitwirkende" (im Footer, in
-  der JSON und im Impressum ergänzt).
+  der JSON und in `DATENSCHUTZ.md` ergänzt).
 - Kein API-Key, keine Kosten, keine 30-Tage-Löschpflicht.
 
 → Der Lizenz-Blocker gegen „public" ist damit ausgeräumt.
 
 ---
 
-## ⚠️ Vor Livegang entscheiden
+## ✅ Frühere Livegang-Punkte – alle erledigt
 
-### 1. E-Mail-Adresse steckt in der Git-History (Datenschutz)
+### 1. E-Mail-Adresse in der Git-History (Datenschutz) — geklärt
 
-In einem öffentlichen Repo ist die Commit-Autorschaft für alle sichtbar und wird
-gescraped. In der History stehen:
+Die komplette History (geprüft mit `git log --all`) enthält **nur GitHub-
+`noreply`-Adressen** – keine `generic.de`-Adresse. Beim Public-Schalten wird
+also keine private Adresse aus dem Commit-Log exponiert.
 
-```
-Katharina Fröhling <katharina.froehling@generic.de>
-Ahirrea <54145949+Ahirrea@users.noreply.github.com>
-```
+### 2. Impressum — bewusst nicht nötig (privates Projekt)
 
-Die `generic.de`-Adresse wäre dann dauerhaft im Commit-Log öffentlich.
-Der zweite Contributor nutzt bereits eine GitHub-`noreply`-Adresse (gut).
+Dies ist ein **privates, nicht-kommerzielles** Projekt und wird nicht als
+geschäftsmäßiger Dienst betrieben. Daher **kein Impressum** nach §5 DDG.
+Statt der früheren Platzhalter-`IMPRESSUM.md` gibt es eine reine
+`DATENSCHUTZ.md` **ohne personenbezogene Daten** (nur „keine Cookies/kein
+Tracking", Geolocation-Hinweis, OSM-Datenquelle + Attribution). Footer und
+README verlinken darauf.
 
-**Optionen:**
-- Ab jetzt eine GitHub-`noreply`-Adresse verwenden
-  (GitHub → Settings → Emails → „Keep my email addresses private" + lokal
-  `git config user.email "<ID>+<user>@users.noreply.github.com"`).
-- Optional die bestehende History **vor** der Veröffentlichung umschreiben
-  (History-Rewrite + Force-Push – bewusste, destruktive Aktion).
+### 3. Mock-Daten — ersetzt
 
-### 2. Public + Pages = echte Anschrift muss veröffentlicht werden (Recht)
-
-`IMPRESSUM.md` enthält aktuell nur Platzhalter (`[Dein Name]`, `[Deine Adresse]`,
-`kontakt@example.de`) – **jetzt** wird also nichts geleakt. Aber ein öffentlicher
-deutscher Dienst braucht ein echtes Impressum nach **§5 DDG**: echter Name +
-**ladungsfähige (physische) Anschrift** + Kontakt.
-
-→ Livegang bedeutet, Name und Adresse bewusst zu veröffentlichen. Viele nutzen
-eine Geschäfts-/Service-Adresse statt der Privatadresse. **Vor** dem Launch klären,
-nicht danach.
-
-### 3. Die Live-Seite zeigt 10 Fake-Restaurants
-
-Pages liefert die Mock-`restaurants.json` aus, bis der erste echte Scan läuft.
-Kein Sicherheitsproblem – nur kosmetisch. Rund um den Launch einen echten Scan
-fahren (kein API-Key nötig): `python scanner.py` → `python export.py`.
+Der wöchentliche Workflow läuft (Overpass/OSM) und hat die Mock-Daten durch
+echte Karlsruher Restaurantdaten ersetzt (~883 Einträge in `main`).
 
 ---
 
@@ -117,9 +100,9 @@ auf `data/restaurants.db`.
 
 ## Kurz-Checkliste für den Launch-Tag
 
-- [ ] Autor-E-Mail auf GitHub-`noreply` umgestellt (ggf. History umgeschrieben)
-- [ ] Echtes Impressum in `IMPRESSUM.md` eingetragen (Name, Anschrift, Kontakt)
+- [x] Autor-E-Mail: History nutzt nur GitHub-`noreply`-Adressen (keine private Mail)
+- [x] Kein Impressum nötig (privates Projekt); `DATENSCHUTZ.md` ohne pers. Daten
 - [x] Datenquelle OpenStreetMap/Overpass (kein API-Key, ODbL, öffentlich teilbar)
-- [ ] Echter Scan gelaufen (`python3 scanner.py`), Mock-Daten ersetzt
+- [x] Echter Scan gelaufen, Mock-Daten ersetzt (~883 Restaurants in `main`)
 - [ ] Repo auf **public** gestellt
 - [ ] GitHub Pages aktiviert (Settings → Pages → `main` / root)

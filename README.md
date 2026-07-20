@@ -31,7 +31,6 @@ Die Seite hat keine Cookie-Banner, kein Tracking, keine Ads. Punkt.
 
 **Fehler auf der Karte (falsche Adresse, Lieferstatus stimmt nicht):**
 → [GitHub Issue öffnen](../../issues/new)
-oder Mail an: `kontakt@example.de` (wird später hinzugefügt)
 
 **Restaurant sollte hier sein, aber fehlt:**
 → Wenn es in OpenStreetMap eingetragen ist (mit `amenity=restaurant`/`fast_food`), wird es beim nächsten wöchentlichen Scan erfasst (normalerweise sonntags).
@@ -84,8 +83,8 @@ cd web && python3 -m http.server 8000
 - Kartenkacheln: © [OpenStreetMap](https://www.openstreetmap.org/copyright)-Mitwirkende (ODbL)
 - Kartensoftware: Leaflet (BSD-2-Clause)
 
-**Impressum & Datenschutzerklärung:**
-→ [siehe hier](IMPRESSUM.md)
+**Datenschutz & Hinweise:**
+→ [siehe hier](DATENSCHUTZ.md)
 
 ## Lizenz
 

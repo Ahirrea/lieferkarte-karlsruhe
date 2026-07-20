@@ -146,7 +146,7 @@ GitHub baut dann automatisch die Seite bei jedem neuen Commit.
 lieferkarte-karlsruhe/
 ├── README.md                    # Öffentliche Doku (was ist das?)
 ├── TECHNICAL.md                 # Das hier – technische Doku
-├── IMPRESSUM.md                 # Impressum & Datenschutz
+├── DATENSCHUTZ.md               # Datenschutz & Hinweise (kein Impressum – privat)
 ├── .gitignore                   # was nicht ins Repo kommt
 ├── scanner.py                   # Overpass-Scanner (OSM) + Change Detection
 ├── export.py                    # DB → JSON

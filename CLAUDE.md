@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `data/restaurants.db` — the SQLite store (three tables + 10 mock rows, `mock_001`–`mock_010`)
 - `.github/workflows/weekly-scan.yml`, MIT `LICENSE`
 
-What has **not** happened yet is the public launch. The repo is still **private**, running on mock data. The remaining work is launch prep (no code changes required) — tracked in `VOR-VEROEFFENTLICHUNG.md`: switch author email to a GitHub `noreply` address, fill in a real `IMPRESSUM.md`, run a real scan to replace the mock data, then flip the repo public and enable GitHub Pages. (No API key or billing setup — the data source is free.)
+What has **not** happened yet is the public launch. The repo is still **private**, running on mock data. The remaining work is launch prep (no code changes required) — tracked in `VOR-VEROEFFENTLICHUNG.md`: flip the repo public and enable GitHub Pages. Author email is already a GitHub `noreply` address, real OSM data is committed, and (as a private, non-commercial project) there is no Impressum — `DATENSCHUTZ.md` is a personal-data-free privacy/notes page instead. (No API key or billing setup — the data source is free.)
 
 **Data source: OpenStreetMap via the Overpass API** (not Google Places). This was a deliberate switch: Google's Maps Platform terms forbid storing paid Places data >30 days, redistributing it, or showing it off a Google map — all of which a public repo with a committed DB/JSON would do. OpenStreetMap is under the **ODbL**, which explicitly permits public (even commercial) redistribution as long as "© OpenStreetMap-Mitwirkende" attribution is shown. That makes the public-repo model licit and free.
 
@@ -54,5 +54,5 @@ There is no test suite or linter configured yet.
 - **Never let an empty/failed scan wipe the DB.** A full scan marks not-seen restaurants as REMOVED. `scanner.py` therefore aborts (leaves the DB untouched) if Overpass fails or returns zero usable places — preserve this guard in any refactor.
 - **`--light` mode intentionally does not mark REMOVED.** An incomplete Overpass response must not delete entries; removals are only trusted from the full scan. Preserve this asymmetry.
 - **`delivery` comes from the OSM `delivery` tag** (`yes`/`only` → true, `no` → false, untagged → unknown/`NULL`). Coverage is patchy — the frontend must handle `delivery === null` gracefully.
-- **Attribution is mandatory (ODbL).** "© OpenStreetMap-Mitwirkende" must stay visible in the frontend footer, the JSON `attribution` field, and IMPRESSUM. Don't remove it.
-- **No cookies, no tracking, no analytics, no server-side data collection** is a hard product promise (README + IMPRESSUM). Geolocation stays browser-only. Don't add anything that breaks this.
+- **Attribution is mandatory (ODbL).** "© OpenStreetMap-Mitwirkende" must stay visible in the frontend footer, the JSON `attribution` field, and DATENSCHUTZ.md. Don't remove it.
+- **No cookies, no tracking, no analytics, no server-side data collection** is a hard product promise (README + DATENSCHUTZ.md). Geolocation stays browser-only. Don't add anything that breaks this.
