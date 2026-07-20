@@ -11,35 +11,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `data/restaurants.db` — the SQLite store (three tables + 10 mock rows, `mock_001`–`mock_010`)
 - `.github/workflows/weekly-scan.yml`, MIT `LICENSE`
 
-What has **not** happened yet is the public launch. The repo is still **private**, running on mock data. The remaining work is launch prep (no code changes required) — tracked in `VOR-VEROEFFENTLICHUNG.md`: switch author email to a GitHub `noreply` address, fill in a real `IMPRESSUM.md`, set `PLACES_API_KEY` as a GitHub secret + a Google Cloud budget alarm, run a real scan to replace the mock data, then flip the repo public and enable GitHub Pages.
+What has **not** happened yet is the public launch. The repo is still **private**, running on mock data. The remaining work is launch prep (no code changes required) — tracked in `VOR-VEROEFFENTLICHUNG.md`: switch author email to a GitHub `noreply` address, fill in a real `IMPRESSUM.md`, run a real scan to replace the mock data, then flip the repo public and enable GitHub Pages. (No API key or billing setup — the data source is free.)
 
-`TECHNICAL.md` is the implementation spec — the DB schema, field masks, change-detection rules, and cost model that the code honors. Read it (and verify against the actual files) before changing pipeline code.
+**Data source: OpenStreetMap via the Overpass API** (not Google Places). This was a deliberate switch: Google's Maps Platform terms forbid storing paid Places data >30 days, redistributing it, or showing it off a Google map — all of which a public repo with a committed DB/JSON would do. OpenStreetMap is under the **ODbL**, which explicitly permits public (even commercial) redistribution as long as "© OpenStreetMap-Mitwirkende" attribution is shown. That makes the public-repo model licit and free.
+
+`TECHNICAL.md` is the implementation spec — the DB schema, the Overpass query, change-detection rules. Read it (and verify against the actual files) before changing pipeline code.
 
 ## Language
 
-The project and all docs are in **German** (it's a public service for Karlsruhe). Keep user-facing strings, commit messages, and new docs in German to match; code identifiers follow the existing docs (e.g. `sync_places`, `FULL_FIELD_MASK`).
+The project and all docs are in **German** (it's a public service for Karlsruhe). Keep user-facing strings, commit messages, and new docs in German to match; code identifiers follow the existing docs (e.g. `sync_places`, `normalize_osm`, `fetch_overpass`).
 
 ## Architecture (as specified in TECHNICAL.md)
 
 A weekly batch pipeline, no backend server. Data flows one direction:
 
 ```
-scanner.py ──> data/restaurants.db ──> export.py ──> web/restaurants.json ──> web/index.html
-(Places API)   (SQLite)                (DB→JSON)                              (Leaflet map)
+scanner.py  ──> data/restaurants.db ──> export.py ──> web/restaurants.json ──> web/index.html
+(Overpass API)   (SQLite)                (DB→JSON)                              (Leaflet map)
 ```
 
-- **scanner.py** — queries Google Places API (New), upserts into SQLite keyed on `place_id`, and detects changes vs. the previous scan.
-- **SQLite schema** — three tables: `restaurants` (current state, `place_id` = stable key), `changes` (append-only log: `NEW` / `REMOVED` / `ADDRESS_CHANGED` / `DELIVERY_CHANGED` / `STATUS_CHANGED`), `scan_runs` (per-scan timestamp + API-call count for cost tracking).
+- **scanner.py** — queries the Overpass API (OpenStreetMap) in a single request, upserts into SQLite keyed on `place_id` (an OSM `type/id`, e.g. `node/12345`), and detects changes vs. the previous scan.
+- **SQLite schema** — three tables: `restaurants` (current state, `place_id` = stable key), `changes` (append-only log: `NEW` / `REMOVED` / `ADDRESS_CHANGED` / `DELIVERY_CHANGED` / `STATUS_CHANGED`), `scan_runs` (per-scan timestamp + request count).
 - **export.py** — reads the DB, writes `web/restaurants.json` (`{count, generatedAt, ...}`); the workflow's summary step reads those fields via `jq`.
-- **web/** — static Leaflet + OpenStreetMap map. No Google Maps JS (avoids that SKU); Google data only via the Places API in `scanner.py`.
-- **Deployment** — GitHub Pages serves from `main` at repo root, so `web/` assets and the JSON are committed into the repo. The DB is also committed (its history *is* the change log — see `fetch-depth: 0` in the workflow).
+- **web/** — static Leaflet + OpenStreetMap map. Both the map tiles and the restaurant data come from OpenStreetMap (ODbL), so a single "© OpenStreetMap-Mitwirkende" attribution covers everything.
+- **Deployment** — GitHub Pages serves from `main` at repo root, so `web/` assets and the JSON are committed into the repo. The DB is also committed (its history *is* the change log — see `fetch-depth: 0` in the workflow). Under ODbL this is fine; it would have breached Google's terms.
 
 ## Commands (once the pipeline exists)
 
 ```bash
-python3 scanner.py --mock      # fill DB with demo data, no API key / no cost
-python3 scanner.py             # full scan: delivery flag + all detail fields (expensive SKU)
-python3 scanner.py --light     # cheap existence/address check, no delivery field, no REMOVED detection
+python3 scanner.py --mock      # fill DB with demo data, no network
+python3 scanner.py             # full scan via Overpass: upsert + change + REMOVED detection
+python3 scanner.py --light     # refresh without REMOVED detection
 python3 export.py              # regenerate web/restaurants.json from the DB
 cd web && python3 -m http.server 8000   # preview at http://localhost:8000
 ```
@@ -48,8 +50,9 @@ There is no test suite or linter configured yet.
 
 ## Constraints that drive the design
 
-- **API cost is the central constraint.** The delivery flag lives in the expensive Places "Enterprise + Atmosphere" SKU (~$40/1000). Budget target is ~10–15 €/month. This is why there are two scan modes (full weekly vs. `--light`), why change detection avoids re-fetching, and why `scan_runs` tracks call counts. Weigh API-call count in any pipeline change.
-- **Google's 30-day storage rule.** Only `place_id` may be cached indefinitely; other fields (name, address, delivery status) must be refreshed within 30 days. The weekly full scan is what keeps the repo compliant — don't design flows that let cached fields go stale beyond that.
-- **`--light` mode intentionally does not mark REMOVED.** Google has caching delays; removals are only trusted from the full scan. Preserve this asymmetry.
-- **`PLACES_API_KEY`** is required for real scans, read from the environment (and from GitHub Actions secrets in CI). It must never be committed — `.gitignore` already blocks the common leak paths.
+- **Free and republishable is the whole point.** The move off Google Places was to make a *public* repo licit (see top). Don't reintroduce a data source that forbids public redistribution or requires paid per-call SKUs. Overpass is free; be a good citizen (single request per scan, descriptive `User-Agent`, backoff on 429/5xx).
+- **Never let an empty/failed scan wipe the DB.** A full scan marks not-seen restaurants as REMOVED. `scanner.py` therefore aborts (leaves the DB untouched) if Overpass fails or returns zero usable places — preserve this guard in any refactor.
+- **`--light` mode intentionally does not mark REMOVED.** An incomplete Overpass response must not delete entries; removals are only trusted from the full scan. Preserve this asymmetry.
+- **`delivery` comes from the OSM `delivery` tag** (`yes`/`only` → true, `no` → false, untagged → unknown/`NULL`). Coverage is patchy — the frontend must handle `delivery === null` gracefully.
+- **Attribution is mandatory (ODbL).** "© OpenStreetMap-Mitwirkende" must stay visible in the frontend footer, the JSON `attribution` field, and IMPRESSUM. Don't remove it.
 - **No cookies, no tracking, no analytics, no server-side data collection** is a hard product promise (README + IMPRESSUM). Geolocation stays browser-only. Don't add anything that breaks this.

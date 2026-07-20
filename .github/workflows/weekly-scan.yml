@@ -1,19 +1,22 @@
 name: Weekly Restaurant Scan
 
-# Nur manueller Trigger: über GitHub UI im "Actions"-Tab.
-# Der Scan verursacht Kosten (Google Places API), daher bewusst kein
-# automatischer Zeitplan (schedule) – der Lauf wird von Hand gestartet.
+# Datenquelle ist OpenStreetMap/Overpass – kostenlos und ohne API-Key.
+# Daher läuft der Scan automatisch wöchentlich und ist zusätzlich manuell
+# über den "Actions"-Tab auslösbar.
 on:
+  schedule:
+    # Jeden Sonntag um 06:00 UTC (07:00/08:00 MEZ/MESZ)
+    - cron: '0 6 * * 0'
   workflow_dispatch:
     inputs:
       scan_mode:
-        description: "Scan-Modus (bestimmt die API-Kosten)"
+        description: "Scan-Modus"
         type: choice
         required: true
-        default: light
+        default: full
         options:
-          - light   # günstig: Existenz-/Adress-Check, kein delivery, kein REMOVED
-          - full    # teuer: delivery-Flag + alle Detailfelder (Enterprise+Atmosphere SKU)
+          - full    # Voll-Scan inkl. REMOVED-Erkennung
+          - light   # Refresh ohne REMOVED-Erkennung
 
 jobs:
   scan:
@@ -37,17 +40,15 @@ jobs:
           python-version: '3.12'
       
       # ================================================================
-      # 3. Scanner ausführen (Places API Scan)
-      #    Modus wird beim manuellen Start gewählt (light = günstig).
+      # 3. Scanner ausführen (Overpass/OpenStreetMap)
+      #    Bei Zeitplan-Trigger ist scan_mode leer -> Voll-Scan.
       # ================================================================
-      - name: Run scanner (${{ inputs.scan_mode }})
-        env:
-          PLACES_API_KEY: ${{ secrets.PLACES_API_KEY }}
+      - name: Run scanner
         run: |
-          if [ "${{ inputs.scan_mode }}" = "full" ]; then
-            python3 scanner.py
-          else
+          if [ "${{ inputs.scan_mode }}" = "light" ]; then
             python3 scanner.py --light
+          else
+            python3 scanner.py
           fi
       
       # ================================================================

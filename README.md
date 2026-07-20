@@ -34,26 +34,29 @@ Die Seite hat keine Cookie-Banner, kein Tracking, keine Ads. Punkt.
 oder Mail an: `kontakt@example.de` (wird später hinzugefügt)
 
 **Restaurant sollte hier sein, aber fehlt:**
-→ Wenn es auf Google Maps zu finden ist, wird es beim nächsten wöchentlichen Scan erfasst (normalerweise sonntags).
-→ Falls es dort gar nicht gelistet ist, kann es [hier als Issue vorgeschlagen werden](../../issues/new).
+→ Wenn es in OpenStreetMap eingetragen ist (mit `amenity=restaurant`/`fast_food`), wird es beim nächsten wöchentlichen Scan erfasst (normalerweise sonntags).
+→ Falls es dort gar nicht gelistet ist, kann es [hier als Issue vorgeschlagen werden](../../issues/new) – oder direkt in [OpenStreetMap](https://www.openstreetmap.org) eingetragen werden.
 
 **Du bist ein Restaurant und möchtest deine Info korrigieren?**
-Aktualisiere deine Daten auf Google Maps (Adresse, Telefon, Website, Liefergebiet) – der Scan greift die Infos von dort.
+Aktualisiere deine Daten in OpenStreetMap (Adresse, Website, `delivery=yes` fürs Liefer-Tag) – der Scan greift die Infos von dort. Änderungen dort kommen allen Karten- und App-Diensten zugute, nicht nur dieser Seite.
 
 ## Technisches
 
 Daten werden wöchentlich automatisch per GitHub Actions gescannt:
-- **Quelle:** Google Maps API (Places)
+- **Quelle:** OpenStreetMap (Overpass API)
 - **Speicher:** SQLite (im Repo)
 - **Karte:** Leaflet + OpenStreetMap (kostenlos)
 - **Hosting:** GitHub Pages (kostenlos)
 
-Kosten: nur die Google-API-Anfragen (~10–15 €/Monat für Karlsruhe).
+Kosten: **0 €.** Die Overpass-API ist kostenlos, kein API-Key nötig. Und weil
+OpenStreetMap unter der ODbL steht, dürfen die Daten (mit Attribution) frei
+weitergegeben werden – deshalb kann das Repo öffentlich sein und die Daten
+direkt ausliefern.
 
 ### Für Entwickler
 
 Das Projekt ist **Open Source** (MIT-Lizenz) – alle Komponenten sind einsehbar:
-- `scanner.py` – Places API (New), Change Detection
+- `scanner.py` – Overpass-Abfrage (OpenStreetMap), Change Detection
 - `export.py` – JSON-Export für die Karte
 - `web/index.html` – Frontend (Leaflet, Suche, Filter)
 
@@ -62,7 +65,7 @@ Vollständiges Setup: siehe [`TECHNICAL.md`](TECHNICAL.md)
 ### Lokale Entwicklung / Test
 
 ```bash
-# Demo ohne API-Key
+# Demo ohne Netz
 python3 scanner.py --mock
 python3 export.py
 cd web && python3 -m http.server 8000
@@ -77,9 +80,9 @@ cd web && python3 -m http.server 8000
 - Keine Formulare, keine Datenerfassung
 
 **Datenquellen:**
-- Restaurants & Lieferstatus: © Google Maps Platform
+- Restaurants & Lieferstatus: © [OpenStreetMap](https://www.openstreetmap.org/copyright)-Mitwirkende (ODbL)
 - Kartenkacheln: © [OpenStreetMap](https://www.openstreetmap.org/copyright)-Mitwirkende (ODbL)
-- Kartendaten: Leaflet (BSD-2-Clause)
+- Kartensoftware: Leaflet (BSD-2-Clause)
 
 **Impressum & Datenschutzerklärung:**
 → [siehe hier](IMPRESSUM.md)
@@ -95,7 +98,7 @@ MIT – du darfst den Code nutzen, ändern und weitergeben. Siehe [`LICENSE`](LI
 - [ ] "In meiner Nähe"-Filter
 - [ ] Änderungs-Feed ("Diese Woche neu …")
 - [ ] PWA (zum Homescreen hinzufügen)
-- [ ] Manuelle Einträge für Restaurants ohne Google-Eintrag
+- [ ] Manuelle Einträge für Restaurants ohne OpenStreetMap-Eintrag
 
 ---
 

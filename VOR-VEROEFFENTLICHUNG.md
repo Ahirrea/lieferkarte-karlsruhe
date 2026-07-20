@@ -23,6 +23,24 @@ und **Rechts-Entscheidungen**, keine Lecks.
 
 ---
 
+## ✅ Datenlizenz für ein öffentliches Repo geklärt (erledigt)
+
+Frühere Sorge: Dürfen kostenpflichtige Google-Places-Daten in einem öffentlichen
+Repo liegen? **Antwort war nein** – die Google-Maps-Bedingungen verbieten
+dauerhaftes Speichern (>30 Tage), öffentliche Weitergabe und das Anzeigen
+außerhalb einer Google-Karte. Eine committete DB + `restaurants.json` im
+public Repo hätte dagegen verstoßen.
+
+**Gelöst durch Wechsel der Datenquelle auf OpenStreetMap (Overpass API):**
+- OSM steht unter der **ODbL** → öffentliche Weitergabe ausdrücklich erlaubt.
+- Einzige Auflage: **Attribution** „© OpenStreetMap-Mitwirkende" (im Footer, in
+  der JSON und im Impressum ergänzt).
+- Kein API-Key, keine Kosten, keine 30-Tage-Löschpflicht.
+
+→ Der Lizenz-Blocker gegen „public" ist damit ausgeräumt.
+
+---
+
 ## ⚠️ Vor Livegang entscheiden
 
 ### 1. E-Mail-Adresse steckt in der Git-History (Datenschutz)
@@ -60,7 +78,7 @@ nicht danach.
 
 Pages liefert die Mock-`restaurants.json` aus, bis der erste echte Scan läuft.
 Kein Sicherheitsproblem – nur kosmetisch. Rund um den Launch einen echten Scan
-fahren (`PLACES_API_KEY` nötig): `python scanner.py` → `python export.py`.
+fahren (kein API-Key nötig): `python scanner.py` → `python export.py`.
 
 ---
 
@@ -75,8 +93,7 @@ fahren (`PLACES_API_KEY` nötig): `python scanner.py` → `python export.py`.
 
 - [ ] Autor-E-Mail auf GitHub-`noreply` umgestellt (ggf. History umgeschrieben)
 - [ ] Echtes Impressum in `IMPRESSUM.md` eingetragen (Name, Anschrift, Kontakt)
-- [ ] `PLACES_API_KEY` als GitHub-Secret hinterlegt (`ACTIONS_SETUP.md`)
-- [ ] Budget-Alarm in Google Cloud gesetzt (`TECHNICAL.md`)
-- [ ] Echter Scan gelaufen, Mock-Daten ersetzt
+- [x] Datenquelle OpenStreetMap/Overpass (kein API-Key, ODbL, öffentlich teilbar)
+- [ ] Echter Scan gelaufen (`python3 scanner.py`), Mock-Daten ersetzt
 - [ ] Repo auf **public** gestellt
 - [ ] GitHub Pages aktiviert (Settings → Pages → `main` / root)

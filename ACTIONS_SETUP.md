@@ -6,22 +6,12 @@ Diese Anleitung erklärt, wie du den Workflow `.github/workflows/weekly-scan.yml
 
 - ✅ Repo `lieferkarte-karlsruhe` ist auf GitHub angelegt
 - ✅ `.github/workflows/weekly-scan.yml` ist ins Repo committed
-- ✅ Google Cloud API-Key ist vorhanden (siehe `TECHNICAL.md`)
 
-## Schritt 1: API-Key als GitHub Secret speichern
+## Schritt 1: Kein API-Key nötig 🎉
 
-Der Google-API-Key darf **nie** im Repo sichtbar sein. GitHub "Secrets" sind verschlüsselte Variablen, die nur in Workflows lesbar sind.
-
-### So speicherst du den Key:
-
-1. Gehe zu deinem Repo → **Settings**
-2. Linkes Menü → **Secrets and variables** → **Actions**
-3. Klick auf **"New repository secret"**
-4. Feld **Name:** `PLACES_API_KEY`
-5. Feld **Secret:** dein Google-API-Key (z. B. `AIzaSy...`)
-6. Klick **"Add secret"**
-
-✅ Der Key ist jetzt verschlüsselt gespeichert. Im Workflow wird er über `${{ secrets.PLACES_API_KEY }}` geladen – aber nur zur Laufzeit, nie in Logs sichtbar.
+Datenquelle ist die **Overpass-API von OpenStreetMap** – kostenlos und ohne
+Anmeldung. Es muss **kein Secret** hinterlegt werden. (Die frühere
+`PLACES_API_KEY`-Konfiguration entfällt komplett.)
 
 ## Schritt 2: GitHub Pages aktivieren
 
@@ -82,11 +72,14 @@ Die gute Nachricht: Da der Workflow selbst Commits macht (neue Daten), triggert 
 
 ### Häufige Fehler:
 
-**"API key not found / PLACES_API_KEY is not set"**
-→ Secret war nicht gespeichert. Erneut hinzufügen (Schritt 1).
+**"Overpass-Abfrage fehlgeschlagen"**
+→ Overpass war kurz nicht erreichbar oder hat gedrosselt. Der Scanner versucht
+es automatisch erneut; wenn es endgültig scheitert, bricht er ab und lässt die
+DB unverändert. Einfach später erneut laufen lassen.
 
 **"429 Too Many Requests"**
-→ Google drosselt. Ist normalerweise kurzzeitig. Script wartet bereits 1 Sec. zwischen Seiten. Nächster Lauf sollte erfolgreich sein.
+→ Overpass drosselt. Ist normalerweise kurzzeitig. Das Skript wartet und
+versucht es erneut. Nächster Lauf sollte erfolgreich sein.
 
 **"fatal: Nothing to commit"**
 → Keine Daten haben sich geändert. Das ist OK – der Commit wird übersprungen.
@@ -98,7 +91,7 @@ Die gute Nachricht: Da der Workflow selbst Commits macht (neue Daten), triggert 
 
 Die `changes`-Tabelle in der DB protokolliert alle Änderungen:
 - `NEW` – Restaurant neu gefunden
-- `REMOVED` – nicht mehr auf Google Maps
+- `REMOVED` – nicht mehr in OpenStreetMap
 - `ADDRESS_CHANGED` – Adresse geändert
 - `DELIVERY_CHANGED` – Lieferstatus hat sich geändert
 - `STATUS_CHANGED` – z. B. jetzt geschlossen
@@ -125,7 +118,7 @@ Für fortgeschrittene Nutzer: Mit einem **Badge** in deinem README kannst du den
 
 ## Nächste Schritte
 
-1. ✅ API-Key als Secret gespeichert
+1. ✅ Kein API-Key nötig (Overpass ist kostenlos)
 2. ✅ GitHub Pages aktiviert
 3. ✅ Workflow startet automatisch jede Woche
 4. ⏭️ Website regelmäßig auf neue Restaurants & Änderungen prüfen

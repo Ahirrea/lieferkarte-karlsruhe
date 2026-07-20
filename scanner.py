@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
 """Lieferkarte Karlsruhe – Scanner.
 
-Fragt die Google Places API (New) nach Restaurants mit Lieferservice in
-Karlsruhe ab, speichert sie in SQLite (``data/restaurants.db``) und erkennt
-Änderungen gegenüber dem vorherigen Scan.
+Fragt Restaurants mit Lieferservice in Karlsruhe über die **Overpass API**
+(OpenStreetMap) ab, speichert sie in SQLite (``data/restaurants.db``) und
+erkennt Änderungen gegenüber dem vorherigen Scan.
+
+Warum OpenStreetMap statt Google Places?
+
+- **Kostenlos:** kein API-Key, kein Billing, ein Overpass-Aufruf pro Scan.
+- **Frei weiterverteilbar:** OSM steht unter der ODbL. Daten dürfen (mit
+  Attribution "© OpenStreetMap-Mitwirkende") öffentlich weitergegeben werden –
+  genau das, was ein öffentliches Repo + GitHub Pages tun. Bei Google Places
+  wäre das durch die Nutzungsbedingungen nicht gedeckt.
 
 Drei Modi:
 
-    python3 scanner.py --mock     Demodaten, keine API, keine Kosten
-    python3 scanner.py            Voll-Scan: delivery-Flag + alle Details (teure SKU)
-    python3 scanner.py --light    günstiger Existenz-/Adress-Check, kein delivery,
-                                  keine REMOVED-Erkennung
+    python3 scanner.py --mock     Demodaten, kein Netz, keine Abhängigkeiten
+    python3 scanner.py            Voll-Scan: Bestand + Änderungen + REMOVED-Erkennung
+    python3 scanner.py --light    Refresh ohne REMOVED-Erkennung
 
 Nur Standardbibliothek – keine externen Pakete nötig (wichtig für CI).
 """
@@ -22,6 +29,7 @@ import sqlite3
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
@@ -31,58 +39,35 @@ from datetime import datetime, timezone
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "restaurants.db")
 
-PLACES_ENDPOINT = "https://places.googleapis.com/v1/places:searchText"
+# Overpass-Endpoint. Per Umgebungsvariable überschreibbar, falls ein
+# Spiegelserver (z. B. https://overpass.kumi.systems/api/interpreter) nötig ist.
+OVERPASS_ENDPOINT = os.environ.get(
+    "OVERPASS_ENDPOINT", "https://overpass-api.de/api/interpreter"
+)
 
-# Karlsruhe-Zentrum für den locationBias (Ergebnisse lokal halten)
+# Freundlicher User-Agent (Overpass-Etikette: identifiziere den Client).
+USER_AGENT = "LieferkarteKarlsruhe/1.0 (+https://github.com/Ahirrea/lieferkarte-karlsruhe)"
+
+# Karlsruhe-Zentrum + Radius für die Umkreissuche.
 KARLSRUHE_LAT = 49.0069
 KARLSRUHE_LNG = 8.4037
-SEARCH_RADIUS_M = 12000.0
+SEARCH_RADIUS_M = 12000
 
-# Voll-Scan: enthält das teure delivery-Feld (Enterprise+Atmosphere-SKU)
-FULL_FIELD_MASK = ",".join([
-    "places.id",
-    "places.displayName",
-    "places.formattedAddress",
-    "places.location",
-    "places.businessStatus",
-    "places.websiteUri",
-    "places.delivery",
-    "nextPageToken",
-])
+# Ein einziger Overpass-QL-Query holt alle Gastro-Objekte im Umkreis.
+# ``nwr`` = nodes + ways + relations; ``out center tags`` liefert für Flächen
+# einen Mittelpunkt und alle Tags.
+OVERPASS_QUERY = f"""
+[out:json][timeout:90];
+(
+  nwr(around:{SEARCH_RADIUS_M},{KARLSRUHE_LAT},{KARLSRUHE_LNG})
+     ["amenity"~"^(restaurant|fast_food)$"];
+);
+out center tags;
+"""
 
-# Light-Scan: nur Existenz/Adresse/Status, KEIN delivery -> günstigere SKU
-LIGHT_FIELD_MASK = ",".join([
-    "places.id",
-    "places.displayName",
-    "places.formattedAddress",
-    "places.location",
-    "places.businessStatus",
-    "nextPageToken",
-])
-
-# Suchabfragen: pro Stadtteil eine Query, ~3 Seiten je Query.
-# Kostenmodell (TECHNICAL.md): ~16 Abfragen × 3 Seiten ≈ 48 Anfragen/Voll-Scan.
-SEARCH_QUERIES = [
-    "Restaurant mit Lieferservice Karlsruhe Innenstadt",
-    "Restaurant mit Lieferservice Karlsruhe Südstadt",
-    "Restaurant mit Lieferservice Karlsruhe Weststadt",
-    "Restaurant mit Lieferservice Karlsruhe Oststadt",
-    "Restaurant mit Lieferservice Karlsruhe Nordstadt",
-    "Restaurant mit Lieferservice Karlsruhe Mühlburg",
-    "Restaurant mit Lieferservice Karlsruhe Durlach",
-    "Restaurant mit Lieferservice Karlsruhe Neureut",
-    "Restaurant mit Lieferservice Karlsruhe Waldstadt",
-    "Restaurant mit Lieferservice Karlsruhe Oberreut",
-    "Restaurant mit Lieferservice Karlsruhe Grünwinkel",
-    "Restaurant mit Lieferservice Karlsruhe Rüppurr",
-    "Pizza Lieferservice Karlsruhe",
-    "Sushi Lieferservice Karlsruhe",
-    "Asiatischer Lieferservice Karlsruhe",
-    "Indischer Lieferservice Karlsruhe",
-]
-
-MAX_PAGES = 3            # Seiten pro Query (Pagination)
-PAGE_SLEEP_S = 1.0       # Wartezeit zwischen Seiten (gegen 429)
+REQUEST_TIMEOUT_S = 120
+RETRY_SLEEP_S = 5.0     # Wartezeit bei 429/5xx vor erneutem Versuch
+MAX_RETRIES = 2
 
 # --------------------------------------------------------------------------
 # Datenbank
@@ -94,13 +79,13 @@ def init_db(conn):
     conn.executescript(
         """
         CREATE TABLE IF NOT EXISTS restaurants (
-            place_id        TEXT PRIMARY KEY,
+            place_id        TEXT PRIMARY KEY,      -- OSM-Schlüssel, z. B. "node/12345"
             name            TEXT,
             address         TEXT,
             lat             REAL,
             lng             REAL,
             website         TEXT,
-            delivery        INTEGER,          -- 1/0/NULL (NULL = unbekannt, z. B. Light-Scan)
+            delivery        INTEGER,          -- 1/0/NULL (NULL = unbekannt / nicht getaggt)
             business_status TEXT,
             active          INTEGER NOT NULL DEFAULT 1,   -- 0 = als REMOVED markiert
             first_seen      TEXT NOT NULL,
@@ -137,81 +122,90 @@ def log_change(conn, place_id, change_type, old_value, new_value, ts):
 
 
 # --------------------------------------------------------------------------
-# Places API
+# Overpass API (OpenStreetMap)
 # --------------------------------------------------------------------------
 
 
-def _post_json(url, payload, headers):
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+def fetch_overpass():
+    """Holt alle Restaurants/Imbisse im Umkreis in EINEM Aufruf.
 
+    Gibt ``(elements, api_calls)`` zurück. Wirft bei endgültigem Fehlschlag
+    eine Exception – der Aufrufer bricht dann ab, statt einen leeren Scan
+    zu verarbeiten (der sonst fälschlich alles als REMOVED markieren würde).
+    """
+    data = urllib.parse.urlencode({"data": OVERPASS_QUERY}).encode("utf-8")
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": USER_AGENT,
+    }
 
-def fetch_query(api_key, query, field_mask):
-    """Holt alle Seiten einer Suchabfrage. Gibt (places, api_calls) zurück."""
-    places = []
-    api_calls = 0
-    page_token = None
-
-    for page in range(MAX_PAGES):
-        payload = {
-            "textQuery": query,
-            "languageCode": "de",
-            "regionCode": "DE",
-            "locationBias": {
-                "circle": {
-                    "center": {"latitude": KARLSRUHE_LAT, "longitude": KARLSRUHE_LNG},
-                    "radius": SEARCH_RADIUS_M,
-                }
-            },
-        }
-        if page_token:
-            payload["pageToken"] = page_token
-
-        headers = {
-            "Content-Type": "application/json",
-            "X-Goog-Api-Key": api_key,
-            "X-Goog-FieldMask": field_mask,
-        }
-
+    last_error = None
+    for attempt in range(MAX_RETRIES + 1):
+        req = urllib.request.Request(
+            OVERPASS_ENDPOINT, data=data, headers=headers, method="POST"
+        )
         try:
-            result = _post_json(PLACES_ENDPOINT, payload, headers)
+            with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT_S) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+            return result.get("elements", []), 1
         except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", errors="replace")
-            if exc.code == 429:
-                print(f"  429 Too Many Requests bei '{query}' – überspringe Rest.",
+            last_error = f"HTTP {exc.code}"
+            # 429 (Rate Limit) und 504 (Overpass-Timeout) sind vorübergehend.
+            if exc.code in (429, 502, 503, 504) and attempt < MAX_RETRIES:
+                print(f"  Overpass {exc.code} – warte {RETRY_SLEEP_S}s und "
+                      f"versuche erneut ({attempt + 1}/{MAX_RETRIES}).",
                       file=sys.stderr)
-                break
-            print(f"  HTTP {exc.code} bei '{query}': {body}", file=sys.stderr)
-            break
+                time.sleep(RETRY_SLEEP_S)
+                continue
+            raise
+        except (urllib.error.URLError, TimeoutError) as exc:
+            last_error = str(exc)
+            if attempt < MAX_RETRIES:
+                print(f"  Overpass-Netzwerkfehler ({last_error}) – warte "
+                      f"{RETRY_SLEEP_S}s und versuche erneut.", file=sys.stderr)
+                time.sleep(RETRY_SLEEP_S)
+                continue
+            raise
 
-        api_calls += 1
-        places.extend(result.get("places", []))
-
-        page_token = result.get("nextPageToken")
-        if not page_token:
-            break
-        time.sleep(PAGE_SLEEP_S)  # Google braucht kurz, bis das Token gültig ist
-
-    return places, api_calls
+    raise RuntimeError(f"Overpass-Abfrage fehlgeschlagen: {last_error}")
 
 
-def normalize_place(place, want_delivery):
-    """Places-API-Objekt in ein flaches Dict für die DB umwandeln."""
-    loc = place.get("location", {})
-    delivery = None
-    if want_delivery and "delivery" in place:
-        delivery = 1 if place.get("delivery") else 0
+def _osm_address(tags):
+    """Adresse aus addr:*-Tags zusammensetzen (soweit vorhanden)."""
+    street = " ".join(t for t in (tags.get("addr:street"),
+                                   tags.get("addr:housenumber")) if t)
+    city = " ".join(t for t in (tags.get("addr:postcode"),
+                                 tags.get("addr:city")) if t)
+    return ", ".join(t for t in (street, city) if t) or None
+
+
+def normalize_osm(el):
+    """OSM-Element in ein flaches Dict umwandeln (Format wie MOCK_PLACES)."""
+    tags = el.get("tags", {})
+
+    # Koordinaten: node hat lat/lon direkt, way/relation über 'center'.
+    center = el.get("center", {})
+    lat = el.get("lat", center.get("lat"))
+    lng = el.get("lon", center.get("lon"))
+
+    # delivery=yes/only -> 1, no -> 0, sonst unbekannt (None).
+    d = tags.get("delivery")
+    if d in ("yes", "only"):
+        delivery = 1
+    elif d == "no":
+        delivery = 0
+    else:
+        delivery = None
+
     return {
-        "place_id": place.get("id"),
-        "name": (place.get("displayName") or {}).get("text"),
-        "address": place.get("formattedAddress"),
-        "lat": loc.get("latitude"),
-        "lng": loc.get("longitude"),
-        "website": place.get("websiteUri"),
+        "place_id": f"{el['type']}/{el['id']}",
+        "name": tags.get("name"),
+        "address": _osm_address(tags),
+        "lat": lat,
+        "lng": lng,
+        "website": tags.get("website") or tags.get("contact:website"),
         "delivery": delivery,
-        "business_status": place.get("businessStatus"),
+        "business_status": None,   # OSM kennt kein Google-"businessStatus"
     }
 
 
@@ -251,10 +245,9 @@ MOCK_PLACES = [
 def sync_places(conn, places, mode, scan_ts):
     """Upsert der gefundenen Places + Änderungserkennung.
 
-    ``places`` ist eine Liste flacher Dicts (siehe normalize_place / MOCK_PLACES).
+    ``places`` ist eine Liste flacher Dicts (siehe normalize_osm / MOCK_PLACES).
     Gibt die Anzahl eindeutiger, verarbeiteter Restaurants zurück.
     """
-    want_delivery = mode in ("full", "mock")
     seen_ids = set()
 
     for p in places:
@@ -288,12 +281,13 @@ def sync_places(conn, places, mode, scan_ts):
         if p["address"] and p["address"] != old_addr:
             log_change(conn, pid, "ADDRESS_CHANGED", old_addr, p["address"], scan_ts)
 
-        # Statusänderung (OPERATIONAL / CLOSED_TEMPORARILY / CLOSED_PERMANENTLY)
+        # Statusänderung (bei OSM i. d. R. leer, daher selten)
         if p["business_status"] and p["business_status"] != old_status:
             log_change(conn, pid, "STATUS_CHANGED", old_status, p["business_status"], scan_ts)
 
-        # Lieferstatus – nur im Voll-Scan geprüft (Light holt das Feld nicht)
-        if want_delivery and p["delivery"] is not None and p["delivery"] != old_delivery:
+        # Lieferstatus – OSM liefert das delivery-Tag kostenlos mit,
+        # daher in jedem Modus geprüft (nur wenn tatsächlich getaggt).
+        if p["delivery"] is not None and p["delivery"] != old_delivery:
             log_change(conn, pid, "DELIVERY_CHANGED",
                        _delivery_str(old_delivery), _delivery_str(p["delivery"]), scan_ts)
 
@@ -301,24 +295,16 @@ def sync_places(conn, places, mode, scan_ts):
         if old_active == 0:
             log_change(conn, pid, "NEW", None, p["name"], scan_ts)
 
-        # Update. Im Light-Modus delivery NICHT überschreiben (Feld nicht abgefragt).
-        if want_delivery:
-            conn.execute(
-                "UPDATE restaurants SET name=?, address=?, lat=?, lng=?, website=?,"
-                " delivery=?, business_status=?, active=1, last_seen=? WHERE place_id=?",
-                (p["name"], p["address"], p["lat"], p["lng"], p["website"],
-                 p["delivery"], p["business_status"], scan_ts, pid),
-            )
-        else:
-            conn.execute(
-                "UPDATE restaurants SET name=?, address=?, lat=?, lng=?,"
-                " business_status=?, active=1, last_seen=? WHERE place_id=?",
-                (p["name"], p["address"], p["lat"], p["lng"],
-                 p["business_status"], scan_ts, pid),
-            )
+        conn.execute(
+            "UPDATE restaurants SET name=?, address=?, lat=?, lng=?, website=?,"
+            " delivery=?, business_status=?, active=1, last_seen=? WHERE place_id=?",
+            (p["name"], p["address"], p["lat"], p["lng"], p["website"],
+             p["delivery"], p["business_status"], scan_ts, pid),
+        )
 
     # REMOVED-Erkennung nur im Voll-Scan (mock zählt als voll).
-    # Light markiert absichtlich NICHTS als entfernt (Google-Caching-Delays).
+    # --light markiert absichtlich NICHTS als entfernt – ein Refresh soll
+    # keine Restaurants löschen, falls die Overpass-Antwort mal unvollständig ist.
     if mode in ("full", "mock"):
         stale = conn.execute(
             "SELECT place_id, name FROM restaurants WHERE active = 1 AND last_seen < ?",
@@ -352,29 +338,34 @@ def run_scan(mode):
 
         api_calls = 0
         if mode == "mock":
-            print("Mock-Modus: fülle DB mit Demodaten (keine API-Kosten).")
+            print("Mock-Modus: fülle DB mit Demodaten (kein Netz).")
             places = list(MOCK_PLACES)
         else:
-            api_key = os.environ.get("PLACES_API_KEY")
-            if not api_key:
-                print("PLACES_API_KEY not set", file=sys.stderr)
-                print("  export PLACES_API_KEY=\"dein-key\"  (oder --mock nutzen)",
-                      file=sys.stderr)
+            print(f"{mode}-Scan: frage Overpass ab ({OVERPASS_ENDPOINT}).")
+            try:
+                elements, api_calls = fetch_overpass()
+            except Exception as exc:  # Netz-/HTTP-Fehler
+                print(f"Overpass-Abfrage fehlgeschlagen: {exc}", file=sys.stderr)
+                print("  Scan abgebrochen – DB bleibt unverändert.", file=sys.stderr)
                 return 1
 
-            field_mask = FULL_FIELD_MASK if mode == "full" else LIGHT_FIELD_MASK
-            want_delivery = mode == "full"
-            raw_by_id = {}
-            print(f"{mode}-Scan: {len(SEARCH_QUERIES)} Abfragen, max. {MAX_PAGES} Seiten je.")
-            for query in SEARCH_QUERIES:
-                found, calls = fetch_query(api_key, query, field_mask)
-                api_calls += calls
-                for place in found:
-                    norm = normalize_place(place, want_delivery)
-                    if norm["place_id"]:
-                        raw_by_id[norm["place_id"]] = norm  # dedupe über Queries hinweg
-                print(f"  '{query}': {len(found)} Treffer ({calls} API-Aufrufe)")
-            places = list(raw_by_id.values())
+            places = []
+            for el in elements:
+                if not el.get("id"):
+                    continue
+                norm = normalize_osm(el)
+                # Nur benannte Objekte mit Koordinaten sind sinnvoll anzeigbar.
+                if norm["name"] and norm["lat"] is not None and norm["lng"] is not None:
+                    places.append(norm)
+
+            print(f"  {len(elements)} OSM-Objekte, {len(places)} verwertbar "
+                  f"(mit Name + Koordinaten).")
+
+            # Schutz: eine leere Antwort niemals als "alle entfernt" verarbeiten.
+            if not places:
+                print("Keine verwertbaren Objekte erhalten – Scan abgebrochen, "
+                      "DB bleibt unverändert.", file=sys.stderr)
+                return 1
 
         count = sync_places(conn, places, mode, scan_ts)
 
@@ -389,19 +380,19 @@ def run_scan(mode):
             "SELECT COUNT(*) FROM restaurants WHERE active = 1"
         ).fetchone()[0]
         print(f"Fertig: {count} Restaurants im Scan, {active} aktiv in DB, "
-              f"{api_calls} API-Aufrufe.")
+              f"{api_calls} API-Aufruf(e).")
         return 0
     finally:
         conn.close()
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Lieferkarte Karlsruhe – Scanner")
+    parser = argparse.ArgumentParser(description="Lieferkarte Karlsruhe – Scanner (OpenStreetMap/Overpass)")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--mock", action="store_true",
-                       help="Demodaten laden, keine API, keine Kosten")
+                       help="Demodaten laden, kein Netz")
     group.add_argument("--light", action="store_true",
-                       help="günstiger Existenz-/Adress-Check, kein delivery, keine REMOVED-Erkennung")
+                       help="Refresh ohne REMOVED-Erkennung")
     args = parser.parse_args(argv)
 
     if args.mock:

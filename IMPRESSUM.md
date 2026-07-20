@@ -11,11 +11,11 @@
 
 ### Haftung für Inhalte
 
-Die Inhalte dieser Website werden mit Sorgfalt erarbeitet. Wir können aber keine Gewähr für die Vollständigkeit, Richtigkeit oder Aktualität der bereitgestellten Informationen übernehmen. Dies gilt besonders für die Lieferstatus-Informationen, die automatisiert von Google Maps übernommen werden.
+Die Inhalte dieser Website werden mit Sorgfalt erarbeitet. Wir können aber keine Gewähr für die Vollständigkeit, Richtigkeit oder Aktualität der bereitgestellten Informationen übernehmen. Dies gilt besonders für die Lieferstatus-Informationen, die automatisiert aus OpenStreetMap übernommen werden.
 
 **Restaurantdaten:**
-- Quelle: Google Maps Platform (© Google)
-- Lieferstatus kann sich ohne Vorankündigung ändern
+- Quelle: OpenStreetMap-Mitwirkende (Lizenz: ODbL)
+- Lieferstatus kann sich ohne Vorankündigung ändern und ist nur so vollständig, wie es die OSM-Community erfasst hat
 - Für aktuelle Informationen direkt beim Restaurant nachfragen
 
 ### Externe Links
@@ -53,17 +53,16 @@ Falls du den Browser-Feature "In meiner Nähe" nutzt:
 
 ### 5. Externe Inhalte
 
-#### Google Maps Platform
-- **Was:** Restaurants, Adressen, Lieferstatus
-- **Quelle:** Google Inc., Google Ireland, 70 Rue Boileau, 75016 Paris, France
-- **Datenschutzerklärung:** https://policies.google.com/privacy
-
-Wenn du die Karte nutzt, können Google-Server Log-Daten erfassen (Standard bei Kartenbibliotheken).
-
 #### OpenStreetMap
-- **Was:** Kartenkacheln (Straßen, Grenzen, etc.)
+- **Was:** Restaurantdaten (Name, Adresse, Lieferstatus) **und** Kartenkacheln
 - **Betreiber:** OpenStreetMap Foundation
+- **Lizenz der Daten:** ODbL (Open Database License)
 - **Datenschutzerklärung:** https://wiki.openstreetmap.org/wiki/Privacy_Policy
+
+Die Restaurantdaten werden vorab per Overpass-API abgerufen und statisch
+ausgeliefert – beim Aufruf der Seite findet dazu **kein** Live-Request an OSM
+statt. Beim Nachladen der Kartenkacheln können die OSM-Tile-Server (wie bei
+jeder Kartenbibliothek) technische Zugriffsdaten erfassen.
 
 ### 6. Deine Rechte
 

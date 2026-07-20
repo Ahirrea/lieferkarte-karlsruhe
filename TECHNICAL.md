@@ -1,14 +1,16 @@
 # Lieferkarte Karlsruhe – Technische Dokumentation
 
-Findet Restaurants mit Lieferservice über die **Google Places API (New)**,
-speichert sie in SQLite, erkennt Änderungen zwischen Scans und zeigt alles
-auf einer Karte (Leaflet + OpenStreetMap, keine Google-Maps-JS-Kosten).
+Findet Restaurants mit Lieferservice über die **Overpass API**
+(OpenStreetMap), speichert sie in SQLite, erkennt Änderungen zwischen Scans
+und zeigt alles auf einer Karte (Leaflet + OpenStreetMap). Kostenlos, kein
+API-Key, und weil OSM unter der ODbL steht, dürfen die Daten öffentlich
+weitergegeben werden.
 
 ## Architektur
 
 ```
 scanner.py  ──>  data/restaurants.db  ──>  export.py  ──>  web/restaurants.json
- (Places API)      (SQLite:                                      │
+ (Overpass API)    (SQLite:                                      │
                     restaurants,                                  v
                     changes,                                web/index.html
                     scan_runs)                              (Leaflet-Karte)
@@ -27,58 +29,21 @@ cd web && python3 -m http.server 8000
 # -> http://localhost:8000 im Browser öffnen
 ```
 
-## Echter Scan (mit Google Places API)
+## Echter Scan (OpenStreetMap/Overpass)
 
-### 1. Google-Cloud-Projekt Setup
+Kein Setup, kein API-Key, keine Anmeldung. Der Scanner stellt eine einzige
+Overpass-Abfrage über das komplette Suchgebiet.
 
-1. [Google Cloud Console](https://console.cloud.google.com/) öffnen
-2. Neues Projekt anlegen (z. B. "Lieferkarte Karlsruhe")
-3. **Places API (New)** aktivieren:
-   - "APIs & Services" → "Library"
-   - "Places API" suchen, den mit "(New)" wählen
-   - "Enable" klicken
-4. **API-Key erzeugen:**
-   - "APIs & Services" → "Credentials"
-   - "+ Create Credentials" → "API Key"
-   - Key kopieren
-5. **Key einschränken (WICHTIG):**
-   - Key anklicken, "API restrictions" setzen
-   - Nur "Places API" (New) erlauben – sonst kann jeder damit andere APIs missbrauchen
-
-### 2. Budget-Alarm setzen (Pflicht!)
-
-Places API mit Atmosphere-Feldern kann bei zu vielen Anfragen schnell teuer werden.
-
-1. Cloud Console → "Billing"
-2. Projekt dem Billing Account zuordnen
-3. "Budgets and alerts" → "+ CREATE BUDGET"
-   - Budget: z. B. 20 EUR/Monat
-   - Alert threshold: z. B. 80%, 100%, 120%
-
-### 3. Umgebungsvariable setzen
+### Scanner laufen lassen
 
 ```bash
-export PLACES_API_KEY="dein-api-key-hier"
-```
-
-Besser (persistent):
-```bash
-echo 'export PLACES_API_KEY="dein-key"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-Oder für GitHub Actions: Siehe Abschnitt "GitHub Actions Workflow" unten.
-
-### 4. Scanner laufen lassen
-
-```bash
-# Voll-Scan: Lieferservice-Flag + alle Details (teure SKU, ~0.04 $ / 1.000 Anfragen)
+# Voll-Scan: Bestand + Änderungen + REMOVED-Erkennung
 python3 scanner.py
 
-# Günstiger Existenz-Check: nur Adresse/Status, kein delivery-Feld
+# Refresh ohne REMOVED-Erkennung
 python3 scanner.py --light
 
-# Demo ohne API-Kosten
+# Demo ohne Netz
 python3 scanner.py --mock
 ```
 
@@ -88,24 +53,28 @@ python3 export.py           # erzeugt web/restaurants.json
 cd web && python3 -m http.server 8000
 ```
 
+### Overpass-Abfrage
+
+`scanner.py` fragt alle `amenity=restaurant`/`fast_food` im 12-km-Umkreis um
+das Karlsruher Zentrum ab (`nwr(around:...)`, `out center tags`). Aus den Tags
+werden Name, Adresse (`addr:*`), Koordinaten, `website`/`contact:website` und
+`delivery` (`yes`/`only` → 1, `no` → 0, sonst unbekannt) übernommen.
+
+Der Endpoint ist per Umgebungsvariable überschreibbar, falls ein Spiegelserver
+nötig wird:
+
+```bash
+export OVERPASS_ENDPOINT="https://overpass.kumi.systems/api/interpreter"
+```
+
 ## Kostenübersicht
 
-### Preise (Stand Mitte 2026, can change)
+**0 €.** Die Overpass-API ist kostenlos und ohne API-Key nutzbar. Ein Scan =
+ein HTTP-Request. Overpass bittet lediglich um faire Nutzung (deshalb ein
+freundlicher `User-Agent` und Retry-Backoff bei `429`/`504`).
 
-| SKU | Enthält | $/1.000 |
-|---|---|---|
-| Text Search Essentials | nur ID | kostenlos |
-| Text Search Pro | Name, Adresse, Koordinaten | ~32 $ |
-| Text Search Enterprise | + Öffnungszeiten, Telefon, Website | ~35 $ |
-| **Text Search Enterprise+Atmosphere** | **+ `delivery`, Dine-in etc.** | **~40 $** |
-
-### Geschätzte monatliche Kosten für Karlsruhe
-
-- **Suchanfragen pro Voll-Scan:** ~16 Suchabfragen × 3 Seiten ≈ 48 Anfragen
-- **Wöchentlicher Voll-Scan:** 4 Wochen × 48 ≈ **192 Anfragen/Monat**
-- **Kosten:** (192 / 1.000) × 40 $ ≈ **~8 $/Monat**
-
-Mit täglichem `--light`-Check (günstiger): die teuren Anfragen steigen minimal. Kostenbudget: **10–15 $/Monat** ist realistisch.
+Kein Google-Cloud-Projekt, kein Billing, kein Budget-Alarm mehr nötig – die
+frühere `PLACES_API_KEY`-Logik entfällt komplett.
 
 ## GitHub Actions Workflow
 
@@ -136,8 +105,6 @@ jobs:
           python-version: '3.12'
 
       - name: Run scanner
-        env:
-          PLACES_API_KEY: ${{ secrets.PLACES_API_KEY }}
         run: |
           python3 scanner.py
 
@@ -153,15 +120,11 @@ jobs:
           git push
 ```
 
-### 2. API-Key als Secret speichern
+### 2. Kein Secret nötig
 
-1. Repo → Settings → "Secrets and variables" → "Actions"
-2. "+ New repository secret"
-3. Name: `PLACES_API_KEY`
-4. Value: dein Google API-Key
-5. Speichern
-
-Der Key wird nur beim Workflow-Lauf sichtbar, nie im Repo oder der History.
+Overpass braucht keinen API-Key – Schritt entfällt. (Die tatsächlich im Repo
+verwendete Workflow-Datei bietet zusätzlich `workflow_dispatch` mit
+Modus-Auswahl `full`/`light`.)
 
 ### 3. GitHub Pages konfigurieren
 
@@ -185,7 +148,7 @@ lieferkarte-karlsruhe/
 ├── TECHNICAL.md                 # Das hier – technische Doku
 ├── IMPRESSUM.md                 # Impressum & Datenschutz
 ├── .gitignore                   # was nicht ins Repo kommt
-├── scanner.py                   # Places API Scanner + Change Detection
+├── scanner.py                   # Overpass-Scanner (OSM) + Change Detection
 ├── export.py                    # DB → JSON
 ├── data/
 │   └── restaurants.db           # SQLite, mit Tabellen: restaurants, changes, scan_runs
@@ -199,61 +162,58 @@ lieferkarte-karlsruhe/
 
 ## Felder in der DB erweitern
 
-Das `delivery`-Flag ist in der Atmosphere-SKU enthalten, du bezahlst also schon dafür. Kostenlos mitnehmbar:
+Overpass liefert alle Tags eines Objekts kostenlos mit – zusätzliche Felder
+kosten nichts extra. Nützliche OSM-Tags:
 
-- `types`: Küchenstil (Pizza, Thai, Burger, etc.)
+- `cuisine`: Küchenstil (`pizza`, `thai`, `burger`, …)
 - `opening_hours`: Öffnungszeiten
-- `phone_number`: Telefon
-- `wheelchair_accessible`: Rollstuhl-zugänglich
-- `rating`: Bewertungsscore
+- `phone` / `contact:phone`: Telefon
+- `wheelchair`: Rollstuhl-Zugänglichkeit (`yes`/`limited`/`no`)
+- `takeaway`: Abholung (ergänzend zu `delivery`)
 
-Um sie abzufragen, in `scanner.py` die `FULL_FIELD_MASK` anpassen:
+Um sie zu übernehmen, in `scanner.py` einfach in `normalize_osm()` aus `tags`
+lesen (der Query holt bereits alle Tags über `out ... tags`):
 
 ```python
-FULL_FIELD_MASK = ",".join([
-    "places.id",
-    "places.displayName",
-    "places.formattedAddress",
-    "places.location",
-    "places.businessStatus",
-    "places.websiteUri",
-    "places.delivery",
-    "places.types",              # <- hinzufügen
-    "places.openingHours",       # <- hinzufügen
-    "places.internationalPhoneNumber",  # <- hinzufügen
-    "nextPageToken",
-])
+"cuisine": tags.get("cuisine"),
+"opening_hours": tags.get("opening_hours"),
+"phone": tags.get("phone") or tags.get("contact:phone"),
 ```
 
 Dann die DB-Schema-Spalten hinzufügen (`ALTER TABLE restaurants ADD COLUMN ...`) und `sync_places()` entsprechend anpassen.
 
 ## Häufige Probleme
 
-### "PLACES_API_KEY not set"
-```bash
-export PLACES_API_KEY="dein-key"
-python3 scanner.py
-```
-
-### "429 Too Many Requests"
-Google drosselt bei zu vielen parallelen Anfragen. `scanner.py` wartet zwischen Pagination-Seiten (`time.sleep(1)`). Falls es trotzdem passiert: Abstand erhöhen oder weniger Seiten pro Query (`max_pages` reduzieren).
+### "Overpass-Abfrage fehlgeschlagen" / 429
+Overpass drosselt bei zu häufigen Anfragen. `scanner.py` versucht bei
+`429`/`502`/`503`/`504` automatisch erneut (Backoff). Bei anhaltenden Problemen
+später erneut laufen lassen oder per `OVERPASS_ENDPOINT` einen Spiegelserver
+setzen. Wichtig: Bei endgültigem Fehlschlag **bricht der Scan ab** und lässt die
+DB unangetastet – eine leere Antwort wird nie als „alles entfernt" verarbeitet.
 
 ### "Restaurant XYZ war hier, jetzt nicht mehr – warum?"
-Im Voll-Scan-Modus (~1× pro Woche) werden Restaurants mit `last_seen < scan_timestamp` als "REMOVED" markiert. Im `--light`-Modus (täglich) werden keine Removals erkannt – das ist absichtlich, weil Google manchmal Caching-Delays hat.
+Im Voll-Scan-Modus werden Restaurants mit `last_seen < scan_timestamp` als
+"REMOVED" markiert. Im `--light`-Modus werden keine Removals erkannt – das ist
+absichtlich, damit eine unvollständige Overpass-Antwort keine Einträge löscht.
 
 ### Ist die `restaurants.db` nicht aktuell in GitHub?
 GitHub cacht den Workflow-Output. Nach einem Scan:
 1. `git log` prüfen – steht dort der neueste Commit?
-2. Falls nicht: Workflow manual triggern (Repo → Actions → "Weekly Restaurant Scan" → "Run workflow")
+2. Falls nicht: Workflow manuell triggern (Repo → Actions → "Weekly Restaurant Scan" → "Run workflow")
 
-## Googles Caching & Datenspeicherung
+## Lizenz & Datenherkunft (OpenStreetMap)
 
 Wichtig für Rechtssicherheit:
 
-- **`place_id`:** Darf unbegrenzt gespeichert werden
-- **Andere Felder (Name, Adresse, Lieferstatus):** Google möchte, dass du sie nicht länger als **30 Tage** speicherst ohne Refresh
-  - Dein wöchentlicher Scan erfüllt das, da du jedes Mal ein Refresh machst
-- **Bei Karte zeigen:** Attribution "Daten: Google Maps" ergänzen (steht bereits im Frontend als Meta)
+- **Datenquelle:** OpenStreetMap, lizenziert unter der **ODbL** (Open Database
+  License). Weiterverteilung – auch öffentlich und kommerziell – ist erlaubt.
+- **Attribution ist Pflicht:** „© OpenStreetMap-Mitwirkende" muss sichtbar sein
+  (steht im Frontend-Footer und im `attribution`-Feld der JSON).
+- **Share-alike:** Wird die Datenbank verändert und als Datenbank weitergegeben,
+  gilt sie ihrerseits als ODbL. Für dieses Projekt unkritisch.
+- **Keine 30-Tage-Löschpflicht** wie bei Google – OSM-Daten dürfen dauerhaft
+  gespeichert und in der Git-History gehalten werden. Genau deshalb ist der
+  öffentliche-Repo-Ansatz hier sauber.
 
 ## Lizenz
 

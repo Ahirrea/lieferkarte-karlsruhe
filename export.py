@@ -73,7 +73,7 @@ def export():
             "generatedAt": datetime.now(timezone.utc).isoformat(),
             "lastScanAt": last_run["started_at"] if last_run else None,
             "lastScanMode": last_run["mode"] if last_run else None,
-            "attribution": "Daten: Google Maps Platform · Karte: © OpenStreetMap-Mitwirkende",
+            "attribution": "Daten & Karte: © OpenStreetMap-Mitwirkende (ODbL)",
             "restaurants": restaurants,
             "recentChanges": changes,
         }

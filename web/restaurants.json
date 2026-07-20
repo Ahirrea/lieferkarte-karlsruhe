@@ -1,9 +1,9 @@
 {
   "count": 10,
-  "generatedAt": "2026-07-16T09:46:52.923301+00:00",
+  "generatedAt": "2026-07-20T19:02:22.611255+00:00",
   "lastScanAt": "2026-07-16T09:46:52.801421+00:00",
   "lastScanMode": "mock",
-  "attribution": "Daten: Google Maps Platform · Karte: © OpenStreetMap-Mitwirkende",
+  "attribution": "Daten & Karte: © OpenStreetMap-Mitwirkende (ODbL)",
   "restaurants": [
     {
       "placeId": "mock_004",
