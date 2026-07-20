@@ -5,6 +5,15 @@ name: Weekly Restaurant Scan
 # automatischer Zeitplan (schedule) – der Lauf wird von Hand gestartet.
 on:
   workflow_dispatch:
+    inputs:
+      scan_mode:
+        description: "Scan-Modus (bestimmt die API-Kosten)"
+        type: choice
+        required: true
+        default: light
+        options:
+          - light   # günstig: Existenz-/Adress-Check, kein delivery, kein REMOVED
+          - full    # teuer: delivery-Flag + alle Detailfelder (Enterprise+Atmosphere SKU)
 
 jobs:
   scan:
@@ -29,12 +38,17 @@ jobs:
       
       # ================================================================
       # 3. Scanner ausführen (Places API Scan)
+      #    Modus wird beim manuellen Start gewählt (light = günstig).
       # ================================================================
-      - name: Run weekly scanner
+      - name: Run scanner (${{ inputs.scan_mode }})
         env:
           PLACES_API_KEY: ${{ secrets.PLACES_API_KEY }}
         run: |
-          python3 scanner.py
+          if [ "${{ inputs.scan_mode }}" = "full" ]; then
+            python3 scanner.py
+          else
+            python3 scanner.py --light
+          fi
       
       # ================================================================
       # 4. Daten als JSON exportieren
