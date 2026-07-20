@@ -18,6 +18,10 @@ on:
           - full    # Voll-Scan inkl. REMOVED-Erkennung
           - light   # Refresh ohne REMOVED-Erkennung
 
+# Der Job committet die neuen Daten zurück ins Repo -> Schreibrecht nötig.
+permissions:
+  contents: write
+
 jobs:
   scan:
     runs-on: ubuntu-latest

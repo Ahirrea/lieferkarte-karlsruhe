@@ -89,6 +89,32 @@ fahren (kein API-Key nötig): `python scanner.py` → `python export.py`.
 
 ---
 
+## 📝 Offene Entscheidung: `delivery`-Abdeckung prüfen (später)
+
+**Zu klären, sobald echte Daten sichtbar sind** (erster Scan lieferte ~883
+Restaurants in Karlsruhe):
+
+Das OSM-Tag `delivery` ist von der Community **lückenhaft** gepflegt. Aktuell
+zeigt die Karte per Default nur Restaurants mit `delivery=yes/only` (Frontend:
+Checkbox „nur mit Lieferservice", standardmäßig an). Wenn nur wenige Einträge
+das Tag gesetzt haben, wirkt die Karte fälschlich leer.
+
+Zu entscheiden, wenn ich mir die tatsächliche Abdeckung angesehen habe:
+
+- **Option A – so lassen:** nur sicher getaggte Lieferdienste zeigen (sauber,
+  aber evtl. sehr wenige Treffer).
+- **Option B – Filter lockern:** zusätzlich `takeaway=yes` einbeziehen oder
+  Restaurants mit ungetaggtem `delivery` als „Lieferung unbekannt" listen
+  (mehr Treffer, dafür unschärfer).
+- **Option C – zurück beitragen:** fehlende `delivery`-Tags selbst in OSM
+  ergänzen (verbessert die Datenlage für alle, aber Handarbeit).
+
+→ Bewusst noch **nicht umgesetzt**. Nach Sichtung der Daten hier entscheiden.
+Zum schnellen Zählen: `SELECT delivery, COUNT(*) FROM restaurants GROUP BY delivery;`
+auf `data/restaurants.db`.
+
+---
+
 ## Kurz-Checkliste für den Launch-Tag
 
 - [ ] Autor-E-Mail auf GitHub-`noreply` umgestellt (ggf. History umgeschrieben)
