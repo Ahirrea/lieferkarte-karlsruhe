@@ -147,6 +147,8 @@ lieferkarte-karlsruhe/
 ├── README.md                    # Öffentliche Doku (was ist das?)
 ├── TECHNICAL.md                 # Das hier – technische Doku
 ├── DATENSCHUTZ.md               # Datenschutz & Hinweise (kein Impressum – privat)
+├── index.html                   # Root-Weiterleitung -> web/index.html (für Pages)
+├── .nojekyll                    # Pages statisch ausliefern, ohne Jekyll
 ├── .gitignore                   # was nicht ins Repo kommt
 ├── scanner.py                   # Overpass-Scanner (OSM) + Change Detection
 ├── export.py                    # DB → JSON

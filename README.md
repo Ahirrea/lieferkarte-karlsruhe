@@ -2,7 +2,7 @@
 
 Kostenlose Lieferkarte für Karlsruhe: Restaurants mit eigenem Lieferservice, direkter Link zur Website – ohne Provisionen-Plattformen wie Wolt oder Uber Eats.
 
-🗺️ **Website:** [lieferkarte-karlsruhe.github.io](https://lieferkarte-karlsruhe.github.io)
+🗺️ **Website:** [ahirrea.github.io/lieferkarte-karlsruhe](https://ahirrea.github.io/lieferkarte-karlsruhe/)
 
 ## Was ist das?
 
@@ -21,7 +21,7 @@ Statt durch Wolt, Uber Eats oder anderen Apps zu bestellen (die Restaurants oft 
 
 ## Wie nutze ich das?
 
-1. Website öffnen: https://lieferkarte-karlsruhe.github.io
+1. Website öffnen: https://ahirrea.github.io/lieferkarte-karlsruhe/
 2. Suche nutzen oder auf der Karte durchschauen
 3. Restaurant anklicken → zur Website und bestellen
 
