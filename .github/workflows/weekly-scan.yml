@@ -1,11 +1,9 @@
 name: Weekly Restaurant Scan
 
+# Nur manueller Trigger: über GitHub UI im "Actions"-Tab.
+# Der Scan verursacht Kosten (Google Places API), daher bewusst kein
+# automatischer Zeitplan (schedule) – der Lauf wird von Hand gestartet.
 on:
-  schedule:
-    # Jeden Sonntag um 06:00 UTC (07:00 MEZ / 08:00 MESZ)
-    - cron: '0 6 * * 0'
-  
-  # Manueller Trigger: über GitHub UI im "Actions"-Tab
   workflow_dispatch:
 
 jobs:
