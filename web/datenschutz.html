@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Datenschutz & Hinweise – Lieferkarte Karlsruhe</title>
+  <meta name="description" content="Datenschutz und Hinweise zur Lieferkarte Karlsruhe. Keine Cookies, kein Tracking, keine Datenerfassung.">
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --panel: #ffffff;
+      --accent: #d64541;
+      --text: #1e1e1e;
+      --muted: #6b6b6b;
+      --border: #e3e3df;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.55;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0.7rem 1rem;
+    }
+    header h1 { font-size: 1.15rem; margin: 0; }
+    header h1 .accent { color: var(--accent); }
+    header a.back {
+      font-size: 0.85rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    header a.back:hover { text-decoration: underline; }
+    .topbar {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 3rem;
+    }
+    main h2 {
+      font-size: 1.05rem;
+      margin: 1.8rem 0 0.5rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid var(--border);
+    }
+    main h3 { font-size: 0.95rem; margin: 1.1rem 0 0.3rem; }
+    p, li { font-size: 0.92rem; }
+    ul { padding-left: 1.2rem; }
+    li { margin: 0.2rem 0; }
+    a { color: var(--accent); }
+    .lead {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      font-size: 0.92rem;
+    }
+    footer {
+      max-width: 720px; margin: 0 auto;
+      padding: 1rem; font-size: 0.75rem; color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <h1>Datenschutz &amp; Hinweise · 🍽️ Lieferkarte <span class="accent">Karlsruhe</span></h1>
+      <a class="back" href="index.html">← Zurück zur Karte</a>
+    </div>
+  </header>
+
+  <main>
+    <p class="lead">
+      Dies ist ein <strong>privates, nicht-kommerzielles Projekt</strong>.
+      Es werden keine personenbezogenen Daten erhoben, gespeichert oder verarbeitet.
+    </p>
+
+    <h2>Datenschutz auf einen Blick</h2>
+    <ul>
+      <li><strong>Keine Cookies</strong> – weder notwendige noch optionale.</li>
+      <li><strong>Kein Tracking, keine Analyse, keine Werbung.</strong></li>
+      <li><strong>Keine Formulare, keine Datenerfassung, keine serverseitige Speicherung.</strong></li>
+      <li>Die Seite ist statisch (GitHub Pages) und läuft ohne eigenen Backend-Server.</li>
+    </ul>
+
+    <h2>Geolocation ("In meiner Nähe")</h2>
+    <p>Wenn du den Browser-Button "In meiner Nähe" nutzt:</p>
+    <ul>
+      <li>Deine Position wird <strong>nur lokal im Browser</strong> verwendet.</li>
+      <li>Sie wird <strong>nicht</strong> an einen Server übertragen.</li>
+      <li>Sie wird <strong>nicht</strong> gespeichert.</li>
+      <li>Der Browser fragt vorher um Erlaubnis – du kannst ablehnen.</li>
+    </ul>
+
+    <h2>Externe Inhalte</h2>
+    <h3>OpenStreetMap</h3>
+    <ul>
+      <li><strong>Was:</strong> Restaurantdaten (Name, Adresse, Lieferstatus) <strong>und</strong> Kartenkacheln</li>
+      <li><strong>Betreiber:</strong> OpenStreetMap Foundation</li>
+      <li><strong>Lizenz der Daten:</strong> ODbL (Open Database License)</li>
+      <li><strong>Datenschutzerklärung:</strong> <a href="https://wiki.openstreetmap.org/wiki/Privacy_Policy" target="_blank" rel="noopener">wiki.openstreetmap.org/wiki/Privacy_Policy</a></li>
+    </ul>
+    <p>
+      Die Restaurantdaten werden vorab per Overpass-API abgerufen und statisch
+      ausgeliefert – beim Aufruf der Seite findet dazu <strong>kein</strong> Live-Request
+      an OSM statt. Beim Nachladen der Kartenkacheln können die OSM-Tile-Server (wie bei
+      jeder Kartenbibliothek) technische Zugriffsdaten wie die IP-Adresse erfassen.
+    </p>
+
+    <h2>Haftung für Inhalte</h2>
+    <p>
+      Die Inhalte werden mit Sorgfalt gepflegt, ohne Gewähr für Vollständigkeit,
+      Richtigkeit oder Aktualität. Das gilt besonders für den Lieferstatus, der
+      automatisiert aus OpenStreetMap übernommen wird und nur so vollständig ist,
+      wie es die OSM-Community erfasst hat. Für aktuelle Informationen bitte direkt
+      beim jeweiligen Restaurant nachfragen.
+    </p>
+
+    <h2>Externe Links</h2>
+    <p>
+      Diese Seite verlinkt zu Restaurant-Websites. Für den Inhalt fremder Seiten wird
+      keine Verantwortung übernommen.
+    </p>
+
+    <h2>Datenquelle &amp; Attribution</h2>
+    <ul>
+      <li>Restaurantdaten &amp; Kartenkacheln: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-Mitwirkende (Lizenz: ODbL)</li>
+      <li>Kartensoftware: Leaflet (BSD-2-Clause)</li>
+    </ul>
+
+    <h2>Fehler melden</h2>
+    <p>
+      Falsche Adresse, falscher Lieferstatus oder fehlendes Restaurant?
+      Über <a href="https://github.com/Ahirrea/lieferkarte-karlsruhe/issues" target="_blank" rel="noopener">GitHub Issues</a> melden –
+      oder direkt in <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">OpenStreetMap</a> korrigieren.
+    </p>
+  </main>
+
+  <footer>
+    Daten &amp; Karte: © OpenStreetMap-Mitwirkende (ODbL) · Keine Cookies, kein Tracking
+  </footer>
+</body>
+</html>
