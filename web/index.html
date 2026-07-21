@@ -108,6 +108,24 @@
       text-decoration: none;
     }
     .popup-link:hover { text-decoration: underline; }
+    .meld { margin-top: 0.5rem; }
+    .meld summary {
+      cursor: pointer;
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .meld-body { margin-top: 0.4rem; }
+    .meld-text {
+      font-size: 0.8rem;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem 0.5rem;
+      margin: 0 0 0.4rem;
+    }
+    .meld-hint { font-size: 0.72rem; color: var(--muted); margin-top: 0.3rem; }
     footer {
       background: var(--panel);
       border-top: 1px solid var(--border);
@@ -190,6 +208,27 @@
       }).join("<br>");
     }
 
+    // Baut einen fertigen Meldetext für eine OSM-Notiz.
+    // Nennt den aktuell getaggten Ist-Wert, damit die Notiz sofort brauchbar ist.
+    function meldeText(r) {
+      const ist = [];
+      if (r.delivery === true) ist.push("Lieferung (delivery) ist als „ja“ getaggt");
+      else if (r.delivery === false) ist.push("Lieferung (delivery) ist als „nein“ getaggt");
+      if (r.takeaway === true) ist.push("Abholung (takeaway) ist als „ja“ getaggt");
+      else if (r.takeaway === false) ist.push("Abholung (takeaway) ist als „nein“ getaggt");
+
+      const adr = r.address ? ", " + r.address : "";
+      let t = `Lieferkarte Karlsruhe – mögliche falsche Angabe bei „${r.name}“${adr}. `;
+      if (ist.length) t += "Aktuell: " + ist.join("; ") + ". ";
+      t += "Nach meiner Kenntnis stimmt das nicht – bitte den korrekten Wert prüfen und eintragen. Danke!";
+      return t;
+    }
+
+    // OSM-Notiz-Editor, punktgenau auf das Restaurant zentriert (kein Konto nötig).
+    function osmNoteUrl(r) {
+      return `https://www.openstreetmap.org/note/new#map=19/${r.lat}/${r.lng}&layers=N`;
+    }
+
     function popupHtml(r) {
       let html = `<div class="popup-name">${esc(r.name)}</div>`;
       html += `<div class="popup-addr">${esc(r.address)}</div>`;
@@ -212,6 +251,19 @@
       if (r.website) {
         html += `<br><a class="popup-link" href="${esc(r.website)}" target="_blank" rel="noopener">Zur Website &amp; bestellen →</a>`;
       }
+
+      // Meldemöglichkeit: immer anzeigen. Der Text kann per URL nicht in die
+      // OSM-Notiz vorbefüllt werden, deshalb kopieren wir ihn in die Zwischenablage
+      // und öffnen den Notiz-Editor – Einfügen genügt dann.
+      const meldung = meldeText(r);
+      html += `<details class="meld">`;
+      html += `<summary>⚑ Falsche Angabe melden</summary>`;
+      html += `<div class="meld-body">`;
+      html += `<p class="meld-text">${esc(meldung)}</p>`;
+      html += `<a class="meld-copy popup-link" href="${esc(osmNoteUrl(r))}" target="_blank" rel="noopener" data-text="${esc(meldung)}">📋 Text kopieren &amp; OSM-Notiz öffnen</a>`;
+      html += `<div class="meld-hint">Der Text wird kopiert – im OSM-Fenster nur noch einfügen (Strg/⌘ + V) und absenden. Kein Konto nötig.</div>`;
+      html += `</div></details>`;
+
       return html;
     }
 
@@ -256,6 +308,23 @@
 
     $search.addEventListener("input", render);
     $onlyDelivery.addEventListener("change", render);
+
+    // Meldelink: Text in die Zwischenablage kopieren, dann OSM-Notiz öffnen.
+    // Kein preventDefault -> der Link öffnet den OSM-Editor wie gewohnt im neuen Tab.
+    // Bleibt komplett clientseitig; es wird nichts gespeichert oder gesendet.
+    document.addEventListener("click", (e) => {
+      const a = e.target.closest(".meld-copy");
+      if (!a) return;
+      const text = a.dataset.text || "";
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          a.textContent = "✔ kopiert – OSM öffnet …";
+        }).catch(() => {
+          // Fallback: Kopieren verweigert/nicht verfügbar – der Text steht
+          // sichtbar im Popup und kann von Hand markiert werden.
+        });
+      }
+    });
 
     fetch("restaurants.json", { cache: "no-store" })
       .then(res => {

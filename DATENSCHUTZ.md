@@ -52,6 +52,15 @@ keine Verantwortung übernommen.
 
 ## Fehler melden
 
-Falsche Adresse, falscher Lieferstatus oder fehlendes Restaurant?
-→ Über [GitHub Issues](../../issues) melden – oder direkt in
+Falscher Liefer- oder Abholstatus? Im Popup jedes Restaurants gibt es
+**„⚑ Falsche Angabe melden"**. Ein Klick auf **„Text kopieren & OSM-Notiz
+öffnen"** legt einen fertigen Meldetext in die **Zwischenablage** (rein lokal
+im Browser – die Lieferkarte speichert oder überträgt dabei nichts) und öffnet
+den Notiz-Editor von OpenStreetMap. Dort den Text einfügen und absenden – ein
+**OSM-Konto ist nicht nötig**. Die OSM-Community pflegt die Korrektur ein, und
+beim nächsten wöchentlichen Abgleich übernimmt die Lieferkarte sie automatisch.
+
+Der OSM-Notiz-Editor ist eine externe Seite der OpenStreetMap Foundation mit
+eigener [Datenschutzerklärung](https://wiki.openstreetmap.org/wiki/Privacy_Policy).
+Alternativ kannst du eine Angabe auch direkt in
 [OpenStreetMap](https://www.openstreetmap.org) korrigieren.
