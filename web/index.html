@@ -88,7 +88,17 @@
       margin-top: 0.45rem;
       line-height: 1.35;
     }
-    .popup-hours .label { color: var(--muted); }
+    .popup-hours .label { color: var(--muted); display: block; margin-bottom: 0.25rem; }
+    /* Zwei Spalten: Tage links, Zeiten rechts – eine Zeile pro Regel. */
+    .hours-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      column-gap: 0.6rem;
+      row-gap: 0.15rem;
+    }
+    .hours-grid .day { color: var(--muted); white-space: nowrap; }
+    .hours-grid .time { font-variant-numeric: tabular-nums; }
+    .hours-grid .time.closed { color: var(--accent); }
     .badge {
       display: inline-block;
       font-size: 0.72rem;
@@ -189,23 +199,72 @@
       ));
     }
 
-    // OSM-Wochentagskürzel -> deutsche Kürzel.
-    const OSM_DAYS = { Mo: "Mo", Tu: "Di", We: "Mi", Th: "Do", Fr: "Fr", Sa: "Sa", Su: "So" };
+    // OSM-Wochentags-/Sonderkürzel -> deutsche Kürzel.
+    const OSM_DAYS = {
+      Mo: "Mo", Tu: "Di", We: "Mi", Th: "Do", Fr: "Fr", Sa: "Sa", Su: "So",
+      PH: "Feiertags", SH: "Ferien"
+    };
+    const DAY_TOKEN = "Mo|Tu|We|Th|Fr|Sa|Su|PH|SH";
+    // Eine Regel: Tages-Spec (Bereiche/Listen) + Rest bis zur nächsten Regel.
+    // Regelgrenze = ";" oder "," direkt vor einem neuen Tageskürzel; Kommas
+    // innerhalb von Tages- ("Fr,Sa") oder Zeitlisten ("11:00-14:00,17:00-…")
+    // lösen keine Trennung aus, weil ihnen kein Tageskürzel folgt.
+    const RULE_RE = new RegExp(
+      "((?:" + DAY_TOKEN + ")(?:\\s*[-,]\\s*(?:" + DAY_TOKEN + "))*)" +  // Tage
+      "\\s+([^;]+?)" +                                                    // Zeiten (lazy)
+      "(?=\\s*[;,]\\s*(?:" + DAY_TOKEN + ")\\b|\\s*$)",                   // bis nächste Regel/Ende
+      "g"
+    );
 
-    // Rohes OSM-`opening_hours` nur lesbarer machen (Textkosmetik). Bewusst
-    // KEINE "jetzt geöffnet"-Auswertung – das komplexe Parsen des Formats
-    // (Feiertage, sunrise/sunset, Wochenregeln) ist ein eigener Schritt.
+    function germanizeDays(days) {
+      // "Mo-Fr" -> "Mo–Fr", "Fr,Sa" -> "Fr, Sa", "So,PH" -> "So, Feiertags".
+      return days
+        .split(",").map(seg => seg.trim().split("-").map(d => OSM_DAYS[d] || d).join("–"))
+        .join(", ");
+    }
+    function germanizeTimes(times) {
+      const t = times.trim();
+      if (/^(off|closed)$/i.test(t)) return { text: "geschlossen", closed: true };
+      // "11:00-14:00,17:00-23:00" -> "11:00–14:00, 17:00–23:00".
+      const text = t.split(",").map(seg => seg.trim().replace(/-/g, "–")).join(", ");
+      return { text, closed: false };
+    }
+
+    // Rohes OSM-`opening_hours` in eine übersichtliche Tag/Zeit-Tabelle wandeln.
+    // Bewusst KEINE "jetzt geöffnet"-Auswertung – das komplexe Parsen des Formats
+    // (sunrise/sunset, Wochenregeln) ist ein eigener Schritt.
     function formatOpeningHours(raw) {
-      const s = String(raw).trim();
+      // Umschließende Anführungszeichen/Whitespace aus unsauberen OSM-Werten entfernen.
+      const s = String(raw).replace(/^["'\s]+|["'\s]+$/g, "");
       if (!s) return "";
-      if (s === "24/7") return "täglich durchgehend geöffnet";
-      // Erst an ";" in Regeln trennen, dann je Regel escapen (damit das Splitten
-      // keine HTML-Entities zerschneidet) und Kürzel eindeutschen.
-      return s.split(";").map(part => part.trim()).filter(Boolean).map(part => {
-        let p = esc(part);
-        p = p.replace(/\b(Mo|Tu|We|Th|Fr|Sa|Su)\b/g, d => OSM_DAYS[d]);
-        return p.replace(/\bPH\b/g, "Feiertags").replace(/\boff\b/g, "geschlossen");
-      }).join("<br>");
+      if (s === "24/7") {
+        return `<div class="hours-grid"><span class="day">täglich</span>` +
+               `<span class="time">durchgehend geöffnet</span></div>`;
+      }
+      // Ganzer Wert = geschlossen (z. B. "closed"/"off"), ohne Tagesangabe.
+      if (/^(off|closed)$/i.test(s)) {
+        return `<div class="hours-grid"><span class="day">zurzeit</span>` +
+               `<span class="time closed">geschlossen</span></div>`;
+      }
+      const rows = [];
+      let m;
+      RULE_RE.lastIndex = 0;
+      while ((m = RULE_RE.exec(s)) !== null) {
+        const time = germanizeTimes(m[2]);
+        rows.push(
+          `<span class="day">${esc(germanizeDays(m[1]))}</span>` +
+          `<span class="time${time.closed ? " closed" : ""}">${esc(time.text)}</span>`
+        );
+      }
+      // Unerwartetes Format (z. B. Freitext „nach Vereinbarung", nur Uhrzeit):
+      // lieber den Rohtext zeigen als nichts – mit leichter Kosmetik (dt. Kürzel,
+      // Gedankenstrich), aber ohne zu interpretieren.
+      if (!rows.length) {
+        let p = esc(s).replace(/\b(Mo|Tu|We|Th|Fr|Sa|Su|PH|SH)\b/g, d => OSM_DAYS[d]);
+        p = p.replace(/(\d{1,2}:\d{2})-(\d{1,2}:\d{2})/g, "$1–$2");
+        return `<div class="hours-grid"><span class="day"></span><span class="time">${p}</span></div>`;
+      }
+      return `<div class="hours-grid">${rows.join("")}</div>`;
     }
 
     // Baut einen fertigen Meldetext für eine OSM-Notiz.
@@ -245,8 +304,9 @@
           ? "vorübergehend geschlossen" : "dauerhaft geschlossen";
         html += `<span class="badge badge-status">${label}</span>`;
       }
-      if (r.openingHours) {
-        html += `<div class="popup-hours"><span class="label">🕒 Öffnungszeiten:</span><br>${formatOpeningHours(r.openingHours)}</div>`;
+      const hours = r.openingHours ? formatOpeningHours(r.openingHours) : "";
+      if (hours) {
+        html += `<div class="popup-hours"><span class="label">🕒 Öffnungszeiten:</span>${hours}</div>`;
       }
       if (r.website) {
         html += `<br><a class="popup-link" href="${esc(r.website)}" target="_blank" rel="noopener">Zur Website &amp; bestellen →</a>`;
