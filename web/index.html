@@ -82,6 +82,13 @@
     #map { flex: 1 1 auto; }
     .popup-name { font-weight: 600; font-size: 1rem; margin-bottom: 0.15rem; }
     .popup-addr { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.4rem; }
+    .popup-hours {
+      font-size: 0.82rem;
+      color: var(--text);
+      margin-top: 0.45rem;
+      line-height: 1.35;
+    }
+    .popup-hours .label { color: var(--muted); }
     .badge {
       display: inline-block;
       font-size: 0.72rem;
@@ -164,6 +171,25 @@
       ));
     }
 
+    // OSM-Wochentagskürzel -> deutsche Kürzel.
+    const OSM_DAYS = { Mo: "Mo", Tu: "Di", We: "Mi", Th: "Do", Fr: "Fr", Sa: "Sa", Su: "So" };
+
+    // Rohes OSM-`opening_hours` nur lesbarer machen (Textkosmetik). Bewusst
+    // KEINE "jetzt geöffnet"-Auswertung – das komplexe Parsen des Formats
+    // (Feiertage, sunrise/sunset, Wochenregeln) ist ein eigener Schritt.
+    function formatOpeningHours(raw) {
+      const s = String(raw).trim();
+      if (!s) return "";
+      if (s === "24/7") return "täglich durchgehend geöffnet";
+      // Erst an ";" in Regeln trennen, dann je Regel escapen (damit das Splitten
+      // keine HTML-Entities zerschneidet) und Kürzel eindeutschen.
+      return s.split(";").map(part => part.trim()).filter(Boolean).map(part => {
+        let p = esc(part);
+        p = p.replace(/\b(Mo|Tu|We|Th|Fr|Sa|Su)\b/g, d => OSM_DAYS[d]);
+        return p.replace(/\bPH\b/g, "Feiertags").replace(/\boff\b/g, "geschlossen");
+      }).join("<br>");
+    }
+
     function popupHtml(r) {
       let html = `<div class="popup-name">${esc(r.name)}</div>`;
       html += `<div class="popup-addr">${esc(r.address)}</div>`;
@@ -179,6 +205,9 @@
         const label = r.businessStatus === "CLOSED_TEMPORARILY"
           ? "vorübergehend geschlossen" : "dauerhaft geschlossen";
         html += `<span class="badge badge-status">${label}</span>`;
+      }
+      if (r.openingHours) {
+        html += `<div class="popup-hours"><span class="label">🕒 Öffnungszeiten:</span><br>${formatOpeningHours(r.openingHours)}</div>`;
       }
       if (r.website) {
         html += `<br><a class="popup-link" href="${esc(r.website)}" target="_blank" rel="noopener">Zur Website &amp; bestellen →</a>`;

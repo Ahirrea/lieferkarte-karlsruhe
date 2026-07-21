@@ -7,8 +7,15 @@ festgehalten, was als Nächstes sinnvoll wäre.
 
 ## Öffnungszeiten anzeigen (+ Bonus: „jetzt geöffnet")
 
-**Ziel:** Zu jedem Restaurant die Öffnungszeiten im Popup anzeigen.
+**Ziel:** Zu jedem Restaurant die Öffnungszeiten im Popup anzeigen. ✅ **umgesetzt**
 **Bonus:** sichtbar machen (und ggf. filtern), was **gerade jetzt** geöffnet hat.
+→ noch **offen** (siehe „der Haken" unten).
+
+> **Stand:** Das *Anzeigen* der Öffnungszeiten ist umgesetzt: `scanner.py` liest
+> das OSM-Tag `opening_hours` (DB-Spalte `opening_hours TEXT` + Migration),
+> `export.py` exportiert `openingHours`, und das Popup zeigt die Zeiten als Text
+> (Wochentags-Kürzel eingedeutscht, eine Regel pro Zeile). Der „jetzt
+> geöffnet"-Teil (Parsing) bleibt der nächste Schritt.
 
 **Datenquelle:** OSM-Tag `opening_hours` – kommt beim Overpass-Scan kostenlos
 mit (der Query holt bereits alle Tags). Die Abdeckung in Karlsruhe ist noch

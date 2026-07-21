@@ -87,6 +87,7 @@ def init_db(conn):
             website         TEXT,
             delivery        INTEGER,          -- 1/0/NULL (NULL = unbekannt / nicht getaggt) -- Lieferung
             takeaway        INTEGER,          -- 1/0/NULL (NULL = unbekannt / nicht getaggt) -- Abholung
+            opening_hours   TEXT,             -- OSM-Tag opening_hours (Rohtext, NULL = nicht getaggt)
             business_status TEXT,
             active          INTEGER NOT NULL DEFAULT 1,   -- 0 = als REMOVED markiert
             first_seen      TEXT NOT NULL,
@@ -116,6 +117,8 @@ def init_db(conn):
     cols = {row[1] for row in conn.execute("PRAGMA table_info(restaurants)")}
     if "takeaway" not in cols:
         conn.execute("ALTER TABLE restaurants ADD COLUMN takeaway INTEGER")
+    if "opening_hours" not in cols:
+        conn.execute("ALTER TABLE restaurants ADD COLUMN opening_hours TEXT")
     conn.commit()
 
 
@@ -212,6 +215,7 @@ def normalize_osm(el):
         "website": tags.get("website") or tags.get("contact:website"),
         "delivery": _osm_yesno(tags.get("delivery")),   # Lieferung
         "takeaway": _osm_yesno(tags.get("takeaway")),   # Abholung
+        "opening_hours": tags.get("opening_hours"),      # Öffnungszeiten (Rohtext)
         "business_status": None,   # OSM kennt kein Google-"businessStatus"
     }
 
@@ -222,25 +226,35 @@ def normalize_osm(el):
 
 MOCK_PLACES = [
     {"place_id": "mock_001", "name": "Pizzeria Bella Napoli", "address": "Kaiserstraße 42, 76133 Karlsruhe",
-     "lat": 49.0094, "lng": 8.4044, "website": "https://bella-napoli-ka.example", "delivery": 1, "takeaway": 1, "business_status": "OPERATIONAL"},
+     "lat": 49.0094, "lng": 8.4044, "website": "https://bella-napoli-ka.example", "delivery": 1, "takeaway": 1,
+     "opening_hours": "Mo-Fr 11:00-14:30,17:00-23:00; Sa-Su 17:00-23:00", "business_status": "OPERATIONAL"},
     {"place_id": "mock_002", "name": "Sushi Karlsruhe Express", "address": "Ludwigsplatz 3, 76133 Karlsruhe",
-     "lat": 49.0075, "lng": 8.3968, "website": "https://sushi-ka.example", "delivery": 1, "takeaway": 1, "business_status": "OPERATIONAL"},
+     "lat": 49.0075, "lng": 8.3968, "website": "https://sushi-ka.example", "delivery": 1, "takeaway": 1,
+     "opening_hours": "Mo-Su 11:30-22:00", "business_status": "OPERATIONAL"},
     {"place_id": "mock_003", "name": "Curry House Südstadt", "address": "Augartenstraße 12, 76137 Karlsruhe",
-     "lat": 48.9985, "lng": 8.4051, "website": "https://curryhouse-ka.example", "delivery": 1, "business_status": "OPERATIONAL"},
+     "lat": 48.9985, "lng": 8.4051, "website": "https://curryhouse-ka.example", "delivery": 1,
+     "opening_hours": "Tu-Su 12:00-23:00; Mo off", "business_status": "OPERATIONAL"},
     {"place_id": "mock_004", "name": "Burger Bude Weststadt", "address": "Sophienstraße 88, 76135 Karlsruhe",
-     "lat": 49.0068, "lng": 8.3805, "website": "https://burgerbude-ka.example", "delivery": 1, "business_status": "OPERATIONAL"},
+     "lat": 49.0068, "lng": 8.3805, "website": "https://burgerbude-ka.example", "delivery": 1,
+     "opening_hours": "Mo-Su 11:00-22:00", "business_status": "OPERATIONAL"},
     {"place_id": "mock_005", "name": "Thai Garden Durlach", "address": "Pfinztalstraße 20, 76227 Karlsruhe",
-     "lat": 48.9977, "lng": 8.4712, "website": "https://thaigarden-ka.example", "delivery": 1, "business_status": "OPERATIONAL"},
+     "lat": 48.9977, "lng": 8.4712, "website": "https://thaigarden-ka.example", "delivery": 1,
+     "business_status": "OPERATIONAL"},
     {"place_id": "mock_006", "name": "Döner & More Mühlburg", "address": "Rheinstraße 15, 76185 Karlsruhe",
-     "lat": 49.0126, "lng": 8.3591, "website": None, "delivery": 1, "business_status": "OPERATIONAL"},
+     "lat": 49.0126, "lng": 8.3591, "website": None, "delivery": 1,
+     "opening_hours": "Mo-Su 10:00-02:00", "business_status": "OPERATIONAL"},
     {"place_id": "mock_007", "name": "Trattoria Oststadt", "address": "Gerwigstraße 5, 76131 Karlsruhe",
-     "lat": 49.0113, "lng": 8.4287, "website": "https://trattoria-ost.example", "delivery": 0, "takeaway": 1, "business_status": "OPERATIONAL"},
+     "lat": 49.0113, "lng": 8.4287, "website": "https://trattoria-ost.example", "delivery": 0, "takeaway": 1,
+     "opening_hours": "Mo-Sa 11:30-14:00,18:00-23:00; Su off", "business_status": "OPERATIONAL"},
     {"place_id": "mock_008", "name": "Vietnam Küche Neureut", "address": "Neureuter Hauptstraße 100, 76149 Karlsruhe",
-     "lat": 49.0421, "lng": 8.3768, "website": "https://vietnam-neureut.example", "delivery": 1, "business_status": "OPERATIONAL"},
+     "lat": 49.0421, "lng": 8.3768, "website": "https://vietnam-neureut.example", "delivery": 1,
+     "business_status": "OPERATIONAL"},
     {"place_id": "mock_009", "name": "Falafel Palast Waldstadt", "address": "Kanzlerstraße 8, 76139 Karlsruhe",
-     "lat": 49.0313, "lng": 8.4384, "website": "https://falafel-waldstadt.example", "delivery": 1, "business_status": "OPERATIONAL"},
+     "lat": 49.0313, "lng": 8.4384, "website": "https://falafel-waldstadt.example", "delivery": 1,
+     "opening_hours": "Mo-Su 11:00-21:30", "business_status": "OPERATIONAL"},
     {"place_id": "mock_010", "name": "Pasta Fresca Südweststadt", "address": "Ebertstraße 30, 76135 Karlsruhe",
-     "lat": 49.0002, "lng": 8.3902, "website": "https://pastafresca-ka.example", "delivery": 1, "business_status": "OPERATIONAL"},
+     "lat": 49.0002, "lng": 8.3902, "website": "https://pastafresca-ka.example", "delivery": 1,
+     "opening_hours": "Mo-Fr 11:00-15:00,17:30-22:00; Sa 17:30-22:00", "business_status": "OPERATIONAL"},
 ]
 
 
@@ -274,10 +288,11 @@ def sync_places(conn, places, mode, scan_ts):
             conn.execute(
                 "INSERT INTO restaurants"
                 " (place_id, name, address, lat, lng, website, delivery, takeaway,"
-                "  business_status, active, first_seen, last_seen)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
+                "  opening_hours, business_status, active, first_seen, last_seen)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
                 (pid, p["name"], p["address"], p["lat"], p["lng"], p["website"],
-                 p["delivery"], p.get("takeaway"), p["business_status"], scan_ts, scan_ts),
+                 p["delivery"], p.get("takeaway"), p.get("opening_hours"),
+                 p["business_status"], scan_ts, scan_ts),
             )
             log_change(conn, pid, "NEW", None, p["name"], scan_ts)
             continue
@@ -310,9 +325,11 @@ def sync_places(conn, places, mode, scan_ts):
 
         conn.execute(
             "UPDATE restaurants SET name=?, address=?, lat=?, lng=?, website=?,"
-            " delivery=?, takeaway=?, business_status=?, active=1, last_seen=? WHERE place_id=?",
+            " delivery=?, takeaway=?, opening_hours=?, business_status=?, active=1,"
+            " last_seen=? WHERE place_id=?",
             (p["name"], p["address"], p["lat"], p["lng"], p["website"],
-             p["delivery"], new_takeaway, p["business_status"], scan_ts, pid),
+             p["delivery"], new_takeaway, p.get("opening_hours"),
+             p["business_status"], scan_ts, pid),
         )
 
     # REMOVED-Erkennung nur im Voll-Scan (mock zählt als voll).
