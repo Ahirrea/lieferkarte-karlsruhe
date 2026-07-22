@@ -334,20 +334,28 @@
 
     // Zeit-Spec ("12:00-14:00,18:00-23:00") -> [{s,e}]; "off"/"closed" -> [];
     // null bei allem Unklaren (offene Zeiten "18:30+", sunrise, …).
+    // Ein einzelner Bereich darf einen angehängten Modifikator tragen:
+    // "17:30-22:00 off"/"…closed" -> dieser Bereich geschlossen (fällt raus),
+    // "…open" -> offen. Ein eingebetteter Freitext-Kommentar ("…") ist bewusst
+    // NICHT abgedeckt -> solche Einträge bleiben „unbekannt" (kein Badge).
     function parseIntervals(spec) {
       const t = spec.trim();
       if (/^(off|closed)$/i.test(t)) return []; // an diesem Tag geschlossen
       const out = [];
+      let sawSegment = false;
       for (const seg of t.split(",")) {
         const s = seg.trim();
         if (!s) continue;
-        const m = /^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/.exec(s);
+        sawSegment = true;
+        const m = /^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})(?:\s+(off|closed|open))?$/i.exec(s);
         if (!m) return null;
+        if (/^(off|closed)$/i.test(m[3] || "")) continue; // Bereich explizit geschlossen
         const a = parseHM(m[1]), b = parseHM(m[2]);
         if (a == null || b == null) return null;
         out.push({ s: a, e: b });
       }
-      return out.length ? out : null;
+      // Bereiche erkannt (auch wenn alle "off" waren -> [] = geschlossen)?
+      return sawSegment ? out : null;
     }
 
     // -> true (offen) | false (geschlossen) | null (unbekannt/nicht auswertbar).
