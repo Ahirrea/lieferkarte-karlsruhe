@@ -110,6 +110,8 @@
     .badge-nodelivery { background: #f4e6e6; color: var(--accent); }
     .badge-takeaway { background: #e7eefc; color: #2b5bb5; }
     .badge-status { background: #fff3cd; color: #856404; }
+    .badge-open { background: #e6f4ea; color: var(--ok); }
+    .badge-closed { background: #f4e6e6; color: var(--accent); }
     .popup-link {
       display: inline-block;
       margin-top: 0.4rem;
@@ -160,6 +162,7 @@
     <div class="controls">
       <input type="search" id="search" placeholder="Restaurant oder Adresse suchen …" autocomplete="off">
       <label><input type="checkbox" id="onlyDelivery" checked> nur mit Lieferservice</label>
+      <label><input type="checkbox" id="onlyOpen"> nur jetzt geöffnet</label>
       <button id="nearMe" type="button">📍 In meiner Nähe</button>
       <span class="count" id="count"></span>
     </div>
@@ -189,6 +192,7 @@
 
     const $search = document.getElementById("search");
     const $onlyDelivery = document.getElementById("onlyDelivery");
+    const $onlyOpen = document.getElementById("onlyOpen");
     const $count = document.getElementById("count");
     const $meta = document.getElementById("meta");
     const $loading = document.getElementById("loading");
@@ -267,6 +271,138 @@
       return `<div class="hours-grid">${rows.join("")}</div>`;
     }
 
+    // ---- „Jetzt geöffnet" – clientseitige Auswertung von opening_hours ----
+    // Bewusst konservativ: nur die häufigen Muster (Tagesbereiche/-listen,
+    // Zeitintervalle, Über-Mitternacht, "off"/"closed", 24/7). Alles Unsichere
+    // – offene Zeiten wie „18:30+", Monatsbereiche („May-Sep"), Freitext,
+    // sunrise/sunset – ergibt bewusst `null` = „unbekannt", damit nie eine
+    // falsche Aussage entsteht. Feiertage/Ferien (PH/SH) werden ignoriert
+    // (ob heute Feiertag ist, lässt sich clientseitig nicht ermitteln).
+    const DAY_NUM = { Mo: 1, Tu: 2, We: 3, Th: 4, Fr: 5, Sa: 6, Su: 7 };
+
+    // Aktuelle Zeit in Europe/Berlin – unabhängig von der Zeitzone des Nutzers
+    // und inkl. korrekter Sommer-/Winterzeit (über Intl). day: 1=Mo … 7=So.
+    function berlinNow() {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Europe/Berlin", weekday: "short",
+        hour: "2-digit", minute: "2-digit", hour12: false,
+      }).formatToParts(new Date());
+      const p = {};
+      for (const part of parts) p[part.type] = part.value;
+      const WD = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+      const day = WD[p.weekday] || null;
+      let hh = parseInt(p.hour, 10);
+      if (hh === 24) hh = 0;
+      return { day, minutes: hh * 60 + parseInt(p.minute, 10) };
+    }
+
+    function parseHM(t) {
+      const m = /^(\d{1,2}):(\d{2})$/.exec(t.trim());
+      if (!m) return null;
+      const h = +m[1], mi = +m[2];
+      if (h > 24 || mi > 59) return null;
+      return h * 60 + mi;
+    }
+
+    // Tages-Spec ("Mo-Fr,Su") -> Set{1..7}; "skip" wenn nur PH/SH; null bei Unbekanntem.
+    function expandDays(spec) {
+      const set = new Set();
+      let sawReal = false;
+      for (const seg of spec.split(",")) {
+        const s = seg.trim();
+        if (!s) continue;
+        if (/^(PH|SH)$/.test(s)) continue; // Feiertag/Ferien -> nicht ermittelbar
+        sawReal = true;
+        const r = s.split("-").map(x => x.trim());
+        if (r.length === 1) {
+          const n = DAY_NUM[r[0]];
+          if (!n) return null;
+          set.add(n);
+        } else if (r.length === 2) {
+          const a = DAY_NUM[r[0]], b = DAY_NUM[r[1]];
+          if (!a || !b) return null;
+          let i = a; // ggf. über Sonntag hinweg (z. B. "We-Mo")
+          for (let guard = 0; guard < 7; guard++) {
+            set.add(i);
+            if (i === b) break;
+            i = (i % 7) + 1;
+          }
+        } else return null;
+      }
+      return sawReal ? set : "skip";
+    }
+
+    // Zeit-Spec ("12:00-14:00,18:00-23:00") -> [{s,e}]; "off"/"closed" -> [];
+    // null bei allem Unklaren (offene Zeiten "18:30+", sunrise, …).
+    function parseIntervals(spec) {
+      const t = spec.trim();
+      if (/^(off|closed)$/i.test(t)) return []; // an diesem Tag geschlossen
+      const out = [];
+      for (const seg of t.split(",")) {
+        const s = seg.trim();
+        if (!s) continue;
+        const m = /^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/.exec(s);
+        if (!m) return null;
+        const a = parseHM(m[1]), b = parseHM(m[2]);
+        if (a == null || b == null) return null;
+        out.push({ s: a, e: b });
+      }
+      return out.length ? out : null;
+    }
+
+    // -> true (offen) | false (geschlossen) | null (unbekannt/nicht auswertbar).
+    function openStateNow(raw) {
+      const s = String(raw).replace(/^["'\s]+|["'\s]+$/g, "");
+      if (!s) return null;
+      if (s === "24/7") return true;
+      if (/^(off|closed)$/i.test(s)) return false;
+
+      const byDay = {}; // 1..7 -> [{s,e}] ; spätere Regel überschreibt frühere je Tag
+      const hasDay = new RegExp("\\b(?:" + DAY_TOKEN + ")\\b").test(s);
+
+      if (!hasDay) {
+        // Kein Tageskürzel -> Zeitangabe gilt täglich.
+        const iv = parseIntervals(s);
+        if (iv == null) return null;
+        for (let d = 1; d <= 7; d++) byDay[d] = iv;
+      } else {
+        const covered = new Array(s.length).fill(false);
+        let any = false, m;
+        RULE_RE.lastIndex = 0;
+        while ((m = RULE_RE.exec(s)) !== null) {
+          any = true;
+          for (let i = m.index; i < m.index + m[0].length; i++) covered[i] = true;
+          const days = expandDays(m[1]);
+          if (days === null) return null;
+          const iv = parseIntervals(m[2]);
+          if (iv === null) return null;
+          if (days === "skip") continue; // reine PH/SH-Regel
+          for (const d of days) byDay[d] = iv;
+        }
+        if (!any) return null;
+        // Bleibt zwischen den erkannten Regeln noch etwas Bedeutungstragendes übrig
+        // (Ziffern, ein Tageskürzel, off/closed)? Dann lieber „unbekannt" melden,
+        // statt aus einer Teil-Interpretation eine falsche Aussage abzuleiten.
+        let rest = "";
+        for (let i = 0; i < s.length; i++) if (!covered[i]) rest += s[i];
+        if (/\d/.test(rest) || /off|closed/i.test(rest) ||
+            new RegExp("\\b(?:" + DAY_TOKEN + ")\\b").test(rest)) return null;
+      }
+
+      const { day, minutes } = berlinNow();
+      if (!day) return null;
+      const prev = (day + 5) % 7 + 1; // Vortag (1..7)
+
+      const openToday = (byDay[day] || []).some(({ s, e }) =>
+        e > s ? (minutes >= s && minutes < e)  // normaler Bereich
+              : (minutes >= s));               // über Mitternacht: ab s bis 24:00
+      if (openToday) return true;
+
+      // Über-Mitternacht-Ausläufer vom Vortag (z. B. Fr 20:00-04:00 -> Sa 02:00 offen).
+      const spillover = (byDay[prev] || []).some(({ s, e }) => e < s && minutes < e);
+      return spillover ? true : false;
+    }
+
     // Baut einen fertigen Meldetext für eine OSM-Notiz.
     // Nennt den aktuell getaggten Ist-Wert, damit die Notiz sofort brauchbar ist.
     function meldeText(r) {
@@ -304,6 +440,14 @@
           ? "vorübergehend geschlossen" : "dauerhaft geschlossen";
         html += `<span class="badge badge-status">${label}</span>`;
       }
+      // „Jetzt geöffnet"-Badge nur, wenn die Öffnungszeiten eindeutig auswertbar
+      // sind (true/false). Bei unbekannt (null) bewusst kein Badge.
+      const open = r.openingHours ? openStateNow(r.openingHours) : null;
+      if (open === true) {
+        html += `<span class="badge badge-open">🟢 Jetzt geöffnet</span>`;
+      } else if (open === false) {
+        html += `<span class="badge badge-closed">🔴 Jetzt geschlossen</span>`;
+      }
       const hours = r.openingHours ? formatOpeningHours(r.openingHours) : "";
       if (hours) {
         html += `<div class="popup-hours"><span class="label">🕒 Öffnungszeiten:</span>${hours}</div>`;
@@ -330,12 +474,15 @@
     function render() {
       const q = $search.value.trim().toLowerCase();
       const onlyDelivery = $onlyDelivery.checked;
+      const onlyOpen = $onlyOpen.checked;
       layer.clearLayers();
       let shown = 0;
 
       for (const r of restaurants) {
         if (r.lat == null || r.lng == null) continue;
         if (onlyDelivery && r.delivery !== true) continue;
+        // Filter „nur jetzt geöffnet": nur sicher offene zeigen (unbekannt fällt raus).
+        if (onlyOpen && !(r.openingHours && openStateNow(r.openingHours) === true)) continue;
         if (q) {
           const hay = ((r.name || "") + " " + (r.address || "")).toLowerCase();
           if (!hay.includes(q)) continue;
@@ -368,6 +515,7 @@
 
     $search.addEventListener("input", render);
     $onlyDelivery.addEventListener("change", render);
+    $onlyOpen.addEventListener("change", render);
 
     // Meldelink: Text in die Zwischenablage kopieren, dann OSM-Notiz öffnen.
     // Kein preventDefault -> der Link öffnet den OSM-Editor wie gewohnt im neuen Tab.

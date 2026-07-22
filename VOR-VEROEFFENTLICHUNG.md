@@ -4,7 +4,9 @@ Diese Datei hält fest, was vor dem Umstellen des Repos auf **public** (und dem
 Aktivieren von GitHub Pages) zu prüfen bzw. zu entscheiden ist.
 
 **Stand des Security-Reviews:** 2026-07-16 (Arbeitsbaum **und** komplette Git-History geprüft)
-**Aktueller Status:** Repo bleibt vorerst **privat**. Punkte unten vor Livegang abarbeiten.
+**Aktueller Status:** ✅ **Live.** Repo ist **public** und die Karte läuft über
+GitHub Pages: <https://ahirrea.github.io/lieferkarte-karlsruhe/web/index.html>.
+Alle Punkte unten sind abgearbeitet.
 
 ---
 
@@ -114,5 +116,6 @@ auf `data/restaurants.db`.
 - [x] Kein Impressum nötig (privates Projekt); `DATENSCHUTZ.md` ohne pers. Daten
 - [x] Datenquelle OpenStreetMap/Overpass (kein API-Key, ODbL, öffentlich teilbar)
 - [x] Echter Scan gelaufen, Mock-Daten ersetzt (~883 Restaurants in `main`)
-- [ ] Repo auf **public** gestellt
-- [ ] GitHub Pages aktiviert (Settings → Pages → `main` / root)
+- [x] Repo auf **public** gestellt
+- [x] GitHub Pages aktiviert (Settings → Pages → `main` / root) – live unter
+      <https://ahirrea.github.io/lieferkarte-karlsruhe/web/index.html>
