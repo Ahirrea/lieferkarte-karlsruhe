@@ -202,6 +202,108 @@ Icons und Precache-Liste durch `tests/test_pwa.py`.
 
 ---
 
+## UI/UX-Review (Juli 2026) – offene Punkte
+
+Ergebnis eines UI/UX-Reviews auf Basis eines Mobil-Screenshots (Android/Chrome,
+1080 × 2340) im Abgleich mit `web/index.html`. Die Nummern (R…) entsprechen der
+Nummerierung im Review, damit Rückfragen zuordenbar bleiben. Es geht ausschließlich
+um das Frontend – Pipeline und Datenmodell bleiben unberührt.
+
+Nicht in diesem Backlog: der entschärfte Standardfilter (steht in
+`VOR-VEROEFFENTLICHUNG.md`, Abschnitt „Filter für Abdeckung anpassen"), eine
+Telefonnummer in der Pipeline und die Frage nach der `cuisine`-Abdeckung.
+
+### Layout: Fußzeile & Attribution auf dem Handy (hoch)
+
+- [ ] **R2 – `100dvh` statt `100vh`.** `body { height: 100vh }` meint auf Android
+  Chrome die *große* Viewport-Höhe (ohne URL-Leiste). `<footer>` mit
+  „© OpenStreetMap-Mitwirkende (ODbL)" und Datenschutz-Link liegen dadurch unter
+  der Browserleiste, ebenso Leaflets eigenes Attribution-Control unten rechts in
+  der Karte. Da die Attribution ODbL-Pflicht ist, hat der Punkt Vorrang.
+  Fix: `height: 100dvh` mit `100vh` als Fallback davor.
+- [ ] **R3 – `viewport-fit=cover` im Viewport-Meta.** Die `env(safe-area-inset-*)`-
+  Regeln für `display-mode: standalone` wirken ohne `viewport-fit=cover` nicht;
+  als installierte iOS-App klebt der Header unter der Statusleiste.
+- [ ] **P3 – Fußzeile ist mit `0.72rem` (≈ 11,5 px) zu klein** für eine
+  Pflichtangabe. Mindestens `0.8rem`.
+
+### Bedienbarkeit & Barrierefreiheit
+
+- [ ] **R4 – Suchfeld ohne Label, Text abgeschnitten.** Das `<input type="search">`
+  hat nur ein `placeholder` (kein `<label>`/`aria-label`) – assistiv also namenlos.
+  Sichtbar ist außerdem nur „Restaurant oder Adresse sucl", weil `flex: 1 1 200px`
+  neben der Checkbox zerdrückt wird. Unter 640 px sollte die Suche eine eigene,
+  volle Zeile bekommen.
+- [ ] **R5 – Trefferzahl wird nicht angekündigt, 0 Treffer sind ein Loch.**
+  `#count` braucht `aria-live="polite"`; `render()` braucht einen Empty State
+  („Keine Treffer – Filter zurücksetzen") statt einer stumm leeren Karte.
+- [ ] **R6 – Karte ist für Tastatur und Screenreader leer.** Die `L.marker(…)`
+  tragen kein `alt`/`title`, die Popup-Inhalte existieren nur im Marker. Vorschlag:
+  eine schlichte Ergebnisliste (dieselben gefilterten Daten als `<ul>`) unter bzw.
+  neben der Karte. Löst gleichzeitig „was ist in der Nähe?" und macht „In meiner
+  Nähe" nach Entfernung sortierbar.
+- [ ] **R14 – `alert()` für Geolocation-Fehler ersetzen.** `locateMe()` nutzt zwei
+  `alert()`; der Banner-Mechanismus (`showBanner`) existiert bereits.
+- [ ] **P3 – Emoji-Icons dekorativ auszeichnen.** 🍽️ 📍 🆕 📲 🥡 ⚑ werden
+  mitgelesen und rendern plattformabhängig unterschiedlich – mindestens
+  `aria-hidden="true"` auf die rein dekorativen.
+- [ ] **P3 – Kopier-Feedback im Fehlerfall.** Schlägt `navigator.clipboard
+  .writeText()` fehl, ändert sich am Melde-Link nichts, der OSM-Tab öffnet aber
+  trotzdem – dann einen Hinweis „Text bitte von Hand markieren" zeigen.
+- [ ] **P3 – Fokus-Verwaltung im Feed-Panel.** Beim Öffnen wandert der Fokus nicht
+  in das Panel (Escape schließt immerhin schon).
+
+### Struktur & visuelle Hierarchie
+
+- [ ] **R8 – Der Pitch verschwindet nach dem Laden.** `$meta` wird von
+  „Restaurants mit eigenem Lieferservice – direkt bestellen, ohne
+  Provisions-Plattformen" auf „883 Restaurants · zuletzt aktualisiert am …"
+  überschrieben; die Anzahl steht damit doppelt (Sub-Zeile + `#count`). Claim
+  stehen lassen, Datum in die Fußzeile oder hinter ein „ⓘ".
+- [ ] **R9 – Header frisst 23 % des Bildschirms.** Suche, zwei Checkboxen, zwei
+  Buttons und die Trefferzahl konkurrieren gleichwertig über drei Zeilen; die
+  Zahl landet per `margin-left: auto` als Waise neben „Diese Woche". Auf Mobil
+  besser: eine Zeile (Suche + „Filter"-Knopf mit Trefferzahl), Rest in ein Bottom
+  Sheet. Nebenbei sind die Buttons ~34 px hoch – unter den empfohlenen 44 px
+  Touch-Target.
+- [ ] **R11 – Popup hat zwei rote Primäraktionen.** „Zur Website & bestellen →"
+  und „⚑ Falsche Angabe melden" sind beide `var(--accent)`, fett, gleich groß und
+  stehen direkt untereinander. Die Bestellaktion als gefüllter Button, den
+  Melde-Link klein und `--muted` unter die Fakten.
+- [ ] **R12 – Rot bedeutet vier Dinge.** `--accent` ist Markenfarbe (H1),
+  Primärlink, „Jetzt geschlossen", „geschlossen" in der Zeitentabelle *und*
+  Melde-Flag. Zustandsfarben von der Markenfarbe trennen.
+- [ ] **R13 – Alle Pins sehen gleich aus.** Ob ein Restaurant liefert, abholen
+  lässt oder gerade geschlossen ist, sieht man erst nach dem Antippen. Farb- oder
+  Formcodierung (z. B. blass = jetzt geschlossen) bringt viel pro Blick – und wird
+  wichtig, sobald der Standardfilter entschärft ist.
+- [ ] **P3 – Dark Mode fehlt.** Über die CSS-Variablen (`:root`) wäre
+  `prefers-color-scheme: dark` ein kleiner Eingriff; abends ist die Seite grell.
+
+### Performance
+
+- [ ] **R7 – Suche drosseln und Popups faul bauen.** `render()` läuft ungedrosselt
+  bei jedem `input` und baut für **jeden** Marker vorab das komplette Popup-HTML
+  inklusive `openStateNow()`-Parsing. Bei entschärftem Standardfilter sind das 883
+  Popups pro Tastendruck. Fix: ~150 ms Debounce, `bindPopup(() => popupHtml(r))`
+  (Leaflet akzeptiert eine Funktion) und Marker-Clustering bzw. Canvas-Marker.
+
+### Inhaltliche Feinheiten (P3)
+
+- [ ] **„Heute" in der Öffnungszeiten-Tabelle hervorheben.** Bei „Di–Fr / Sa, So /
+  Mo" muss man selbst suchen, was gerade gilt – `berlinNow()` kennt den Wochentag
+  schon.
+- [ ] **„Jetzt geschlossen – öffnet wieder um 16:30".** Die Intervalle sind in
+  `parseIntervals()` bereits geparst; die Zusatzinfo entscheidet, ob jemand bleibt.
+- [ ] **Filterzustand teilbar und wiederherstellbar machen.** Bisher gibt es nur
+  `?open=1` / `?nearby=1`; `?delivery=0&cuisine=thai` passt ins bestehende Muster
+  und verletzt das „keine Cookies"-Versprechen nicht (reine URL-Parameter, keine
+  Speicherung).
+- [ ] **Feed-Panel verdeckt auf Mobil fast die ganze Karte** – als Bottom Sheet mit
+  Griff angenehmer als das aktuelle schwebende Panel.
+
+---
+
 ## Weitere offene Punkte
 
 - **Lieferung/Abholung filtern:** Details + echte Abdeckungszahlen stehen in

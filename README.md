@@ -129,11 +129,16 @@ Details & Specs siehe [`IDEEN.md`](IDEEN.md).
 - [x] **PWA (zum Homescreen hinzufügen)** – Manifest, Icons, Service Worker mit
   Offline-Betrieb und Update-Hinweis (siehe `IDEEN.md` und `TECHNICAL.md`)
 
-**Offen:** Damit ist die Roadmap abgearbeitet. Die einzige noch offene
-Produktfrage steht in [`VOR-VEROEFFENTLICHUNG.md`](VOR-VEROEFFENTLICHUNG.md):
-Der Standardfilter „nur mit Lieferservice" trifft nur ~7 % der Restaurants, weil
-das OSM-Tag `delivery` selten gesetzt ist – die Karte wirkt dadurch leerer, als
-die Daten hergeben.
+**Offen:**
+
+- [ ] **UI/UX-Feinschliff** – Punkte aus dem Review vom Juli 2026, gesammelt in
+  [`IDEEN.md`](IDEEN.md) (Abschnitt „UI/UX-Review (Juli 2026)"). Vorrang hat die
+  Fußzeile: durch `height: 100vh` liegen Attribution und Datenschutz-Link auf dem
+  Handy unter der Browserleiste.
+- [ ] **Standardfilter** – „nur mit Lieferservice" trifft nur ~7 % der Restaurants,
+  weil das OSM-Tag `delivery` selten gesetzt ist; die Karte wirkt dadurch leerer,
+  als die Daten hergeben. Optionen und Abdeckungszahlen stehen in
+  [`VOR-VEROEFFENTLICHUNG.md`](VOR-VEROEFFENTLICHUNG.md).
 
 *Bewusst gestrichen:* Manuelle Einträge für Restaurants ohne
 OpenStreetMap-Eintrag – OSM ist bereits eine gepflegte, kostenlose Datenbank;
