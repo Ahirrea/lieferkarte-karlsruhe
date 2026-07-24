@@ -44,7 +44,16 @@ jobs:
           python-version: '3.12'
       
       # ================================================================
-      # 3. Scanner ausführen (Overpass/OpenStreetMap)
+      # 3. Tests ausführen (Sicherheitsnetz vor dem automatischen Commit)
+      #    Schlagen die Invarianten-Tests fehl, wird weder gescannt noch
+      #    committet – die DB im Repo bleibt unverändert.
+      # ================================================================
+      - name: Run tests
+        run: |
+          python3 -m unittest discover -s tests -v
+
+      # ================================================================
+      # 4. Scanner ausführen (Overpass/OpenStreetMap)
       #    Bei Zeitplan-Trigger ist scan_mode leer -> Voll-Scan.
       # ================================================================
       - name: Run scanner
@@ -56,14 +65,14 @@ jobs:
           fi
       
       # ================================================================
-      # 4. Daten als JSON exportieren
+      # 5. Daten als JSON exportieren
       # ================================================================
       - name: Export to JSON
         run: |
           python3 export.py
       
       # ================================================================
-      # 5. Git konfigurieren & committen (nur wenn Änderungen da sind)
+      # 6. Git konfigurieren & committen (nur wenn Änderungen da sind)
       # ================================================================
       - name: Commit changes
         run: |
@@ -75,14 +84,14 @@ jobs:
           git diff --cached --quiet || git commit -m "🤖 Weekly scan: $(date -I)"
       
       # ================================================================
-      # 6. Änderungen pushen
+      # 7. Änderungen pushen
       # ================================================================
       - name: Push to repository
         run: |
           git push
       
       # ================================================================
-      # 7. Optional: Job-Summary für GitHub UI
+      # 8. Optional: Job-Summary für GitHub UI
       # ================================================================
       - name: Summary
         if: always()
