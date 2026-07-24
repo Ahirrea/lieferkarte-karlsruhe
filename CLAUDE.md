@@ -2,16 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Current state: implemented, running on mock data, pre-launch
+## Current state: implemented, running on real OSM data, pre-launch
 
 **The full pipeline exists and works.** These files are all present and functional:
 
 - `scanner.py`, `export.py` — the Python pipeline
+- `tests/` — stdlib-`unittest` suite for the pipeline invariants (no dependencies)
 - `web/index.html`, `web/restaurants.json` — the frontend and its data
-- `data/restaurants.db` — the SQLite store (three tables + 10 mock rows, `mock_001`–`mock_010`)
+- `data/restaurants.db` — the SQLite store (three tables; ~880 active restaurants from real Overpass scans, plus the 10 inactive mock rows `mock_001`–`mock_010` from early development)
 - `.github/workflows/weekly-scan.yml`, MIT `LICENSE`
 
-What has **not** happened yet is the public launch. The repo is still **private**, running on mock data. The remaining work is launch prep (no code changes required) — tracked in `VOR-VEROEFFENTLICHUNG.md`: flip the repo public and enable GitHub Pages. Author email is already a GitHub `noreply` address, real OSM data is committed, and (as a private, non-commercial project) there is no Impressum — `DATENSCHUTZ.md` is a personal-data-free privacy/notes page instead. (No API key or billing setup — the data source is free.)
+What has **not** happened yet is the public launch. The repo is still **private**. The remaining work is launch prep (no code changes required) — tracked in `VOR-VEROEFFENTLICHUNG.md`: flip the repo public and enable GitHub Pages. Author email is already a GitHub `noreply` address, real OSM data is committed, and (as a private, non-commercial project) there is no Impressum — `DATENSCHUTZ.md` is a personal-data-free privacy/notes page instead. (No API key or billing setup — the data source is free.)
 
 **Data source: OpenStreetMap via the Overpass API** (not Google Places). This was a deliberate switch: Google's Maps Platform terms forbid storing paid Places data >30 days, redistributing it, or showing it off a Google map — all of which a public repo with a committed DB/JSON would do. OpenStreetMap is under the **ODbL**, which explicitly permits public (even commercial) redistribution as long as "© OpenStreetMap-Mitwirkende" attribution is shown. That makes the public-repo model licit and free.
 
@@ -36,17 +37,19 @@ scanner.py  ──> data/restaurants.db ──> export.py ──> web/restaurant
 - **web/** — static Leaflet + OpenStreetMap map. Both the map tiles and the restaurant data come from OpenStreetMap (ODbL), so a single "© OpenStreetMap-Mitwirkende" attribution covers everything.
 - **Deployment** — GitHub Pages serves from `main` at repo root, so `web/` assets and the JSON are committed into the repo. The DB is also committed (its history *is* the change log — see `fetch-depth: 0` in the workflow). Under ODbL this is fine; it would have breached Google's terms.
 
-## Commands (once the pipeline exists)
+## Commands
 
 ```bash
-python3 scanner.py --mock      # fill DB with demo data, no network
+python3 -m unittest discover -s tests -v   # run the test suite (stdlib only, no install)
 python3 scanner.py             # full scan via Overpass: upsert + change + REMOVED detection
 python3 scanner.py --light     # refresh without REMOVED detection
 python3 export.py              # regenerate web/restaurants.json from the DB
 cd web && python3 -m http.server 8000   # preview at http://localhost:8000
 ```
 
-There is no test suite or linter configured yet.
+**Run the tests before pushing any pipeline change.** They use in-memory/temp databases and never touch `data/restaurants.db`; there is no linter configured.
+
+**`python3 scanner.py --mock` is destructive now that real data is in the DB:** mock counts as a full scan, so it would mark all real restaurants as REMOVED. Never run it against `data/restaurants.db` — the tests exercise mock mode against temp DBs instead.
 
 ## Constraints that drive the design
 
