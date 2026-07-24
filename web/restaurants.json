@@ -1,6 +1,6 @@
 {
   "count": 883,
-  "generatedAt": "2026-07-21T16:07:27.260719+00:00",
+  "generatedAt": "2026-07-24T20:48:31.129809+00:00",
   "lastScanAt": "2026-07-21T16:07:05.254713+00:00",
   "lastScanMode": "full",
   "attribution": "Daten & Karte: © OpenStreetMap-Mitwirkende (ODbL)",
@@ -12719,5 +12719,160 @@
       "newValue": "ja",
       "detectedAt": "2026-07-20T21:13:51.197958+00:00"
     }
-  ]
+  ],
+  "feed": {
+    "since": "2026-07-14T16:07:05.254713+00:00",
+    "until": "2026-07-21T16:07:05.254713+00:00",
+    "windowDays": 7,
+    "total": 245,
+    "counts": {
+      "TAKEAWAY_CHANGED": 245
+    },
+    "items": [
+      {
+        "placeId": "way/1423291887",
+        "type": "TAKEAWAY_CHANGED",
+        "name": "KFC",
+        "address": "Pulverhausstraße 36, 76135 Karlsruhe",
+        "lat": 48.9907101,
+        "lng": 8.3708926,
+        "oldValue": "unbekannt",
+        "newValue": "ja",
+        "detectedAt": "2026-07-20T21:13:51.197958+00:00",
+        "active": true
+      },
+      {
+        "placeId": "way/1089834717",
+        "type": "TAKEAWAY_CHANGED",
+        "name": "McDonald's",
+        "address": "Pforzheimer Straße 72a, 76275 Ettlingen",
+        "lat": 48.9375196,
+        "lng": 8.4194677,
+        "oldValue": "unbekannt",
+        "newValue": "ja",
+        "detectedAt": "2026-07-20T21:13:51.197958+00:00",
+        "active": true
+      },
+      {
+        "placeId": "way/910255966",
+        "type": "TAKEAWAY_CHANGED",
+        "name": "Çiğköftem",
+        "address": null,
+        "lat": 49.0063725,
+        "lng": 8.4026986,
+        "oldValue": "unbekannt",
+        "newValue": "ja",
+        "detectedAt": "2026-07-20T21:13:51.197958+00:00",
+        "active": true
+      },
+      {
+        "placeId": "way/910156709",
+        "type": "TAKEAWAY_CHANGED",
+        "name": "Dunkin'",
+        "address": null,
+        "lat": 49.0072361,
+        "lng": 8.4016879,
+        "oldValue": "unbekannt",
+        "newValue": "ja",
+        "detectedAt": "2026-07-20T21:13:51.197958+00:00",
+        "active": true
+      },
+      {
+        "placeId": "way/910156686",
+        "type": "TAKEAWAY_CHANGED",
+        "name": "Subway",
+        "address": null,
+        "lat": 49.0066412,
+        "lng": 8.4027546,
+        "oldValue": "unbekannt",
+        "newValue": "ja",
+        "detectedAt": "2026-07-20T21:13:51.197958+00:00",
+        "active": true
+      },
+      {
+        "placeId": "way/910156677",
+        "type": "TAKEAWAY_CHANGED",
+        "name": "KFC",
+        "address": null,
+        "lat": 49.0067878,
+        "lng": 8.4029494,
+        "oldValue": "unbekannt",
+        "newValue": "ja",
+        "detectedAt": "2026-07-20T21:13:51.197958+00:00",
+        "active": true
+      },
+      {
+        "placeId": "way/910156674",
+        "type": "TAKEAWAY_CHANGED",
+        "name": "Nordsee",
+        "address": null,
+        "lat": 49.0065538,
+        "lng": 8.4031674,
+        "oldValue": "unbekannt",
+        "newValue": "ja",
+        "detectedAt": "2026-07-20T21:13:51.197958+00:00",
+        "active": true
+      },
+      {
+        "placeId": "way/910156673",
+        "type": "TAKEAWAY_CHANGED",
+        "name": "Ma'loa",
+        "address": null,
+        "lat": 49.0066068,
+        "lng": 8.4032277,
+        "oldValue": "unbekannt",
+        "newValue": "ja",
+        "detectedAt": "2026-07-20T21:13:51.197958+00:00",
+        "active": true
+      },
+      {
+        "placeId": "way/749249152",
+        "type": "TAKEAWAY_CHANGED",
+        "name": "anatolia Pizza & Kebap Haus",
+        "address": "Rintheimer Straße 92, 76131 Karlsruhe",
+        "lat": 49.0113322,
+        "lng": 8.4381501,
+        "oldValue": "unbekannt",
+        "newValue": "ja",
+        "detectedAt": "2026-07-20T21:13:51.197958+00:00",
+        "active": true
+      },
+      {
+        "placeId": "way/737096373",
+        "type": "TAKEAWAY_CHANGED",
+        "name": "Tigris Pizza & Kebaphaus",
+        "address": "Haid-und-Neu-Straße 40, 76131 Karlsruhe",
+        "lat": 49.0138604,
+        "lng": 8.4312515,
+        "oldValue": "unbekannt",
+        "newValue": "ja",
+        "detectedAt": "2026-07-20T21:13:51.197958+00:00",
+        "active": true
+      },
+      {
+        "placeId": "way/706063505",
+        "type": "TAKEAWAY_CHANGED",
+        "name": "Sela's",
+        "address": "Georg-Friedrich-Straße 22, 76131 Karlsruhe",
+        "lat": 49.009703,
+        "lng": 8.4233409,
+        "oldValue": "unbekannt",
+        "newValue": "ja",
+        "detectedAt": "2026-07-20T21:13:51.197958+00:00",
+        "active": true
+      },
+      {
+        "placeId": "way/691966120",
+        "type": "TAKEAWAY_CHANGED",
+        "name": "Subway",
+        "address": "Wolfartsweierer Straße 42, 76137 Karlsruhe",
+        "lat": 48.9998356,
+        "lng": 8.4270541,
+        "oldValue": "unbekannt",
+        "newValue": "ja",
+        "detectedAt": "2026-07-20T21:13:51.197958+00:00",
+        "active": true
+      }
+    ]
+  }
 }

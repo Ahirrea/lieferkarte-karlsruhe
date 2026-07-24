@@ -101,8 +101,11 @@ jobs:
           if [ -f web/restaurants.json ]; then
             COUNT=$(jq '.count' web/restaurants.json)
             UPDATED=$(jq '.generatedAt' web/restaurants.json)
+            CHANGES=$(jq -r '.feed.total // 0' web/restaurants.json)
+            NEW=$(jq -r '.feed.counts.NEW // 0' web/restaurants.json)
             echo "✅ **Restaurants found:** $COUNT" >> $GITHUB_STEP_SUMMARY
             echo "📅 **Last updated:** $UPDATED" >> $GITHUB_STEP_SUMMARY
+            echo "🆕 **Feed (letzte 7 Tage):** $CHANGES Änderungen, davon $NEW neu" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ restaurants.json not generated" >> $GITHUB_STEP_SUMMARY
           fi

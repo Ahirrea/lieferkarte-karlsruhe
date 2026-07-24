@@ -12,6 +12,7 @@ Statt durch Wolt, Uber Eats oder anderen Apps zu bestellen (die Restaurants oft 
 - Übersichtliche Karte statt App-Chaos
 - Direkt beim Restaurant bestellen, keine Provisionen
 - Filter nach Stadtteil, Öffnungszeiten, Lieferstatus
+- „🆕 Diese Woche": was seit dem letzten Scan neu ist oder sich geändert hat
 - Jede Woche aktualisiert
 
 **Für Restaurants:**
@@ -101,12 +102,12 @@ Details & Specs siehe [`IDEEN.md`](IDEEN.md).
 
 - [x] Öffnungszeiten im Popup + „jetzt geöffnet"-Anzeige und -Filter (siehe `IDEEN.md`)
 - [x] „In meiner Nähe"-Button (zentriert die Karte auf den eigenen Standort)
+- [x] Änderungs-Feed („Diese Woche neu …") – Knopf „🆕 Diese Woche" öffnet die
+  Änderungen der letzten sieben Tage, gruppiert nach Art; ein Klick springt zum
+  Restaurant auf der Karte (siehe `IDEEN.md`)
 
 **Offen – sortiert nach Aufwand (aufsteigend):**
 
-- [ ] **Änderungs-Feed („Diese Woche neu …")** *(klein–mittel)* – die
-  `changes`-Tabelle wird bereits bei jedem Scan gefüllt; es fehlen nur Export
-  nach JSON und die Anzeige auf der Seite.
 - [ ] **Filter nach Küchenstil (Pizza, Thai, Burger, …)** *(mittel)* – OSM-Tag
   `cuisine` durch die Pipeline ziehen (Scanner-Spalte + Migration, Export,
   Filter-UI). Werte müssen normalisiert werden (`pizza;italian` …); Daten sind

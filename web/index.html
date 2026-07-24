@@ -78,8 +78,92 @@
       font-size: 0.85rem;
     }
     .controls button:hover { background: #f0f0ee; }
+    .controls button[aria-expanded="true"] { background: #f0f0ee; border-color: var(--accent); }
     .controls .count { font-size: 0.85rem; color: var(--muted); margin-left: auto; }
+    .pill {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0 0.35rem;
+      margin-left: 0.25rem;
+    }
     #map { flex: 1 1 auto; }
+
+    /* --- Änderungs-Feed („Diese Woche neu …") --- */
+    #feed[hidden] { display: none; }
+    #feed {
+      position: fixed;
+      z-index: 900;            /* über den Leaflet-Panes/Controls */
+      top: auto; right: 0.75rem; bottom: 2.2rem;
+      width: min(23rem, calc(100vw - 1.5rem));
+      max-height: min(60vh, 34rem);
+      display: flex;
+      flex-direction: column;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+      overflow: hidden;
+    }
+    .feed-head {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .feed-head h2 { font-size: 0.95rem; margin: 0; }
+    .feed-head .range { font-size: 0.72rem; color: var(--muted); }
+    .feed-close {
+      margin-left: auto;
+      border: 0; background: none; cursor: pointer;
+      font-size: 1rem; color: var(--muted); line-height: 1;
+      padding: 0 0.15rem;
+    }
+    .feed-body { overflow-y: auto; padding: 0.35rem 0.75rem 0.6rem; }
+    .feed-group { margin-top: 0.5rem; }
+    .feed-group h3 {
+      font-size: 0.78rem;
+      margin: 0 0 0.25rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .feed-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: 0;
+      border-radius: 6px;
+      background: none;
+      padding: 0.3rem 0.35rem;
+      font: inherit;
+      font-size: 0.85rem;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .feed-item:hover, .feed-item:focus-visible { background: var(--bg); }
+    .feed-item .fname { font-weight: 600; }
+    .feed-item .fmeta { display: block; font-size: 0.74rem; color: var(--muted); }
+    .feed-item.inactive .fname { text-decoration: line-through; }
+    .feed-more, .feed-empty, .feed-note {
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin: 0.2rem 0.35rem 0;
+    }
+    .feed-empty { margin: 0.6rem 0.35rem; }
+    .feed-note { border-top: 1px solid var(--border); padding-top: 0.4rem; margin-top: 0.6rem; }
+    /* Schmale Displays: über die ganze Breite, und höher – dort umbricht die
+       Fußzeile auf zwei Zeilen und würde sonst verdeckt. */
+    @media (max-width: 640px) {
+      #feed {
+        left: 0.5rem; right: 0.5rem; bottom: 4rem;
+        width: auto;
+        max-height: 55vh;
+      }
+    }
     .popup-name { font-weight: 600; font-size: 1rem; margin-bottom: 0.15rem; }
     .popup-addr { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.4rem; }
     .popup-hours {
@@ -164,6 +248,9 @@
       <label><input type="checkbox" id="onlyDelivery" checked> nur mit Lieferservice</label>
       <label><input type="checkbox" id="onlyOpen"> nur jetzt geöffnet</label>
       <button id="nearMe" type="button">📍 In meiner Nähe</button>
+      <button id="feedToggle" type="button" aria-expanded="false" aria-controls="feed" hidden>
+        🆕 Diese Woche<span class="pill" id="feedPill" hidden></span>
+      </button>
       <span class="count" id="count"></span>
     </div>
   </header>
@@ -171,6 +258,15 @@
   <div id="map">
     <div class="loading" id="loading">Lade Restaurants …</div>
   </div>
+
+  <aside id="feed" hidden aria-labelledby="feedTitle">
+    <div class="feed-head">
+      <h2 id="feedTitle">Diese Woche neu</h2>
+      <span class="range" id="feedRange"></span>
+      <button class="feed-close" id="feedClose" type="button" aria-label="Feed schließen">✕</button>
+    </div>
+    <div class="feed-body" id="feedBody"></div>
+  </aside>
 
   <footer>
     Daten &amp; Karte: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-Mitwirkende (ODbL) ·
@@ -188,6 +284,7 @@
 
     const layer = L.layerGroup().addTo(map);
     let restaurants = [];
+    let feedItems = [];
     let meMarker = null;
 
     const $search = document.getElementById("search");
@@ -196,6 +293,11 @@
     const $count = document.getElementById("count");
     const $meta = document.getElementById("meta");
     const $loading = document.getElementById("loading");
+    const $feed = document.getElementById("feed");
+    const $feedToggle = document.getElementById("feedToggle");
+    const $feedPill = document.getElementById("feedPill");
+    const $feedRange = document.getElementById("feedRange");
+    const $feedBody = document.getElementById("feedBody");
 
     function esc(s) {
       return String(s == null ? "" : s).replace(/[&<>"']/g, c => (
@@ -479,6 +581,123 @@
       return html;
     }
 
+    // ---- Änderungs-Feed („Diese Woche neu …") ----
+    // Quelle: `feed` aus restaurants.json (export.py) – die Änderungen der
+    // letzten Tage aus der `changes`-Tabelle, ohne den Erstimport.
+    const FEED_GROUPS = [
+      { type: "NEW",               label: "🆕 Neu dabei" },
+      { type: "REMOVED",           label: "❌ Nicht mehr in OpenStreetMap" },
+      { type: "DELIVERY_CHANGED",  label: "🚚 Lieferung geändert" },
+      { type: "TAKEAWAY_CHANGED",  label: "🥡 Abholung geändert" },
+      { type: "ADDRESS_CHANGED",   label: "📍 Adresse geändert" },
+      { type: "STATUS_CHANGED",    label: "ℹ️ Status geändert" },
+    ];
+
+    function fmtDate(iso) {
+      const d = new Date(iso);
+      return isNaN(d) ? "" : d.toLocaleDateString("de-DE",
+        { day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+
+    // Zweite Zeile eines Feed-Eintrags: bei Wert-Änderungen „alt → neu",
+    // sonst die Adresse.
+    function feedItemMeta(it) {
+      const when = fmtDate(it.detectedAt);
+      let what = it.address || "";
+      if (it.type !== "NEW" && it.type !== "REMOVED" && (it.oldValue || it.newValue)) {
+        what = `${it.oldValue || "unbekannt"} → ${it.newValue || "unbekannt"}`;
+      }
+      return [what, when].filter(Boolean).join(" · ");
+    }
+
+    function renderFeed(feed) {
+      const items = (feed && feed.items) || [];
+      const counts = (feed && feed.counts) || {};
+      const total = feed && typeof feed.total === "number" ? feed.total : items.length;
+
+      // Der Knopf erscheint erst, wenn es überhaupt einen Feed gibt.
+      $feedToggle.hidden = false;
+      if (counts.NEW) {
+        $feedPill.hidden = false;
+        $feedPill.textContent = counts.NEW;
+        $feedPill.title = `${counts.NEW} neue Restaurants`;
+      }
+      if (feed && feed.since && feed.until) {
+        const since = fmtDate(feed.since), until = fmtDate(feed.until);
+        $feedRange.textContent = since && until ? `${since} – ${until}` : "";
+      }
+
+      if (!total) {
+        $feedBody.innerHTML =
+          `<p class="feed-empty">Seit dem letzten Scan gab es keine Änderungen in ` +
+          `OpenStreetMap. Der nächste Scan läuft sonntags.</p>`;
+        return;
+      }
+
+      // Gruppen in fester Reihenfolge; unbekannte Änderungsarten hinten dran.
+      const known = FEED_GROUPS.map(g => g.type);
+      const groups = FEED_GROUPS.concat(
+        Object.keys(counts).filter(t => !known.includes(t)).map(t => ({ type: t, label: t }))
+      );
+
+      let html = "";
+      for (const g of groups) {
+        const list = items.filter(it => it.type === g.type);
+        if (!list.length) continue;
+        html += `<section class="feed-group"><h3>${esc(g.label)} (${counts[g.type] || list.length})</h3>`;
+        for (const it of list) {
+          const canJump = it.lat != null && it.lng != null;
+          html +=
+            `<button class="feed-item${it.active ? "" : " inactive"}" type="button"` +
+            ` data-place="${esc(it.placeId)}"${canJump ? "" : " disabled"}>` +
+            `<span class="fname">${esc(it.name)}</span>` +
+            `<span class="fmeta">${esc(feedItemMeta(it))}</span></button>`;
+        }
+        const rest = (counts[g.type] || 0) - list.length;
+        if (rest > 0) html += `<p class="feed-more">… und ${rest} weitere</p>`;
+        html += `</section>`;
+      }
+      html += `<p class="feed-note">Grundlage sind die wöchentlichen ` +
+              `OpenStreetMap-Scans – „neu" heißt: neu in OpenStreetMap erfasst, ` +
+              `nicht zwangsläufig neu eröffnet.</p>`;
+      $feedBody.innerHTML = html;
+    }
+
+    // Feed-Eintrag anspringen: Karte zentrieren und ein Popup öffnen – auch
+    // wenn der Marker gerade weggefiltert ist (z. B. ohne delivery=yes) oder
+    // das Restaurant nicht mehr gelistet ist.
+    function focusPlace(placeId) {
+      const item = (feedItems || []).find(it => it.placeId === placeId);
+      const r = restaurants.find(x => x.placeId === placeId);
+      const lat = r ? r.lat : (item && item.lat);
+      const lng = r ? r.lng : (item && item.lng);
+      if (lat == null || lng == null) return;
+      map.setView([lat, lng], 17);
+      const html = r
+        ? popupHtml(r)
+        : `<div class="popup-name">${esc(item.name)}</div>` +
+          `<div class="popup-addr">${esc(item.address || "")}</div>` +
+          `<span class="badge badge-status">nicht mehr in OpenStreetMap gelistet</span>`;
+      L.popup({ maxWidth: 320 }).setLatLng([lat, lng]).setContent(html).openOn(map);
+      // Auf schmalen Displays verdeckt das Panel die Karte – dann schließen.
+      if (window.matchMedia("(max-width: 640px)").matches) setFeedOpen(false);
+    }
+
+    function setFeedOpen(open) {
+      $feed.hidden = !open;
+      $feedToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    $feedToggle.addEventListener("click", () => setFeedOpen($feed.hidden));
+    document.getElementById("feedClose").addEventListener("click", () => setFeedOpen(false));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !$feed.hidden) setFeedOpen(false);
+    });
+    $feedBody.addEventListener("click", (e) => {
+      const btn = e.target.closest(".feed-item");
+      if (btn) focusPlace(btn.dataset.place);
+    });
+
     function render() {
       const q = $search.value.trim().toLowerCase();
       const onlyDelivery = $onlyDelivery.checked;
@@ -549,7 +768,10 @@
       })
       .then(data => {
         restaurants = data.restaurants || [];
+        feedItems = (data.feed && data.feed.items) || [];
         $loading.remove();
+        // Älteres restaurants.json (noch ohne `feed`): Knopf bleibt versteckt.
+        if (data.feed) renderFeed(data.feed);
         if (data.lastScanAt) {
           const d = new Date(data.lastScanAt);
           const when = isNaN(d) ? data.lastScanAt : d.toLocaleDateString("de-DE");

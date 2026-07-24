@@ -33,7 +33,7 @@ scanner.py  ──> data/restaurants.db ──> export.py ──> web/restaurant
 
 - **scanner.py** — queries the Overpass API (OpenStreetMap) in a single request, upserts into SQLite keyed on `place_id` (an OSM `type/id`, e.g. `node/12345`), and detects changes vs. the previous scan.
 - **SQLite schema** — three tables: `restaurants` (current state, `place_id` = stable key), `changes` (append-only log: `NEW` / `REMOVED` / `ADDRESS_CHANGED` / `DELIVERY_CHANGED` / `TAKEAWAY_CHANGED` / `STATUS_CHANGED`), `scan_runs` (per-scan timestamp + request count).
-- **export.py** — reads the DB, writes `web/restaurants.json` (`{count, generatedAt, ...}`); the workflow's summary step reads those fields via `jq`.
+- **export.py** — reads the DB, writes `web/restaurants.json` (`{count, generatedAt, ...}`); the workflow's summary step reads those fields via `jq`. It also builds the `feed` block for the „Diese Woche neu"-Panel (`build_feed()`): the `changes` of the last 7 days, **minus the initial import** (the first scan logs every restaurant as `NEW`), capped per change type. Rules documented in `TECHNICAL.md`.
 - **web/** — static Leaflet + OpenStreetMap map. Both the map tiles and the restaurant data come from OpenStreetMap (ODbL), so a single "© OpenStreetMap-Mitwirkende" attribution covers everything.
 - **Deployment** — GitHub Pages serves from `main` at repo root, so `web/` assets and the JSON are committed into the repo. The DB is also committed (its history *is* the change log — see `fetch-depth: 0` in the workflow). Under ODbL this is fine; it would have breached Google's terms.
 
