@@ -97,12 +97,27 @@ MIT – du darfst den Code nutzen, ändern und weitergeben. Siehe [`LICENSE`](LI
 
 Details & Specs siehe [`IDEEN.md`](IDEEN.md).
 
-- [ ] Filter nach Küchenstil (Pizza, Thai, Burger, …)
-- [ ] Öffnungszeiten im Popup + „jetzt geöffnet"-Anzeige (siehe `IDEEN.md`)
-- [ ] "In meiner Nähe"-Filter
-- [ ] Änderungs-Feed ("Diese Woche neu …")
-- [ ] PWA (zum Homescreen hinzufügen)
-- [ ] Manuelle Einträge für Restaurants ohne OpenStreetMap-Eintrag
+**Bereits umgesetzt:**
+
+- [x] Öffnungszeiten im Popup + „jetzt geöffnet"-Anzeige und -Filter (siehe `IDEEN.md`)
+- [x] „In meiner Nähe"-Button (zentriert die Karte auf den eigenen Standort)
+
+**Offen – sortiert nach Aufwand (aufsteigend):**
+
+- [ ] **Änderungs-Feed („Diese Woche neu …")** *(klein–mittel)* – die
+  `changes`-Tabelle wird bereits bei jedem Scan gefüllt; es fehlen nur Export
+  nach JSON und die Anzeige auf der Seite.
+- [ ] **Filter nach Küchenstil (Pizza, Thai, Burger, …)** *(mittel)* – OSM-Tag
+  `cuisine` durch die Pipeline ziehen (Scanner-Spalte + Migration, Export,
+  Filter-UI). Werte müssen normalisiert werden (`pizza;italian` …); Daten sind
+  erst nach dem nächsten Scan in der DB.
+- [ ] **PWA (zum Homescreen hinzufügen)** *(mittel)* – Manifest, Icons, Service
+  Worker inkl. Update-Strategie für die wöchentlich neuen Daten.
+
+*Bewusst gestrichen:* Manuelle Einträge für Restaurants ohne
+OpenStreetMap-Eintrag – OSM ist bereits eine gepflegte, kostenlose Datenbank;
+eine zweite Datenbank zu pflegen ist nicht das Ziel. Fehlende Restaurants
+werden stattdessen direkt in OpenStreetMap eingetragen (siehe oben).
 
 ---
 
