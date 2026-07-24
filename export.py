@@ -24,7 +24,7 @@ RECENT_CHANGES_LIMIT = 50
 def export():
     if not os.path.exists(DB_PATH):
         print(f"DB nicht gefunden: {DB_PATH}", file=sys.stderr)
-        print("  Erst scanner.py laufen lassen (z. B. python3 scanner.py --mock).",
+        print("  Erst scanner.py laufen lassen (Voll-Scan über Overpass).",
               file=sys.stderr)
         return 1
 

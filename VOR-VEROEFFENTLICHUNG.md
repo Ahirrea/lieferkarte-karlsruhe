@@ -17,8 +17,9 @@ Alle Punkte unten sind abgearbeitet.
 - **Keine** Tokens/Passwörter/Secrets im Arbeitsbaum oder in der Git-History.
 - **Keine** `.env`- oder Key-Dateien wurden je committet. `.gitignore` blockt die
   üblichen Leak-Pfade (`.env`, `*.key`, `*.pem`, `places_api_key.txt`).
-- **DB + JSON enthalten nur Demodaten** (`mock_001`–`mock_010`, `.example`-URLs).
-  Nichts Echtes oder Sensibles.
+- **DB + JSON enthalten nur öffentliche OSM-Daten** (Restaurants, ODbL).
+  Die frühen Demodaten (`mock_001`–`mock_010`) wurden samt Mock-Modus
+  entfernt. Nichts Sensibles.
 
 → Technisch keine Credentials exponiert. Die offenen Punkte sind **Datenschutz-**
 und **Rechts-Entscheidungen**, keine Lecks.

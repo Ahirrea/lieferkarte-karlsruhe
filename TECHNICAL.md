@@ -20,13 +20,19 @@ scanner.py  ──>  data/restaurants.db  ──>  export.py  ──>  web/resta
 - **changes**: Änderungsprotokoll (NEW / REMOVED / ADDRESS_CHANGED / DELIVERY_CHANGED / TAKEAWAY_CHANGED / STATUS_CHANGED)
 - **scan_runs**: wann lief welcher Scan mit wie vielen API-Aufrufen (Kostenkontrolle)
 
-## Schnellstart (ohne API-Key, mit Demodaten)
+## Schnellstart (ohne API-Key)
 
 ```bash
-python3 scanner.py --mock     # füllt die DB mit Beispiel-Restaurants
+python3 scanner.py            # Voll-Scan über Overpass (ein Request, kein Key)
 python3 export.py             # erzeugt web/restaurants.json
 cd web && python3 -m http.server 8000
 # -> http://localhost:8000 im Browser öffnen
+```
+
+Tests (nur Standardbibliothek, arbeiten mit Temporär-DBs):
+
+```bash
+python3 -m unittest discover -s tests -v
 ```
 
 ## Echter Scan (OpenStreetMap/Overpass)
@@ -42,9 +48,6 @@ python3 scanner.py
 
 # Refresh ohne REMOVED-Erkennung
 python3 scanner.py --light
-
-# Demo ohne Netz
-python3 scanner.py --mock
 ```
 
 Dann:

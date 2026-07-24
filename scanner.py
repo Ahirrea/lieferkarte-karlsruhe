@@ -13,9 +13,8 @@ Warum OpenStreetMap statt Google Places?
   genau das, was ein öffentliches Repo + GitHub Pages tun. Bei Google Places
   wäre das durch die Nutzungsbedingungen nicht gedeckt.
 
-Drei Modi:
+Zwei Modi:
 
-    python3 scanner.py --mock     Demodaten, kein Netz, keine Abhängigkeiten
     python3 scanner.py            Voll-Scan: Bestand + Änderungen + REMOVED-Erkennung
     python3 scanner.py --light    Refresh ohne REMOVED-Erkennung
 
@@ -106,7 +105,7 @@ def init_db(conn):
         CREATE TABLE IF NOT EXISTS scan_runs (
             id           INTEGER PRIMARY KEY AUTOINCREMENT,
             started_at   TEXT NOT NULL,
-            mode         TEXT NOT NULL,       -- full/light/mock
+            mode         TEXT NOT NULL,       -- full/light
             api_calls    INTEGER NOT NULL DEFAULT 0,
             places_found INTEGER NOT NULL DEFAULT 0
         );
@@ -198,7 +197,7 @@ def _osm_yesno(val):
 
 
 def normalize_osm(el):
-    """OSM-Element in ein flaches Dict umwandeln (Format wie MOCK_PLACES)."""
+    """OSM-Element in ein flaches Dict umwandeln."""
     tags = el.get("tags", {})
 
     # Koordinaten: node hat lat/lon direkt, way/relation über 'center'.
@@ -221,44 +220,6 @@ def normalize_osm(el):
 
 
 # --------------------------------------------------------------------------
-# Mock-Daten
-# --------------------------------------------------------------------------
-
-MOCK_PLACES = [
-    {"place_id": "mock_001", "name": "Pizzeria Bella Napoli", "address": "Kaiserstraße 42, 76133 Karlsruhe",
-     "lat": 49.0094, "lng": 8.4044, "website": "https://bella-napoli-ka.example", "delivery": 1, "takeaway": 1,
-     "opening_hours": "Mo-Fr 11:00-14:30,17:00-23:00; Sa-Su 17:00-23:00", "business_status": "OPERATIONAL"},
-    {"place_id": "mock_002", "name": "Sushi Karlsruhe Express", "address": "Ludwigsplatz 3, 76133 Karlsruhe",
-     "lat": 49.0075, "lng": 8.3968, "website": "https://sushi-ka.example", "delivery": 1, "takeaway": 1,
-     "opening_hours": "Mo-Su 11:30-22:00", "business_status": "OPERATIONAL"},
-    {"place_id": "mock_003", "name": "Curry House Südstadt", "address": "Augartenstraße 12, 76137 Karlsruhe",
-     "lat": 48.9985, "lng": 8.4051, "website": "https://curryhouse-ka.example", "delivery": 1,
-     "opening_hours": "Tu-Su 12:00-23:00; Mo off", "business_status": "OPERATIONAL"},
-    {"place_id": "mock_004", "name": "Burger Bude Weststadt", "address": "Sophienstraße 88, 76135 Karlsruhe",
-     "lat": 49.0068, "lng": 8.3805, "website": "https://burgerbude-ka.example", "delivery": 1,
-     "opening_hours": "Mo-Su 11:00-22:00", "business_status": "OPERATIONAL"},
-    {"place_id": "mock_005", "name": "Thai Garden Durlach", "address": "Pfinztalstraße 20, 76227 Karlsruhe",
-     "lat": 48.9977, "lng": 8.4712, "website": "https://thaigarden-ka.example", "delivery": 1,
-     "business_status": "OPERATIONAL"},
-    {"place_id": "mock_006", "name": "Döner & More Mühlburg", "address": "Rheinstraße 15, 76185 Karlsruhe",
-     "lat": 49.0126, "lng": 8.3591, "website": None, "delivery": 1,
-     "opening_hours": "Mo-Su 10:00-02:00", "business_status": "OPERATIONAL"},
-    {"place_id": "mock_007", "name": "Trattoria Oststadt", "address": "Gerwigstraße 5, 76131 Karlsruhe",
-     "lat": 49.0113, "lng": 8.4287, "website": "https://trattoria-ost.example", "delivery": 0, "takeaway": 1,
-     "opening_hours": "Mo-Sa 11:30-14:00,18:00-23:00; Su off", "business_status": "OPERATIONAL"},
-    {"place_id": "mock_008", "name": "Vietnam Küche Neureut", "address": "Neureuter Hauptstraße 100, 76149 Karlsruhe",
-     "lat": 49.0421, "lng": 8.3768, "website": "https://vietnam-neureut.example", "delivery": 1,
-     "business_status": "OPERATIONAL"},
-    {"place_id": "mock_009", "name": "Falafel Palast Waldstadt", "address": "Kanzlerstraße 8, 76139 Karlsruhe",
-     "lat": 49.0313, "lng": 8.4384, "website": "https://falafel-waldstadt.example", "delivery": 1,
-     "opening_hours": "Mo-Su 11:00-21:30", "business_status": "OPERATIONAL"},
-    {"place_id": "mock_010", "name": "Pasta Fresca Südweststadt", "address": "Ebertstraße 30, 76135 Karlsruhe",
-     "lat": 49.0002, "lng": 8.3902, "website": "https://pastafresca-ka.example", "delivery": 1,
-     "opening_hours": "Mo-Fr 11:00-15:00,17:30-22:00; Sa 17:30-22:00", "business_status": "OPERATIONAL"},
-]
-
-
-# --------------------------------------------------------------------------
 # Kern: Scan
 # --------------------------------------------------------------------------
 
@@ -266,7 +227,7 @@ MOCK_PLACES = [
 def sync_places(conn, places, mode, scan_ts):
     """Upsert der gefundenen Places + Änderungserkennung.
 
-    ``places`` ist eine Liste flacher Dicts (siehe normalize_osm / MOCK_PLACES).
+    ``places`` ist eine Liste flacher Dicts (siehe normalize_osm).
     Gibt die Anzahl eindeutiger, verarbeiteter Restaurants zurück.
     """
     seen_ids = set()
@@ -332,10 +293,10 @@ def sync_places(conn, places, mode, scan_ts):
              p["business_status"], scan_ts, pid),
         )
 
-    # REMOVED-Erkennung nur im Voll-Scan (mock zählt als voll).
+    # REMOVED-Erkennung nur im Voll-Scan.
     # --light markiert absichtlich NICHTS als entfernt – ein Refresh soll
     # keine Restaurants löschen, falls die Overpass-Antwort mal unvollständig ist.
-    if mode in ("full", "mock"):
+    if mode == "full":
         stale = conn.execute(
             "SELECT place_id, name FROM restaurants WHERE active = 1 AND last_seen < ?",
             (scan_ts,),
@@ -366,36 +327,31 @@ def run_scan(mode):
     try:
         init_db(conn)
 
-        api_calls = 0
-        if mode == "mock":
-            print("Mock-Modus: fülle DB mit Demodaten (kein Netz).")
-            places = list(MOCK_PLACES)
-        else:
-            print(f"{mode}-Scan: frage Overpass ab ({OVERPASS_ENDPOINT}).")
-            try:
-                elements, api_calls = fetch_overpass()
-            except Exception as exc:  # Netz-/HTTP-Fehler
-                print(f"Overpass-Abfrage fehlgeschlagen: {exc}", file=sys.stderr)
-                print("  Scan abgebrochen – DB bleibt unverändert.", file=sys.stderr)
-                return 1
+        print(f"{mode}-Scan: frage Overpass ab ({OVERPASS_ENDPOINT}).")
+        try:
+            elements, api_calls = fetch_overpass()
+        except Exception as exc:  # Netz-/HTTP-Fehler
+            print(f"Overpass-Abfrage fehlgeschlagen: {exc}", file=sys.stderr)
+            print("  Scan abgebrochen – DB bleibt unverändert.", file=sys.stderr)
+            return 1
 
-            places = []
-            for el in elements:
-                if not el.get("id"):
-                    continue
-                norm = normalize_osm(el)
-                # Nur benannte Objekte mit Koordinaten sind sinnvoll anzeigbar.
-                if norm["name"] and norm["lat"] is not None and norm["lng"] is not None:
-                    places.append(norm)
+        places = []
+        for el in elements:
+            if not el.get("id"):
+                continue
+            norm = normalize_osm(el)
+            # Nur benannte Objekte mit Koordinaten sind sinnvoll anzeigbar.
+            if norm["name"] and norm["lat"] is not None and norm["lng"] is not None:
+                places.append(norm)
 
-            print(f"  {len(elements)} OSM-Objekte, {len(places)} verwertbar "
-                  f"(mit Name + Koordinaten).")
+        print(f"  {len(elements)} OSM-Objekte, {len(places)} verwertbar "
+              f"(mit Name + Koordinaten).")
 
-            # Schutz: eine leere Antwort niemals als "alle entfernt" verarbeiten.
-            if not places:
-                print("Keine verwertbaren Objekte erhalten – Scan abgebrochen, "
-                      "DB bleibt unverändert.", file=sys.stderr)
-                return 1
+        # Schutz: eine leere Antwort niemals als "alle entfernt" verarbeiten.
+        if not places:
+            print("Keine verwertbaren Objekte erhalten – Scan abgebrochen, "
+                  "DB bleibt unverändert.", file=sys.stderr)
+            return 1
 
         count = sync_places(conn, places, mode, scan_ts)
 
@@ -418,21 +374,11 @@ def run_scan(mode):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Lieferkarte Karlsruhe – Scanner (OpenStreetMap/Overpass)")
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("--mock", action="store_true",
-                       help="Demodaten laden, kein Netz")
-    group.add_argument("--light", action="store_true",
-                       help="Refresh ohne REMOVED-Erkennung")
+    parser.add_argument("--light", action="store_true",
+                        help="Refresh ohne REMOVED-Erkennung")
     args = parser.parse_args(argv)
 
-    if args.mock:
-        mode = "mock"
-    elif args.light:
-        mode = "light"
-    else:
-        mode = "full"
-
-    return run_scan(mode)
+    return run_scan("light" if args.light else "full")
 
 
 if __name__ == "__main__":

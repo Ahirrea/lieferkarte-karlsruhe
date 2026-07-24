@@ -64,8 +64,11 @@ Vollständiges Setup: siehe [`TECHNICAL.md`](TECHNICAL.md)
 ### Lokale Entwicklung / Test
 
 ```bash
-# Demo ohne Netz
-python3 scanner.py --mock
+# Tests (nur Standardbibliothek, keine Installation nötig)
+python3 -m unittest discover -s tests -v
+
+# Scan + Vorschau
+python3 scanner.py            # Voll-Scan über Overpass (ein Request, kein Key)
 python3 export.py
 cd web && python3 -m http.server 8000
 # -> http://localhost:8000

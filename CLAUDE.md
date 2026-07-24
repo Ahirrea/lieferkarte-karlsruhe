@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `scanner.py`, `export.py` — the Python pipeline
 - `tests/` — stdlib-`unittest` suite for the pipeline invariants (no dependencies)
 - `web/index.html`, `web/restaurants.json` — the frontend and its data
-- `data/restaurants.db` — the SQLite store (three tables; ~880 active restaurants from real Overpass scans, plus the 10 inactive mock rows `mock_001`–`mock_010` from early development)
+- `data/restaurants.db` — the SQLite store (three tables; ~880 active restaurants from real Overpass scans)
 - `.github/workflows/weekly-scan.yml`, MIT `LICENSE`
 
 What has **not** happened yet is the public launch. The repo is still **private**. The remaining work is launch prep (no code changes required) — tracked in `VOR-VEROEFFENTLICHUNG.md`: flip the repo public and enable GitHub Pages. Author email is already a GitHub `noreply` address, real OSM data is committed, and (as a private, non-commercial project) there is no Impressum — `DATENSCHUTZ.md` is a personal-data-free privacy/notes page instead. (No API key or billing setup — the data source is free.)
@@ -49,7 +49,7 @@ cd web && python3 -m http.server 8000   # preview at http://localhost:8000
 
 **Run the tests before pushing any pipeline change.** They use in-memory/temp databases and never touch `data/restaurants.db`; there is no linter configured.
 
-**`python3 scanner.py --mock` is destructive now that real data is in the DB:** mock counts as a full scan, so it would mark all real restaurants as REMOVED. Never run it against `data/restaurants.db` — the tests exercise mock mode against temp DBs instead.
+**There is no mock mode.** `scanner.py --mock` and its demo rows were removed once real data replaced them (mock counted as a full scan and would have marked every real restaurant as REMOVED). The scanner only knows full and `--light`; the tests seed their fixtures directly via `sync_places` into temp DBs (`tests/helpers.py`).
 
 ## Constraints that drive the design
 

@@ -21,28 +21,7 @@ from unittest import mock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import scanner
-
-TS1 = "2026-01-01T00:00:00+00:00"
-TS2 = "2026-01-02T00:00:00+00:00"
-TS3 = "2026-01-03T00:00:00+00:00"
-
-
-def make_place(pid, **overrides):
-    """Vollständiges Place-Dict im Format von normalize_osm / MOCK_PLACES."""
-    place = {
-        "place_id": pid,
-        "name": f"Restaurant {pid}",
-        "address": "Kaiserstraße 1, 76133 Karlsruhe",
-        "lat": 49.0,
-        "lng": 8.4,
-        "website": None,
-        "delivery": None,
-        "takeaway": None,
-        "opening_hours": None,
-        "business_status": None,
-    }
-    place.update(overrides)
-    return place
+from tests.helpers import TS1, TS2, TS3, make_place, seed_db
 
 
 class OsmYesnoTest(unittest.TestCase):
@@ -216,9 +195,8 @@ class RunScanGuardTest(unittest.TestCase):
         patcher = mock.patch.object(scanner, "DB_PATH", db_path)
         patcher.start()
         self.addCleanup(patcher.stop)
-        # DB mit den Demodaten befüllen (10 Restaurants).
-        with contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(scanner.run_scan("mock"), 0)
+        # DB mit zehn Fixture-Restaurants befüllen (ohne Netz).
+        seed_db(db_path, [make_place(f"node/{i}") for i in range(1, 11)])
 
     def _snapshot(self):
         conn = sqlite3.connect(scanner.DB_PATH)

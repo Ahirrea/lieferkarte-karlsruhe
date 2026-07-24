@@ -17,7 +17,18 @@ from unittest import mock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import export
-import scanner
+from tests.helpers import make_place, seed_db
+
+# Deckt alle drei Zustände von delivery/takeaway (true/false/null) und die
+# Sortierung unabhängig von Groß-/Kleinschreibung ab.
+FIXTURE_PLACES = [
+    make_place("node/1", name="Zebra Grill", delivery=1, takeaway=1,
+               opening_hours="Mo-Su 11:00-22:00"),
+    make_place("node/2", name="alpha Pizza", delivery=0),
+    make_place("node/3", name="Curry Eck", takeaway=0),
+    make_place("node/4", name="Beta Sushi", delivery=1,
+               website="https://beta-sushi.example"),
+]
 
 
 class ExportTest(unittest.TestCase):
@@ -26,16 +37,11 @@ class ExportTest(unittest.TestCase):
         self.addCleanup(self.tmpdir.cleanup)
         self.db_path = os.path.join(self.tmpdir.name, "restaurants.db")
         self.out_path = os.path.join(self.tmpdir.name, "web", "restaurants.json")
-        for target, attr, value in (
-            (scanner, "DB_PATH", self.db_path),
-            (export, "DB_PATH", self.db_path),
-            (export, "OUT_PATH", self.out_path),
-        ):
-            patcher = mock.patch.object(target, attr, value)
+        for attr, value in (("DB_PATH", self.db_path), ("OUT_PATH", self.out_path)):
+            patcher = mock.patch.object(export, attr, value)
             patcher.start()
             self.addCleanup(patcher.stop)
-        with contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(scanner.run_scan("mock"), 0)
+        seed_db(self.db_path, FIXTURE_PLACES)
 
     def _export(self):
         with contextlib.redirect_stdout(io.StringIO()):
@@ -49,9 +55,9 @@ class ExportTest(unittest.TestCase):
         for key in ("count", "generatedAt", "lastScanAt", "lastScanMode",
                     "attribution", "restaurants", "recentChanges"):
             self.assertIn(key, payload)
-        self.assertEqual(payload["count"], len(scanner.MOCK_PLACES))
+        self.assertEqual(payload["count"], len(FIXTURE_PLACES))
         self.assertEqual(payload["count"], len(payload["restaurants"]))
-        self.assertEqual(payload["lastScanMode"], "mock")
+        self.assertEqual(payload["lastScanMode"], "full")
 
     def test_odbl_attribution_ist_enthalten(self):
         """ODbL-Pflicht: die OSM-Attribution darf nie verschwinden."""
@@ -63,24 +69,27 @@ class ExportTest(unittest.TestCase):
         for r in payload["restaurants"]:
             self.assertIn(r["delivery"], (True, False, None))
             self.assertIn(r["takeaway"], (True, False, None))
-        # Die Mock-Daten enthalten bewusst alle drei Fälle für takeaway.
-        takeaways = {r["takeaway"] for r in payload["restaurants"]}
-        self.assertEqual(takeaways, {True, None})
+        # Die Fixtures enthalten bewusst alle drei Fälle.
+        self.assertEqual({r["delivery"] for r in payload["restaurants"]},
+                         {True, False, None})
+        self.assertEqual({r["takeaway"] for r in payload["restaurants"]},
+                         {True, False, None})
 
     def test_entfernte_restaurants_werden_nicht_exportiert(self):
         conn = sqlite3.connect(self.db_path)
-        conn.execute("UPDATE restaurants SET active = 0 WHERE place_id = 'mock_001'")
+        conn.execute("UPDATE restaurants SET active = 0 WHERE place_id = 'node/1'")
         conn.commit()
         conn.close()
         payload = self._export()
-        self.assertEqual(payload["count"], len(scanner.MOCK_PLACES) - 1)
+        self.assertEqual(payload["count"], len(FIXTURE_PLACES) - 1)
         ids = [r["placeId"] for r in payload["restaurants"]]
-        self.assertNotIn("mock_001", ids)
+        self.assertNotIn("node/1", ids)
 
     def test_sortierung_nach_name(self):
         payload = self._export()
         names = [r["name"] for r in payload["restaurants"]]
-        self.assertEqual(names, sorted(names, key=str.casefold))
+        self.assertEqual(names, ["alpha Pizza", "Beta Sushi", "Curry Eck",
+                                 "Zebra Grill"])
 
     def test_fehlende_db_gibt_fehler_und_schreibt_nichts(self):
         os.remove(self.db_path)
