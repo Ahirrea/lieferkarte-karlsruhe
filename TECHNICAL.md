@@ -60,8 +60,20 @@ cd web && python3 -m http.server 8000
 
 `scanner.py` fragt alle `amenity=restaurant`/`fast_food` im 12-km-Umkreis um
 das Karlsruher Zentrum ab (`nwr(around:...)`, `out center tags`). Aus den Tags
-werden Name, Adresse (`addr:*`), Koordinaten, `website`/`contact:website` und
-`delivery` (`yes`/`only` → 1, `no` → 0, sonst unbekannt) übernommen.
+werden Name, Adresse (`addr:*`), Koordinaten, `website`/`contact:website`,
+`delivery` und `takeaway` (`yes`/`only` → 1, `no` → 0, sonst unbekannt),
+`opening_hours` (Rohtext) und `cuisine` (Küchenstil) übernommen.
+
+**`cuisine` wird normalisiert** (`_osm_cuisine()`): OSM erlaubt mehrere Werte in
+einem Tag und beliebige Schreibweise (`pizza;italian`, `Pizza; Kebab`,
+`burger, american`, `Ice Cream`). In der Spalte `cuisine` steht daraus eine
+kanonische, `;`-getrennte Liste kleingeschriebener Schlüssel mit `_` statt
+Leerzeichen/Bindestrich (`"pizza;italian"`, `"ice_cream"`); Dubletten und
+nichtssagende Werte (`yes`, `no`, `unknown`, `fixme`, `other`) fallen weg,
+`NULL` = nicht getaggt. `export.py` gibt das Feld als Liste `cuisines` aus
+(leere Liste = unbekannt), die deutschen Bezeichnungen liegen im Frontend
+(`CUISINE_LABELS`). Änderungen am Küchenstil werden **nicht** protokolliert
+(siehe `IDEEN.md`).
 
 Der Endpoint ist per Umgebungsvariable überschreibbar, falls ein Spiegelserver
 nötig wird:
@@ -170,19 +182,19 @@ lieferkarte-karlsruhe/
 Overpass liefert alle Tags eines Objekts kostenlos mit – zusätzliche Felder
 kosten nichts extra. Nützliche OSM-Tags:
 
-- `cuisine`: Küchenstil (`pizza`, `thai`, `burger`, …)
-- `opening_hours`: Öffnungszeiten
+Bereits übernommen: `delivery`, `takeaway`, `opening_hours`, `cuisine`
+(siehe „Overpass-Abfrage" oben). Weitere Kandidaten:
+
 - `phone` / `contact:phone`: Telefon
 - `wheelchair`: Rollstuhl-Zugänglichkeit (`yes`/`limited`/`no`)
-- `takeaway`: Abholung (ergänzend zu `delivery`)
+- `outdoor_seating`: Außenbereich (`yes`/`no`)
 
 Um sie zu übernehmen, in `scanner.py` einfach in `normalize_osm()` aus `tags`
 lesen (der Query holt bereits alle Tags über `out ... tags`):
 
 ```python
-"cuisine": tags.get("cuisine"),
-"opening_hours": tags.get("opening_hours"),
 "phone": tags.get("phone") or tags.get("contact:phone"),
+"wheelchair": tags.get("wheelchair"),
 ```
 
 Dann die DB-Schema-Spalten hinzufügen (`ALTER TABLE restaurants ADD COLUMN ...`) und `sync_places()` entsprechend anpassen.

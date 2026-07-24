@@ -30,6 +30,7 @@ def make_place(pid, **overrides):
         "delivery": None,
         "takeaway": None,
         "opening_hours": None,
+        "cuisine": None,
         "business_status": None,
     }
     place.update(overrides)

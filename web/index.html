@@ -69,19 +69,24 @@
       gap: 0.3rem;
       white-space: nowrap;
     }
-    .controls button {
+    .controls button,
+    .controls select {
       padding: 0.45rem 0.7rem;
       border: 1px solid var(--border);
       background: var(--panel);
       border-radius: 6px;
       cursor: pointer;
       font-size: 0.85rem;
+      color: var(--text);
+      max-width: 14rem;
     }
     .controls button:hover { background: #f0f0ee; }
     .controls .count { font-size: 0.85rem; color: var(--muted); margin-left: auto; }
     #map { flex: 1 1 auto; }
     .popup-name { font-weight: 600; font-size: 1rem; margin-bottom: 0.15rem; }
     .popup-addr { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.4rem; }
+    .popup-cuisine { font-size: 0.82rem; color: var(--text); margin-bottom: 0.4rem; }
+    .popup-cuisine .label { color: var(--muted); }
     .popup-hours {
       font-size: 0.82rem;
       color: var(--text);
@@ -163,6 +168,11 @@
       <input type="search" id="search" placeholder="Restaurant oder Adresse suchen …" autocomplete="off">
       <label><input type="checkbox" id="onlyDelivery" checked> nur mit Lieferservice</label>
       <label><input type="checkbox" id="onlyOpen"> nur jetzt geöffnet</label>
+      <!-- Küchenstil-Filter: wird aus den Daten aufgebaut und bleibt versteckt,
+           solange kein Restaurant einen cuisine-Tag hat. -->
+      <select id="cuisine" aria-label="Nach Küchenstil filtern" hidden>
+        <option value="">🍽️ Alle Küchen</option>
+      </select>
       <button id="nearMe" type="button">📍 In meiner Nähe</button>
       <span class="count" id="count"></span>
     </div>
@@ -193,6 +203,7 @@
     const $search = document.getElementById("search");
     const $onlyDelivery = document.getElementById("onlyDelivery");
     const $onlyOpen = document.getElementById("onlyOpen");
+    const $cuisine = document.getElementById("cuisine");
     const $count = document.getElementById("count");
     const $meta = document.getElementById("meta");
     const $loading = document.getElementById("loading");
@@ -201,6 +212,86 @@
       return String(s == null ? "" : s).replace(/[&<>"']/g, c => (
         { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
       ));
+    }
+
+    // ---- Küchenstil (OSM-Tag `cuisine`) ----
+    // Die Schlüssel kommen normalisiert aus der Pipeline (klein, "_" statt
+    // Leerzeichen, mehrere Werte als Liste). Hier nur noch die deutschen
+    // Bezeichnungen für die häufigen Werte; alles Unbekannte wird lesbar
+    // aufbereitet (cuisineLabel), damit auch seltene Stile filterbar bleiben.
+    const CUISINE_LABELS = {
+      pizza: "Pizza", italian: "Italienisch", pasta: "Pasta",
+      kebab: "Kebab & Döner", doner: "Döner", shawarma: "Shawarma",
+      falafel: "Falafel", turkish: "Türkisch", arab: "Arabisch",
+      lebanese: "Libanesisch", syrian: "Syrisch", persian: "Persisch",
+      oriental: "Orientalisch", moroccan: "Marokkanisch",
+      burger: "Burger", american: "Amerikanisch", steak_house: "Steakhaus",
+      barbecue: "Grill & BBQ", chicken: "Hähnchen", wings: "Chicken Wings",
+      hot_dog: "Hot Dog", sandwich: "Sandwich", bagel: "Bagel", wrap: "Wrap",
+      german: "Deutsch", regional: "Regional", bavarian: "Bayerisch",
+      swabian: "Schwäbisch", franconian: "Fränkisch", austrian: "Österreichisch",
+      swiss: "Schweizerisch", schnitzel: "Schnitzel", sausage: "Wurst",
+      currywurst: "Currywurst", potato: "Kartoffelgerichte",
+      asian: "Asiatisch", chinese: "Chinesisch", thai: "Thailändisch",
+      vietnamese: "Vietnamesisch", japanese: "Japanisch", sushi: "Sushi",
+      ramen: "Ramen", korean: "Koreanisch", indian: "Indisch",
+      pakistani: "Pakistanisch", curry: "Curry", noodle: "Nudelgerichte",
+      indonesian: "Indonesisch", filipino: "Philippinisch",
+      greek: "Griechisch", balkan: "Balkan", croatian: "Kroatisch",
+      serbian: "Serbisch", bosnian: "Bosnisch", hungarian: "Ungarisch",
+      polish: "Polnisch", russian: "Russisch", ukrainian: "Ukrainisch",
+      spanish: "Spanisch", tapas: "Tapas", portuguese: "Portugiesisch",
+      french: "Französisch", crepe: "Crêpes", mediterranean: "Mediterran",
+      european: "Europäisch", international: "International", fusion: "Fusion",
+      mexican: "Mexikanisch", tex_mex: "Tex-Mex",
+      latin_american: "Lateinamerikanisch", brazilian: "Brasilianisch",
+      argentinian: "Argentinisch", peruvian: "Peruanisch",
+      african: "Afrikanisch", ethiopian: "Äthiopisch", egyptian: "Ägyptisch",
+      caribbean: "Karibisch",
+      fish: "Fisch", seafood: "Meeresfrüchte", fish_and_chips: "Fish & Chips",
+      friture: "Pommes & Frittiertes", snack: "Snacks", buffet: "Buffet",
+      salad: "Salate", soup: "Suppen", bowl: "Bowls", poke: "Poke Bowls",
+      vegetarian: "Vegetarisch", vegan: "Vegan",
+      breakfast: "Frühstück", brunch: "Brunch", cake: "Kuchen",
+      dessert: "Dessert", ice_cream: "Eis", waffle: "Waffeln",
+      donut: "Donuts", coffee_shop: "Café", tea: "Tee",
+      bubble_tea: "Bubble Tea", juice: "Saft", beer: "Bier", wine: "Wein",
+      pub: "Pub", bar: "Bar", local: "Lokale Küche",
+    };
+
+    // "ice_cream" -> "Ice Cream" als Rückfall für nicht übersetzte Werte.
+    function cuisineLabel(key) {
+      return CUISINE_LABELS[key] ||
+        key.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    }
+
+    function cuisinesOf(r) {
+      return Array.isArray(r.cuisines) ? r.cuisines : [];
+    }
+
+    // Auswahlliste aus den tatsächlich vorhandenen Werten bauen (häufigste
+    // zuerst, mit Anzahl). Ohne getaggte Küchenstile bleibt der Filter versteckt.
+    function buildCuisineOptions() {
+      const counts = new Map();
+      for (const r of restaurants) {
+        for (const key of cuisinesOf(r)) {
+          counts.set(key, (counts.get(key) || 0) + 1);
+        }
+      }
+      if (!counts.size) {
+        $cuisine.hidden = true;
+        return;
+      }
+      const entries = [...counts.entries()].sort((a, b) =>
+        b[1] - a[1] || cuisineLabel(a[0]).localeCompare(cuisineLabel(b[0]), "de")
+      );
+      for (const [key, n] of entries) {
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = `${cuisineLabel(key)} (${n})`;
+        $cuisine.appendChild(opt);
+      }
+      $cuisine.hidden = false;
     }
 
     // OSM-Wochentags-/Sonderkürzel -> deutsche Kürzel.
@@ -435,6 +526,11 @@
     function popupHtml(r) {
       let html = `<div class="popup-name">${esc(r.name)}</div>`;
       html += `<div class="popup-addr">${esc(r.address)}</div>`;
+      const cuisines = cuisinesOf(r);
+      if (cuisines.length) {
+        html += `<div class="popup-cuisine"><span class="label">🍽️ Küche:</span> ` +
+                `${esc(cuisines.map(cuisineLabel).join(", "))}</div>`;
+      }
       if (r.delivery === true) {
         html += `<span class="badge badge-delivery">✔ Lieferservice</span>`;
       } else if (r.delivery === false) {
@@ -483,6 +579,7 @@
       const q = $search.value.trim().toLowerCase();
       const onlyDelivery = $onlyDelivery.checked;
       const onlyOpen = $onlyOpen.checked;
+      const cuisine = $cuisine.value;
       layer.clearLayers();
       let shown = 0;
 
@@ -491,8 +588,16 @@
         if (onlyDelivery && r.delivery !== true) continue;
         // Filter „nur jetzt geöffnet": nur sicher offene zeigen (unbekannt fällt raus).
         if (onlyOpen && !(r.openingHours && openStateNow(r.openingHours) === true)) continue;
+        // Küchenstil: ungetaggte Restaurants fallen bei aktivem Filter heraus –
+        // die Abdeckung ist lückenhaft, „unbekannt" ist kein Treffer.
+        if (cuisine && !cuisinesOf(r).includes(cuisine)) continue;
         if (q) {
-          const hay = ((r.name || "") + " " + (r.address || "")).toLowerCase();
+          // Küchenstil mitsuchen, damit „thai"/„Italienisch" auch über das
+          // Suchfeld funktioniert – in Schlüssel- und Klartextform.
+          const styles = cuisinesOf(r);
+          const hay = ((r.name || "") + " " + (r.address || "") + " " +
+                       styles.join(" ") + " " +
+                       styles.map(cuisineLabel).join(" ")).toLowerCase();
           if (!hay.includes(q)) continue;
         }
         L.marker([r.lat, r.lng]).bindPopup(popupHtml(r)).addTo(layer);
@@ -524,6 +629,7 @@
     $search.addEventListener("input", render);
     $onlyDelivery.addEventListener("change", render);
     $onlyOpen.addEventListener("change", render);
+    $cuisine.addEventListener("change", render);
 
     // Meldelink: Text in die Zwischenablage kopieren, dann OSM-Notiz öffnen.
     // Kein preventDefault -> der Link öffnet den OSM-Editor wie gewohnt im neuen Tab.
@@ -550,6 +656,7 @@
       .then(data => {
         restaurants = data.restaurants || [];
         $loading.remove();
+        buildCuisineOptions();
         if (data.lastScanAt) {
           const d = new Date(data.lastScanAt);
           const when = isNaN(d) ? data.lastScanAt : d.toLocaleDateString("de-DE");

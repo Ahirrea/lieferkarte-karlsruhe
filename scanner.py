@@ -87,6 +87,7 @@ def init_db(conn):
             delivery        INTEGER,          -- 1/0/NULL (NULL = unbekannt / nicht getaggt) -- Lieferung
             takeaway        INTEGER,          -- 1/0/NULL (NULL = unbekannt / nicht getaggt) -- Abholung
             opening_hours   TEXT,             -- OSM-Tag opening_hours (Rohtext, NULL = nicht getaggt)
+            cuisine         TEXT,             -- Küchenstil, normalisiert & ";"-getrennt (NULL = nicht getaggt)
             business_status TEXT,
             active          INTEGER NOT NULL DEFAULT 1,   -- 0 = als REMOVED markiert
             first_seen      TEXT NOT NULL,
@@ -111,13 +112,15 @@ def init_db(conn):
         );
         """
     )
-    # Migration: Spalte takeaway zu bestehenden DBs ergänzen (CREATE TABLE
-    # IF NOT EXISTS legt sie in Alt-DBs nicht nachträglich an).
+    # Migration: nachträglich ergänzte Spalten in bestehende DBs einziehen
+    # (CREATE TABLE IF NOT EXISTS legt sie in Alt-DBs nicht nachträglich an).
     cols = {row[1] for row in conn.execute("PRAGMA table_info(restaurants)")}
     if "takeaway" not in cols:
         conn.execute("ALTER TABLE restaurants ADD COLUMN takeaway INTEGER")
     if "opening_hours" not in cols:
         conn.execute("ALTER TABLE restaurants ADD COLUMN opening_hours TEXT")
+    if "cuisine" not in cols:
+        conn.execute("ALTER TABLE restaurants ADD COLUMN cuisine TEXT")
     conn.commit()
 
 
@@ -196,6 +199,34 @@ def _osm_yesno(val):
     return None
 
 
+# Werte im cuisine-Tag, die keinen Küchenstil benennen und deshalb wegfallen.
+CUISINE_JUNK = {"yes", "no", "none", "unknown", "fixme", "other", "*"}
+
+
+def _osm_cuisine(val):
+    """OSM-Tag ``cuisine`` in eine kanonische Liste normalisieren.
+
+    OSM erlaubt mehrere Küchenstile in einem Tag, getrennt durch ``;``
+    (gelegentlich auch durch ``,``), in beliebiger Schreibweise:
+    ``pizza;italian``, ``Pizza; Kebab``, ``ice cream``, ``coffee-shop``.
+
+    Ergebnis ist ein ``;``-getrennter String aus kleingeschriebenen Schlüsseln
+    mit ``_`` statt Leerzeichen/Bindestrich (``"pizza;italian"``,
+    ``"ice_cream"``) – oder ``None``, wenn nichts Verwertbares übrig bleibt
+    (= nicht getaggt / unbekannt). Die Reihenfolge aus OSM bleibt erhalten,
+    Dubletten fallen weg.
+    """
+    if not val:
+        return None
+    keys = []
+    for part in str(val).replace(",", ";").split(";"):
+        key = "_".join(part.replace("-", " ").replace("_", " ").lower().split())
+        if not key or key in CUISINE_JUNK or key in keys:
+            continue
+        keys.append(key)
+    return ";".join(keys) or None
+
+
 def normalize_osm(el):
     """OSM-Element in ein flaches Dict umwandeln."""
     tags = el.get("tags", {})
@@ -215,6 +246,7 @@ def normalize_osm(el):
         "delivery": _osm_yesno(tags.get("delivery")),   # Lieferung
         "takeaway": _osm_yesno(tags.get("takeaway")),   # Abholung
         "opening_hours": tags.get("opening_hours"),      # Öffnungszeiten (Rohtext)
+        "cuisine": _osm_cuisine(tags.get("cuisine")),    # Küchenstil (normalisiert)
         "business_status": None,   # OSM kennt kein Google-"businessStatus"
     }
 
@@ -249,11 +281,11 @@ def sync_places(conn, places, mode, scan_ts):
             conn.execute(
                 "INSERT INTO restaurants"
                 " (place_id, name, address, lat, lng, website, delivery, takeaway,"
-                "  opening_hours, business_status, active, first_seen, last_seen)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
+                "  opening_hours, cuisine, business_status, active, first_seen, last_seen)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
                 (pid, p["name"], p["address"], p["lat"], p["lng"], p["website"],
                  p["delivery"], p.get("takeaway"), p.get("opening_hours"),
-                 p["business_status"], scan_ts, scan_ts),
+                 p.get("cuisine"), p["business_status"], scan_ts, scan_ts),
             )
             log_change(conn, pid, "NEW", None, p["name"], scan_ts)
             continue
@@ -280,17 +312,21 @@ def sync_places(conn, places, mode, scan_ts):
             log_change(conn, pid, "TAKEAWAY_CHANGED",
                        _delivery_str(old_takeaway), _delivery_str(new_takeaway), scan_ts)
 
+        # Küchenstil (cuisine) wird bewusst NICHT protokolliert: Umtaggen in OSM
+        # (z. B. "pizza" -> "pizza;italian") ist häufig und für den
+        # Änderungs-Feed ohne Aussagekraft – der aktuelle Wert genügt.
+
         # Wiederauferstehung: war als REMOVED markiert, jetzt wieder da
         if old_active == 0:
             log_change(conn, pid, "NEW", None, p["name"], scan_ts)
 
         conn.execute(
             "UPDATE restaurants SET name=?, address=?, lat=?, lng=?, website=?,"
-            " delivery=?, takeaway=?, opening_hours=?, business_status=?, active=1,"
-            " last_seen=? WHERE place_id=?",
+            " delivery=?, takeaway=?, opening_hours=?, cuisine=?, business_status=?,"
+            " active=1, last_seen=? WHERE place_id=?",
             (p["name"], p["address"], p["lat"], p["lng"], p["website"],
              p["delivery"], new_takeaway, p.get("opening_hours"),
-             p["business_status"], scan_ts, pid),
+             p.get("cuisine"), p["business_status"], scan_ts, pid),
         )
 
     # REMOVED-Erkennung nur im Voll-Scan.

@@ -55,11 +55,44 @@ class OsmAddressTest(unittest.TestCase):
         self.assertIsNone(scanner._osm_address({}))
 
 
+class OsmCuisineTest(unittest.TestCase):
+    """cuisine-Tag: Mehrfachwerte normalisieren, Müll verwerfen."""
+
+    def test_einzelwert_wird_kleingeschrieben(self):
+        self.assertEqual(scanner._osm_cuisine("Pizza"), "pizza")
+
+    def test_mehrere_werte_bleiben_semikolon_getrennt(self):
+        self.assertEqual(scanner._osm_cuisine("pizza;italian"), "pizza;italian")
+
+    def test_leerzeichen_und_grossschreibung_werden_normalisiert(self):
+        self.assertEqual(scanner._osm_cuisine(" Pizza ; Kebab "), "pizza;kebab")
+
+    def test_komma_gilt_auch_als_trenner(self):
+        self.assertEqual(scanner._osm_cuisine("burger, american"), "burger;american")
+
+    def test_leerzeichen_und_bindestrich_werden_unterstrich(self):
+        self.assertEqual(scanner._osm_cuisine("Ice Cream"), "ice_cream")
+        self.assertEqual(scanner._osm_cuisine("coffee-shop"), "coffee_shop")
+
+    def test_dubletten_fallen_weg_reihenfolge_bleibt(self):
+        self.assertEqual(scanner._osm_cuisine("pizza;Pizza;italian"), "pizza;italian")
+
+    def test_nichtssagende_werte_werden_verworfen(self):
+        self.assertIsNone(scanner._osm_cuisine("yes"))
+        self.assertEqual(scanner._osm_cuisine("yes;thai"), "thai")
+
+    def test_ungetaggt_oder_leer_ist_none(self):
+        self.assertIsNone(scanner._osm_cuisine(None))
+        self.assertIsNone(scanner._osm_cuisine(""))
+        self.assertIsNone(scanner._osm_cuisine(";;"))
+
+
 class NormalizeOsmTest(unittest.TestCase):
     def test_node_mit_direkten_koordinaten(self):
         el = {"type": "node", "id": 12345, "lat": 49.01, "lon": 8.40,
               "tags": {"name": "Testpizzeria", "delivery": "yes",
-                       "takeaway": "no", "opening_hours": "Mo-Su 11:00-22:00"}}
+                       "takeaway": "no", "opening_hours": "Mo-Su 11:00-22:00",
+                       "cuisine": "Pizza;italian"}}
         norm = scanner.normalize_osm(el)
         self.assertEqual(norm["place_id"], "node/12345")
         self.assertEqual(norm["name"], "Testpizzeria")
@@ -68,6 +101,7 @@ class NormalizeOsmTest(unittest.TestCase):
         self.assertEqual(norm["delivery"], 1)
         self.assertEqual(norm["takeaway"], 0)
         self.assertEqual(norm["opening_hours"], "Mo-Su 11:00-22:00")
+        self.assertEqual(norm["cuisine"], "pizza;italian")
 
     def test_way_nutzt_center_koordinaten(self):
         el = {"type": "way", "id": 777, "center": {"lat": 48.99, "lon": 8.45},
@@ -83,6 +117,7 @@ class NormalizeOsmTest(unittest.TestCase):
         norm = scanner.normalize_osm(el)
         self.assertIsNone(norm["delivery"])
         self.assertIsNone(norm["takeaway"])
+        self.assertIsNone(norm["cuisine"])
 
     def test_website_fallback_auf_contact_website(self):
         el = {"type": "node", "id": 2, "lat": 49.0, "lon": 8.4,
@@ -111,6 +146,11 @@ class SyncPlacesTest(unittest.TestCase):
     def _active(self, pid):
         return self.conn.execute(
             "SELECT active FROM restaurants WHERE place_id = ?", (pid,)
+        ).fetchone()[0]
+
+    def _cuisine(self, pid):
+        return self.conn.execute(
+            "SELECT cuisine FROM restaurants WHERE place_id = ?", (pid,)
         ).fetchone()[0]
 
     def test_neues_restaurant_loggt_new(self):
@@ -172,6 +212,18 @@ class SyncPlacesTest(unittest.TestCase):
         types = [c[1] for c in self._changes()]
         self.assertIn("TAKEAWAY_CHANGED", types)
 
+    def test_cuisine_wird_gespeichert_und_aktualisiert(self):
+        scanner.sync_places(self.conn, [make_place("node/1", cuisine="pizza")],
+                            "full", TS1)
+        self.assertEqual(self._cuisine("node/1"), "pizza")
+        scanner.sync_places(self.conn,
+                            [make_place("node/1", cuisine="pizza;italian")],
+                            "full", TS2)
+        self.assertEqual(self._cuisine("node/1"), "pizza;italian")
+        # Küchenstil ist bewusst kein Änderungstyp im Protokoll.
+        types = [c[1] for c in self._changes()]
+        self.assertEqual(types, ["NEW"])
+
     def test_adressaenderung_wird_geloggt(self):
         scanner.sync_places(self.conn, [make_place("node/1")], "full", TS1)
         scanner.sync_places(
@@ -183,6 +235,48 @@ class SyncPlacesTest(unittest.TestCase):
             "SELECT new_value FROM changes WHERE change_type = 'ADDRESS_CHANGED'"
         ).fetchone()
         self.assertEqual(row[0], "Neue Straße 9, 76133 Karlsruhe")
+
+
+class MigrationTest(unittest.TestCase):
+    """Nachträglich ergänzte Spalten müssen in Alt-DBs eingezogen werden."""
+
+    # Schema vor den Spalten takeaway/opening_hours/cuisine.
+    ALT_SCHEMA = """
+        CREATE TABLE restaurants (
+            place_id        TEXT PRIMARY KEY,
+            name            TEXT,
+            address         TEXT,
+            lat             REAL,
+            lng             REAL,
+            website         TEXT,
+            delivery        INTEGER,
+            business_status TEXT,
+            active          INTEGER NOT NULL DEFAULT 1,
+            first_seen      TEXT NOT NULL,
+            last_seen       TEXT NOT NULL
+        );
+    """
+
+    def test_alte_db_erhaelt_neue_spalten_und_bleibt_nutzbar(self):
+        conn = sqlite3.connect(":memory:")
+        self.addCleanup(conn.close)
+        conn.executescript(self.ALT_SCHEMA)
+        conn.execute(
+            "INSERT INTO restaurants (place_id, name, first_seen, last_seen)"
+            " VALUES ('node/alt', 'Altbestand', ?, ?)", (TS1, TS1))
+        conn.commit()
+
+        scanner.init_db(conn)
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(restaurants)")}
+        self.assertLessEqual({"takeaway", "opening_hours", "cuisine"}, cols)
+
+        # Nach der Migration lässt sich weiterhin scannen (inkl. cuisine).
+        scanner.sync_places(conn, [make_place("node/1", cuisine="thai")], "light", TS2)
+        self.assertEqual(
+            conn.execute("SELECT cuisine FROM restaurants WHERE place_id='node/1'")
+                .fetchone()[0],
+            "thai",
+        )
 
 
 class RunScanGuardTest(unittest.TestCase):

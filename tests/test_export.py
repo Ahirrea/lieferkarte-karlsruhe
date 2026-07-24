@@ -19,15 +19,16 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import export
 from tests.helpers import make_place, seed_db
 
-# Deckt alle drei Zustände von delivery/takeaway (true/false/null) und die
-# Sortierung unabhängig von Groß-/Kleinschreibung ab.
+# Deckt alle drei Zustände von delivery/takeaway (true/false/null), Küchenstile
+# (mehrfach/einfach/ungetaggt) und die Sortierung unabhängig von
+# Groß-/Kleinschreibung ab.
 FIXTURE_PLACES = [
     make_place("node/1", name="Zebra Grill", delivery=1, takeaway=1,
-               opening_hours="Mo-Su 11:00-22:00"),
-    make_place("node/2", name="alpha Pizza", delivery=0),
+               opening_hours="Mo-Su 11:00-22:00", cuisine="burger;american"),
+    make_place("node/2", name="alpha Pizza", delivery=0, cuisine="pizza"),
     make_place("node/3", name="Curry Eck", takeaway=0),
     make_place("node/4", name="Beta Sushi", delivery=1,
-               website="https://beta-sushi.example"),
+               website="https://beta-sushi.example", cuisine="sushi"),
 ]
 
 
@@ -74,6 +75,16 @@ class ExportTest(unittest.TestCase):
                          {True, False, None})
         self.assertEqual({r["takeaway"] for r in payload["restaurants"]},
                          {True, False, None})
+
+    def test_cuisines_sind_immer_eine_liste(self):
+        payload = self._export()
+        by_id = {r["placeId"]: r for r in payload["restaurants"]}
+        for r in payload["restaurants"]:
+            self.assertIsInstance(r["cuisines"], list)
+        # Mehrfachwert wird zur Liste, ungetaggt zur leeren Liste.
+        self.assertEqual(by_id["node/1"]["cuisines"], ["burger", "american"])
+        self.assertEqual(by_id["node/2"]["cuisines"], ["pizza"])
+        self.assertEqual(by_id["node/3"]["cuisines"], [])
 
     def test_entfernte_restaurants_werden_nicht_exportiert(self):
         conn = sqlite3.connect(self.db_path)

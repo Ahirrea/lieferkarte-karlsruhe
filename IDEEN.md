@@ -64,6 +64,55 @@ nicht nötig, da ~90 % der getaggten Fälle schon eindeutig auswertbar sind.
 
 ---
 
+## Filter nach Küchenstil (Pizza, Thai, Burger, …) ✅ **umgesetzt**
+
+**Ziel:** Die Karte nach Küchenstil filtern können und den Stil im Popup zeigen.
+
+**Datenquelle:** OSM-Tag `cuisine` – kommt beim Overpass-Scan kostenlos mit
+(der Query holt bereits alle Tags).
+
+**Umsetzung – Pipeline:**
+- `scanner.py`: `_osm_cuisine()` normalisiert das Tag, `normalize_osm()` liest es;
+  DB-Spalte `cuisine TEXT` inkl. Migration (`ALTER TABLE ADD COLUMN`, wie bei
+  `takeaway`/`opening_hours`).
+- `export.py`: Feld `cuisines` in `restaurants.json` – immer eine **Liste**
+  (`["pizza","italian"]`), leere Liste = nicht getaggt.
+- `web/index.html`: Auswahlliste „🍽️ Alle Küchen" im Kopf, Küchenzeile im Popup,
+  Küchenstil zusätzlich im Suchfeld auffindbar („thai", „Italienisch").
+
+**Normalisierung (der Haken):** `cuisine` ist ein Freitext-Tag mit Mehrfachwerten
+und wechselnder Schreibweise: `pizza;italian`, `Pizza; Kebab`, `burger, american`,
+`Ice Cream`, `coffee-shop`. `_osm_cuisine()` macht daraus eine kanonische,
+`;`-getrennte Liste aus kleingeschriebenen Schlüsseln mit `_` statt
+Leerzeichen/Bindestrich, verwirft Dubletten und nichtssagende Werte
+(`yes`, `no`, `unknown`, `fixme`, `other`). Die Reihenfolge aus OSM bleibt
+erhalten (der erste Wert ist meist der Hauptstil).
+
+**Deutsche Bezeichnungen** liegen bewusst im Frontend (`CUISINE_LABELS`), nicht in
+der DB: die DB bleibt roh und verlustfrei, Übersetzungen sind Anzeige-Sache. Für
+nicht übersetzte Werte greift ein Rückfall (`ice_cream` → „Ice Cream"), damit auch
+seltene Stile filterbar bleiben statt zu verschwinden.
+
+**Auswahlliste** baut sich aus den tatsächlich vorhandenen Werten – häufigste
+zuerst, mit Anzahl („Pizza (148)"). Ohne getaggte Küchenstile bleibt der Filter
+komplett versteckt; die Karte sieht damit unverändert aus, bis der nächste Scan
+die Werte einträgt. Bei aktivem Filter fallen ungetaggte Restaurants heraus
+(„unbekannt" ist kein Treffer – wie beim Lieferfilter).
+
+**Bewusst nicht gemacht:**
+- **Kein `CUISINE_CHANGED` im Änderungsprotokoll.** Umtaggen in OSM
+  (`pizza` → `pizza;italian`) ist häufig und für den geplanten Änderungs-Feed
+  ohne Aussagekraft – der aktuelle Wert genügt.
+- **Keine Synonym-Gruppierung** (`sushi` unter `japanese`, `doner` unter `kebab`).
+  Das wäre Interpretation der OSM-Daten; die Liste zeigt, was getaggt ist. Falls
+  die Auswahl später zu lang wirkt, ist Gruppieren der nächste Schritt.
+
+**Abdeckung:** noch nicht gemessen – die Spalte ist erst nach dem nächsten
+Voll-Scan gefüllt. Zum Nachzählen dann:
+`SELECT cuisine, COUNT(*) FROM restaurants WHERE active=1 GROUP BY cuisine ORDER BY 2 DESC;`
+
+---
+
 ## Weitere offene Punkte
 
 - **Lieferung/Abholung filtern:** Details + echte Abdeckungszahlen stehen in
