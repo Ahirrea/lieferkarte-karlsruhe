@@ -101,7 +101,7 @@ die Werte einträgt. Bei aktivem Filter fallen ungetaggte Restaurants heraus
 
 **Bewusst nicht gemacht:**
 - **Kein `CUISINE_CHANGED` im Änderungsprotokoll.** Umtaggen in OSM
-  (`pizza` → `pizza;italian`) ist häufig und für den geplanten Änderungs-Feed
+  (`pizza` → `pizza;italian`) ist häufig und für den Änderungs-Feed
   ohne Aussagekraft – der aktuelle Wert genügt.
 - **Keine Synonym-Gruppierung** (`sushi` unter `japanese`, `doner` unter `kebab`).
   Das wäre Interpretation der OSM-Daten; die Liste zeigt, was getaggt ist. Falls
@@ -110,6 +110,40 @@ die Werte einträgt. Bei aktivem Filter fallen ungetaggte Restaurants heraus
 **Abdeckung:** noch nicht gemessen – die Spalte ist erst nach dem nächsten
 Voll-Scan gefüllt. Zum Nachzählen dann:
 `SELECT cuisine, COUNT(*) FROM restaurants WHERE active=1 GROUP BY cuisine ORDER BY 2 DESC;`
+---
+
+## Änderungs-Feed („Diese Woche neu …") ✅ **umgesetzt**
+
+**Ziel:** Zeigen, was sich seit dem letzten Scan geändert hat – neue
+Restaurants, verschwundene, geänderte Liefer-/Abhol-/Adressangaben.
+
+> **Stand:** umgesetzt. `export.py` (`build_feed()`) schreibt den Block `feed`
+> nach `web/restaurants.json`, `web/index.html` zeigt ihn über den Knopf
+> „🆕 Diese Woche" in einem Panel – gruppiert nach Änderungsart, ein Klick
+> zentriert die Karte auf das Restaurant und öffnet das Popup (auch wenn der
+> Marker gerade weggefiltert ist). Feldbeschreibung: `TECHNICAL.md`.
+
+**Datenquelle:** die `changes`-Tabelle, die `scanner.py` ohnehin bei jedem Scan
+füllt – es war also reine Export- + Anzeigearbeit, kein neuer Request.
+
+**Die drei Haken (so gelöst):**
+
+1. **Der Erstimport ist keine Neuigkeit.** Der allererste Scan protokolliert
+   *jedes* gefundene Restaurant als `NEW` (hier: 883 Zeilen). Ungefiltert hätte
+   der Feed „883 neu diese Woche" gemeldet. Der Feed blendet daher alles aus,
+   was am Zeitstempel des ersten `scan_runs`-Eintrags protokolliert wurde.
+2. **Massen-Ereignisse.** Kommt ein Feld neu in die Pipeline, ändern sich auf
+   einen Schlag hunderte Werte (bei `takeaway`: 245 × „unbekannt → ja"). Pro
+   Änderungsart landen deshalb nur `FEED_MAX_PER_TYPE` Einträge in der JSON;
+   die vollständige Zahl steht in `counts`, die Anzeige ergänzt „… und N
+   weitere".
+3. **Zeitfenster ab Scan, nicht ab „jetzt".** Sonst wäre der Feed leer, sobald
+   der Export einmal Tage nach dem Scan läuft (oder die Seite länger nicht neu
+   gebaut wurde). Anker ist der jüngste `scan_runs`-Zeitstempel.
+
+**Bewusst nicht gemacht:** „neu" heißt *neu in OpenStreetMap erfasst*, nicht
+„neu eröffnet" – das lässt sich aus OSM-Daten nicht unterscheiden. Ein Hinweis
+dazu steht im Panel, statt eine Aussage zu treffen, die die Daten nicht tragen.
 
 ---
 

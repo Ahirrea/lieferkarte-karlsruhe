@@ -82,6 +82,49 @@ nötig wird:
 export OVERPASS_ENDPOINT="https://overpass.kumi.systems/api/interpreter"
 ```
 
+## Änderungs-Feed („Diese Woche neu …")
+
+`export.py` schreibt neben dem Bestand zwei Sichten auf die `changes`-Tabelle
+nach `web/restaurants.json`:
+
+- **`recentChanges`** – die rohen letzten `RECENT_CHANGES_LIMIT` (50) Zeilen,
+  ungefiltert. Nur zur Kontrolle/Fehlersuche, wird nicht angezeigt.
+- **`feed`** – die anzeigefertige Sicht (`build_feed()`), die
+  `web/index.html` im Panel „🆕 Diese Woche" darstellt:
+
+```json
+"feed": {
+  "since": "2026-07-14T16:07:05+00:00",   // Fensterbeginn
+  "until": "2026-07-21T16:07:05+00:00",   // Anker = jüngster Scan
+  "windowDays": 7,
+  "total": 245,                            // Änderungen im Fenster (ungekappt)
+  "counts": { "NEW": 3, "TAKEAWAY_CHANGED": 242 },
+  "items": [
+    { "placeId": "node/123", "type": "NEW", "name": "…", "address": "…",
+      "lat": 49.0, "lng": 8.4, "oldValue": null, "newValue": "…",
+      "detectedAt": "2026-07-21T16:07:05+00:00", "active": true }
+  ]
+}
+```
+
+Drei Regeln, die dabei absichtlich so sind:
+
+1. **Zeitfenster ab dem letzten Scan** (`FEED_WINDOW_DAYS = 7`), nicht ab
+   „jetzt" – sonst wäre der Feed leer, wenn der Export Tage nach dem Scan läuft.
+2. **Der Erstimport bleibt draußen.** Der erste Scan protokolliert jedes
+   Restaurant als `NEW`; alles mit dem Zeitstempel des ersten
+   `scan_runs`-Eintrags wird ausgeblendet (sonst „883 neu diese Woche").
+3. **Pro Änderungsart max. `FEED_MAX_PER_TYPE` (12) Einträge** in `items` –
+   `counts` nennt trotzdem die vollständige Zahl, die Anzeige ergänzt „… und N
+   weitere". Hält die JSON klein, wenn ein Massen-Ereignis auftritt (z. B. 245
+   neu getaggte `takeaway`-Werte auf einen Schlag).
+
+Die Einträge sind mit Name/Adresse/Koordinaten aus `restaurants` angereichert
+(LEFT JOIN), damit die Karte sie anspringen kann – auch `REMOVED`-Einträge, die
+in `restaurants` nur noch mit `active = 0` stehen und im Bestands-Export fehlen.
+`items` ist nach Änderungsart gruppiert (Reihenfolge: `FEED_TYPE_ORDER`),
+innerhalb einer Gruppe neueste zuerst.
+
 ## Kostenübersicht
 
 **0 €.** Die Overpass-API ist kostenlos und ohne API-Key nutzbar. Ein Scan =

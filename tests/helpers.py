@@ -37,16 +37,20 @@ def make_place(pid, **overrides):
     return place
 
 
-def seed_db(db_path, places, ts=TS1):
-    """Temp-DB anlegen und per Voll-Scan-Semantik mit ``places`` befüllen."""
+def seed_db(db_path, places, ts=TS1, mode="full"):
+    """Temp-DB anlegen und einen Scan mit ``places`` simulieren.
+
+    Mehrfach aufrufbar (``init_db`` ist idempotent): so lassen sich
+    aufeinanderfolgende Scans – und damit Änderungen – nachstellen.
+    """
     conn = sqlite3.connect(db_path)
     try:
         scanner.init_db(conn)
-        scanner.sync_places(conn, places, "full", ts)
+        scanner.sync_places(conn, places, mode, ts)
         conn.execute(
             "INSERT INTO scan_runs (started_at, mode, api_calls, places_found)"
-            " VALUES (?, 'full', 1, ?)",
-            (ts, len(places)),
+            " VALUES (?, ?, 1, ?)",
+            (ts, mode, len(places)),
         )
         conn.commit()
     finally:

@@ -12,6 +12,7 @@ Statt durch Wolt, Uber Eats oder anderen Apps zu bestellen (die Restaurants oft 
 - Übersichtliche Karte statt App-Chaos
 - Direkt beim Restaurant bestellen, keine Provisionen
 - Filter nach Stadtteil, Öffnungszeiten, Lieferstatus und Küchenstil
+- „🆕 Diese Woche": was seit dem letzten Scan neu ist oder sich geändert hat
 - Jede Woche aktualisiert
 
 **Für Restaurants:**
@@ -105,12 +106,12 @@ Details & Specs siehe [`IDEEN.md`](IDEEN.md).
   durch die komplette Pipeline (siehe `IDEEN.md`). Die Auswahlliste baut sich aus
   den vorhandenen Daten und bleibt versteckt, solange kein Restaurant getaggt
   ist – die Werte füllt der nächste wöchentliche Scan.
+- [x] Änderungs-Feed („Diese Woche neu …") – Knopf „🆕 Diese Woche" öffnet die
+  Änderungen der letzten sieben Tage, gruppiert nach Art; ein Klick springt zum
+  Restaurant auf der Karte (siehe `IDEEN.md`)
 
-**Offen – sortiert nach Aufwand (aufsteigend):**
+**Offen:**
 
-- [ ] **Änderungs-Feed („Diese Woche neu …")** *(klein–mittel)* – die
-  `changes`-Tabelle wird bereits bei jedem Scan gefüllt; es fehlen nur Export
-  nach JSON und die Anzeige auf der Seite.
 - [ ] **PWA (zum Homescreen hinzufügen)** *(mittel)* – Manifest, Icons, Service
   Worker inkl. Update-Strategie für die wöchentlich neuen Daten.
 
