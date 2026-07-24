@@ -6,6 +6,19 @@
   <title>Lieferkarte Karlsruhe – Restaurants mit eigenem Lieferservice</title>
   <meta name="description" content="Restaurants in Karlsruhe mit eigenem Lieferservice – direkt bestellen, ohne Provisions-Plattformen. Keine Cookies, kein Tracking.">
 
+  <!-- PWA: installierbar („zum Homescreen hinzufügen"), offline nutzbar.
+       Gecacht wird nur im Browser – kein Tracking, keine Datenübertragung. -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#d64541">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <!-- iOS kennt kein Manifest-`display` – dort steuern diese Meta-Tags den
+       Vollbildmodus und den Namen unter dem Homescreen-Icon. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Lieferkarte">
+
   <!-- Leaflet (Kartenbibliothek, BSD-2-Clause) -->
   <link rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -167,6 +180,53 @@
         max-height: 55vh;
       }
     }
+    /* Installations-Button: nur sichtbar, wenn Installieren möglich ist. */
+    .controls button#install {
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .controls button#install:hover { background: #fdf0ef; }
+    /* Hinweisleiste unter dem Kopf: Update verfügbar, Offline-Datenstand,
+       Installations-Anleitung für iOS. */
+    .banner {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #fff8e6;
+      border-bottom: 1px solid #f0e2bd;
+      padding: 0.45rem 1rem;
+      font-size: 0.82rem;
+      color: #6b5a1f;
+    }
+    .banner[hidden] { display: none; }
+    .banner .banner-text { flex: 1 1 auto; }
+    .banner button {
+      border: 1px solid #d9c68f;
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .banner button:hover { background: #fdf7e6; }
+    .banner .banner-close {
+      border: 0;
+      background: none;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0 0.2rem;
+      color: #6b5a1f;
+    }
+    .banner .banner-close:hover { background: none; color: var(--accent); }
+    /* Als installierte App: Platz für Statusleiste/Home-Indikator freihalten. */
+    @media (display-mode: standalone) {
+      header { padding-top: calc(0.6rem + env(safe-area-inset-top)); }
+      footer { padding-bottom: calc(0.4rem + env(safe-area-inset-bottom)); }
+    }
     .popup-name { font-weight: 600; font-size: 1rem; margin-bottom: 0.15rem; }
     .popup-addr { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.4rem; }
     .popup-cuisine { font-size: 0.82rem; color: var(--text); margin-bottom: 0.4rem; }
@@ -261,9 +321,18 @@
       <button id="feedToggle" type="button" aria-expanded="false" aria-controls="feed" hidden>
         🆕 Diese Woche<span class="pill" id="feedPill" hidden></span>
       </button>
+      <!-- Wird nur eingeblendet, wenn der Browser das Installieren anbietet
+           (bzw. auf iOS, wo es die Anleitung dazu zeigt). -->
+      <button id="install" type="button" hidden>📲 App installieren</button>
       <span class="count" id="count"></span>
     </div>
   </header>
+
+  <div class="banner" id="banner" hidden>
+    <span class="banner-text" id="bannerText"></span>
+    <button type="button" id="bannerAction" hidden></button>
+    <button type="button" class="banner-close" id="bannerClose" aria-label="Hinweis schließen" title="Hinweis schließen">×</button>
+  </div>
 
   <div id="map">
     <div class="loading" id="loading">Lade Restaurants …</div>
@@ -825,7 +894,7 @@
       $count.textContent = `${shown} von ${restaurants.length} angezeigt`;
     }
 
-    document.getElementById("nearMe").addEventListener("click", () => {
+    function locateMe() {
       if (!navigator.geolocation) {
         alert("Geolocation wird von deinem Browser nicht unterstützt.");
         return;
@@ -843,7 +912,9 @@
         () => alert("Standort konnte nicht ermittelt werden (Erlaubnis verweigert?)."),
         { enableHighAccuracy: true, timeout: 8000 }
       );
-    });
+    }
+
+    document.getElementById("nearMe").addEventListener("click", locateMe);
 
     $search.addEventListener("input", render);
     $onlyDelivery.addEventListener("change", render);
@@ -867,9 +938,35 @@
       }
     });
 
+    // ---- Hinweisleiste (Update, Offline-Datenstand, Installations-Anleitung) ----
+    const $banner = document.getElementById("banner");
+    const $bannerText = document.getElementById("bannerText");
+    const $bannerAction = document.getElementById("bannerAction");
+
+    function showBanner(text, actionLabel, onAction) {
+      $bannerText.textContent = text;
+      if (actionLabel && onAction) {
+        $bannerAction.textContent = actionLabel;
+        $bannerAction.hidden = false;
+        $bannerAction.onclick = onAction;
+      } else {
+        $bannerAction.hidden = true;
+        $bannerAction.onclick = null;
+      }
+      $banner.hidden = false;
+    }
+    document.getElementById("bannerClose").addEventListener("click", () => {
+      $banner.hidden = true;
+    });
+
+    // ---- Restaurantdaten laden ----
+    // `no-store`: kein HTTP-Cache. Ohne Netz antwortet der Service Worker mit
+    // seiner Kopie und markiert das per Header – dann kommt der Offline-Hinweis.
+    let fromCache = false;
     fetch("restaurants.json", { cache: "no-store" })
       .then(res => {
         if (!res.ok) throw new Error("HTTP " + res.status);
+        fromCache = res.headers.get("X-Lieferkarte-Cache") === "hit";
         return res.json();
       })
       .then(data => {
@@ -879,16 +976,120 @@
         buildCuisineOptions();
         // Älteres restaurants.json (noch ohne `feed`): Knopf bleibt versteckt.
         if (data.feed) renderFeed(data.feed);
+        let when = null;
         if (data.lastScanAt) {
           const d = new Date(data.lastScanAt);
-          const when = isNaN(d) ? data.lastScanAt : d.toLocaleDateString("de-DE");
+          when = isNaN(d) ? data.lastScanAt : d.toLocaleDateString("de-DE");
           $meta.textContent = `${data.count} Restaurants · zuletzt aktualisiert am ${when}`;
+        }
+        if (fromCache) {
+          showBanner("📴 Offline – gespeicherte Daten" +
+                     (when ? ` vom ${when}` : "") +
+                     ". Sobald wieder Netz da ist, wird automatisch aktualisiert.");
         }
         render();
       })
       .catch(err => {
         $loading.textContent = "Konnte Restaurantdaten nicht laden (" + err.message + ").";
       });
+
+    // ---- Startparameter (App-Verknüpfungen aus dem Manifest) ----
+    // "?open=1" -> direkt mit dem Filter „nur jetzt geöffnet" starten,
+    // "?nearby=1" -> direkt den Standort abfragen.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("open") === "1") {
+      $onlyOpen.checked = true;
+      render();
+    }
+    if (params.get("nearby") === "1") locateMe();
+
+    // ---- PWA: Service Worker + Installation ------------------------------
+    // Der Service Worker cacht ausschließlich lokal im Browser (Karte, Icons,
+    // Restaurantdaten) – kein Tracking, nichts wird übertragen. Details zur
+    // Update-Strategie stehen in sw.js.
+    const isStandalone = () =>
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true;
+
+    if ("serviceWorker" in navigator) {
+      let updateAccepted = false;
+
+      // Nur nach einem bewusst angenommenen Update neu laden. Beim allerersten
+      // Besuch übernimmt der Worker ebenfalls die Kontrolle (clients.claim) –
+      // dann wäre ein Reload überflüssig und irritierend.
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (updateAccepted) window.location.reload();
+      });
+
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").then(reg => {
+          const offerUpdate = (worker) => {
+            showBanner("🔄 Neue Version verfügbar.", "Jetzt neu laden", () => {
+              updateAccepted = true;
+              $banner.hidden = true;
+              worker.postMessage({ type: "SKIP_WAITING" });
+            });
+          };
+
+          // Update lag schon bereit, als die Seite geladen wurde.
+          if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg.waiting);
+
+          reg.addEventListener("updatefound", () => {
+            const worker = reg.installing;
+            if (!worker) return;
+            worker.addEventListener("statechange", () => {
+              // `controller` vorhanden = es gab schon eine Version, also ein
+              // echtes Update (und nicht die Erstinstallation).
+              if (worker.state === "installed" && navigator.serviceWorker.controller) {
+                offerUpdate(worker);
+              }
+            });
+          });
+
+          // Bei der Rückkehr zur App nach Updates sehen – wichtig, weil eine
+          // installierte App oft wochenlang nicht neu geladen wird, die Daten
+          // aber wöchentlich neu sind.
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") reg.update().catch(() => {});
+          });
+        }).catch(() => {
+          /* Ohne Service Worker funktioniert die Seite unverändert weiter. */
+        });
+      });
+    }
+
+    const $install = document.getElementById("install");
+    let installPrompt = null;
+
+    // Chrome/Edge/Android: eigener Button statt der unauffälligen Browserleiste.
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      installPrompt = e;
+      if (!isStandalone()) $install.hidden = false;
+    });
+
+    window.addEventListener("appinstalled", () => {
+      installPrompt = null;
+      $install.hidden = true;
+    });
+
+    // iOS/iPadOS-Safari kennt `beforeinstallprompt` nicht – dort gibt es nur
+    // den manuellen Weg über das Teilen-Menü, also zeigen wir die Anleitung.
+    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (isIOS && !isStandalone()) $install.hidden = false;
+
+    $install.addEventListener("click", async () => {
+      if (installPrompt) {
+        installPrompt.prompt();
+        const choice = await installPrompt.userChoice.catch(() => null);
+        installPrompt = null;
+        if (choice && choice.outcome === "accepted") $install.hidden = true;
+        return;
+      }
+      showBanner("📲 Zum Homescreen hinzufügen: im Browser auf „Teilen“ tippen " +
+                 "(Symbol ⬆) und dann „Zum Home-Bildschirm“ wählen.");
+    });
   </script>
 </body>
 </html>

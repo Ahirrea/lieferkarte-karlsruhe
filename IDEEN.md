@@ -147,6 +147,61 @@ dazu steht im Panel, statt eine Aussage zu treffen, die die Daten nicht tragen.
 
 ---
 
+## PWA („zum Homescreen hinzufügen") ✅ **umgesetzt**
+
+**Ziel:** Die Karte lässt sich wie eine App auf den Homescreen legen, startet im
+Vollbild und funktioniert auch ohne Netz (unterwegs im Funkloch ist eine
+Lieferkarte sonst wenig wert).
+
+**Umgesetzt mit drei statischen Dateien** – kein Build-Schritt, keine
+Abhängigkeit, passend zum Rest des Projekts:
+
+- `web/manifest.webmanifest` – Name, Icons, `display: standalone`, Farben und
+  zwei App-Verknüpfungen („Jetzt geöffnet" → `?open=1`, „In meiner Nähe" →
+  `?nearby=1`; die Parameter wertet `web/index.html` beim Start aus).
+- `web/sw.js` – Service Worker mit Precache (Karte, Icons, Datenschutzseite,
+  `restaurants.json`) und pro Inhalt passender Strategie.
+- `web/icons/*.png` – erzeugt von `tools/make_icons.py` (nur Standardbibliothek,
+  zeichnet Teller + Besteck in der Projektfarbe; kein Pillow nötig).
+
+Dazu im Frontend: `📲 App installieren`-Button (nutzt `beforeinstallprompt`, auf
+iOS stattdessen die Anleitung übers Teilen-Menü) und eine Hinweisleiste für
+„Offline – gespeicherte Daten vom …" bzw. „Neue Version verfügbar".
+
+**Der Haken – wöchentlich neue Daten (so gelöst):** Ein naiver „cache first"-
+Worker hätte die installierte App auf dem Datenstand des Installationstags
+eingefroren. Deshalb:
+
+- `restaurants.json` läuft **network first** – der Cache greift nur ohne Netz und
+  wird dann sichtbar als Offline-Stand ausgewiesen (Datum aus `lastScanAt`).
+- Auch HTML/Manifest kommen network first, damit neue Versionen der Seite nicht
+  hinter einem alten Cache hängen bleiben.
+- Eine neue Worker-Version übernimmt **nicht** von selbst (kein `skipWaiting`
+  beim Installieren): Die Seite fragt erst („Jetzt neu laden"), damit nicht
+  mitten im Betrieb die halbe App getauscht wird.
+- Bei jeder Rückkehr zur App wird nach Updates gesucht – eine installierte App
+  wird oft wochenlang nicht neu geladen.
+
+**Bewusste Einschränkungen:**
+
+- **Kartenkacheln** werden nur *nachträglich* gecacht (max. 400, cache first) –
+  bereits besuchte Gegenden funktionieren offline, es wird aber nichts auf Vorrat
+  heruntergeladen (Rücksicht auf die kostenlosen OSM-Tile-Server).
+- **Leaflet kommt weiterhin vom CDN** (mit `integrity`-Hash). Der Worker legt es
+  beim Installieren mit in den Cache, aber „best effort": Ist unpkg gerade nicht
+  erreichbar, gelingt die Installation trotzdem und die Datei wird beim nächsten
+  erfolgreichen Laden nachgecacht. Wer die Offline-Fähigkeit ganz unabhängig
+  machen will, müsste Leaflet lokal ins Repo legen (vendoren) – bisher nicht
+  nötig.
+- **Keine Push-Nachrichten, keine Background-Sync-Registrierung** – das würde dem
+  „kein Tracking, keine Datenerfassung"-Versprechen widersprechen. Der Worker
+  cacht ausschließlich, er sendet nichts.
+
+**Aufwand:** wie geschätzt mittel. Geprüft wird das Zusammenspiel von Manifest,
+Icons und Precache-Liste durch `tests/test_pwa.py`.
+
+---
+
 ## Weitere offene Punkte
 
 - **Lieferung/Abholung filtern:** Details + echte Abdeckungszahlen stehen in

@@ -19,6 +19,26 @@ Wenn du den Browser-Button "In meiner Nähe" nutzt:
 - Sie wird **nicht** gespeichert.
 - Der Browser fragt vorher um Erlaubnis – du kannst ablehnen.
 
+## App-Installation & Offline-Nutzung (PWA)
+
+Die Seite kann als App zum Homescreen hinzugefügt werden. Dafür läuft ein
+**Service Worker** im Browser, der Karte, Icons und die Restaurantdaten im
+lokalen Browser-Speicher (Cache Storage) ablegt – damit die Karte auch ohne Netz
+funktioniert.
+
+- Der Cache liegt **ausschließlich auf deinem Gerät**; es wird nichts an einen
+  Server übertragen.
+- **Keine Cookies, kein Local-Storage-Profil, keine Kennung** – gespeichert
+  werden nur die abgerufenen Dateien selbst.
+- Die Restaurantdaten werden immer zuerst frisch geladen; die Kopie aus dem
+  Cache kommt nur zum Einsatz, wenn kein Netz verfügbar ist (dann erscheint ein
+  Hinweis mit dem Datenstand).
+- Bereits angezeigte Kartenkacheln werden begrenzt zwischengespeichert
+  (max. 400), damit unterwegs weniger Daten nötig sind. Es wird nichts auf
+  Vorrat heruntergeladen.
+- Der Cache lässt sich jederzeit löschen: App bzw. Verknüpfung entfernen oder in
+  den Browser-Einstellungen die Websitedaten löschen.
+
 ## Externe Inhalte
 
 ### OpenStreetMap

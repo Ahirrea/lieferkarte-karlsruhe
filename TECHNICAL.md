@@ -198,6 +198,79 @@ GitHub baut dann automatisch die Seite bei jedem neuen Commit.
 
 (Falls du es später auf `lieferkarte-karlsruhe.github.io` als eigene Org migrierst, ist das nur ein umbenanntes Repo.)
 
+## PWA („zum Homescreen hinzufügen")
+
+Die Seite ist eine installierbare Progressive Web App und funktioniert offline.
+Dafür sind keine Abhängigkeiten und kein Build-Schritt nötig – drei statische
+Dateien genügen:
+
+| Datei | Zweck |
+|---|---|
+| `web/manifest.webmanifest` | Name, Icons, Startadresse, `display: standalone`, Farben, App-Verknüpfungen |
+| `web/sw.js` | Service Worker: Precache + Caching-Strategien + Update-Logik |
+| `web/icons/*.png` | App-Icons (192/512 normal + maskable, Apple-Touch, Favicon) |
+
+Alle Pfade im Manifest und im Service Worker sind **relativ** (`./…`) – die Seite
+liegt auf GitHub Pages unter `/<repo>/web/`, absolute Pfade würden dort ins Leere
+zeigen.
+
+### Caching-Strategien (in `web/sw.js`)
+
+| Inhalt | Strategie | Warum |
+|---|---|---|
+| `restaurants.json` | **network first**, Cache nur als Rückfall | Die Daten sind wöchentlich neu – der Sonntags-Scan muss sofort ankommen. Kommt die Kopie aus dem Cache, setzt der Worker den Header `X-Lieferkarte-Cache: hit`; die Seite zeigt daraufhin „📴 Offline – gespeicherte Daten vom …". |
+| HTML / Manifest | **network first** | Eine neue Version der Seite darf nicht hinter einem alten Cache hängen bleiben. |
+| Icons, Leaflet (CDN) | **cache first** | Stabile bzw. versionierte URLs. |
+| Kartenkacheln (`*.tile.openstreetmap.org`) | **cache first**, max. `MAX_TILES` (400) | Bereits besuchte Kacheln kommen aus dem Cache; es wird nichts auf Vorrat geladen (Rücksicht auf die kostenlosen Tile-Server). |
+
+Leaflet und die Kacheln werden teils als `no-cors` angefragt; solche Antworten
+sind „opaque" und schlecht cachebar. Beide Server erlauben CORS, deshalb holt
+`corsFetch()` sie bewusst als CORS-Anfrage und fällt nur im Fehlerfall auf die
+Originalanfrage zurück.
+
+### Update-Strategie
+
+- Der Worker ruft **kein** `skipWaiting()` beim Installieren. Eine neue Version
+  wartet, die Seite zeigt „🔄 Neue Version verfügbar." und erst der Klick
+  schickt `SKIP_WAITING` – so wird nie mitten im Betrieb die halbe Seite
+  ausgetauscht. Danach löst `controllerchange` einen Reload aus (nur wenn das
+  Update auch bestätigt wurde, sonst würde die Erstinstallation neu laden).
+- Bei jeder Rückkehr zur App (`visibilitychange`) läuft `registration.update()` –
+  wichtig, weil eine installierte App oft wochenlang nicht neu geladen wird.
+- **Beim Ändern gecachter Dateien `CACHE_VERSION` in `web/sw.js` erhöhen.** Beim
+  Aktivieren löscht der Worker dann alle `lieferkarte-*`-Caches der alten
+  Version.
+
+### Icons neu erzeugen
+
+Die PNGs liegen fertig im Repo. Wenn sich das Design ändert:
+
+```bash
+python3 tools/make_icons.py     # schreibt web/icons/*.png (nur Standardbibliothek)
+```
+
+Das Skript zeichnet das Motiv (Teller + Besteck in `--accent`) geometrisch und
+schreibt die PNGs selbst – kein Pillow, kein ImageMagick nötig. Die maskierbaren
+Varianten füllen die Fläche komplett und halten das Motiv in der Safe Zone
+(mittlere 80 %), damit Android es beliebig zuschneiden kann.
+
+### Testen
+
+`tests/test_pwa.py` prüft rein lesend, dass Manifest und Service Worker zu den
+tatsächlich vorhandenen Dateien passen (Icon-Größen aus dem PNG-Header, keine
+Precache-Pfade ins Leere, `CACHE_VERSION` gesetzt, kein automatisches
+`skipWaiting`). Im Browser lokal prüfen:
+
+```bash
+cd web && python3 -m http.server 8000
+# -> http://localhost:8000 (localhost gilt als sicherer Kontext, SW läuft)
+# DevTools -> Application -> Manifest / Service Workers / Cache Storage
+# Offline-Test: DevTools -> Network -> "Offline" -> neu laden
+```
+
+Service Worker brauchen HTTPS oder `localhost` – über `file://` lässt sich die
+PWA nicht testen.
+
 ## Dateistruktur
 
 ```
@@ -212,8 +285,14 @@ lieferkarte-karlsruhe/
 ├── export.py                    # DB → JSON
 ├── data/
 │   └── restaurants.db           # SQLite, mit Tabellen: restaurants, changes, scan_runs
+├── tools/
+│   └── make_icons.py            # erzeugt web/icons/*.png (nur bei Design-Änderung)
 ├── web/
 │   ├── index.html               # Leaflet-Karte
+│   ├── datenschutz.html         # Datenschutz & Hinweise (HTML-Fassung)
+│   ├── manifest.webmanifest     # PWA-Manifest (installierbar)
+│   ├── sw.js                    # Service Worker (Offline-Cache + Updates)
+│   ├── icons/                   # App-Icons (192/512, maskable, Apple-Touch, Favicon)
 │   └── restaurants.json         # aktuelles Datenpack (wird von export.py generiert)
 └── .github/
     └── workflows/

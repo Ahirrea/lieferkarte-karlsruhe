@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Datenschutz & Hinweise – Lieferkarte Karlsruhe</title>
   <meta name="description" content="Datenschutz und Hinweise zur Lieferkarte Karlsruhe. Keine Cookies, kein Tracking, keine Datenerfassung.">
+  <meta name="theme-color" content="#d64541">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <style>
     :root {
       --bg: #f7f7f5;
@@ -99,6 +102,21 @@
       <li>Sie wird <strong>nicht</strong> an einen Server übertragen.</li>
       <li>Sie wird <strong>nicht</strong> gespeichert.</li>
       <li>Der Browser fragt vorher um Erlaubnis – du kannst ablehnen.</li>
+    </ul>
+
+    <h2>App-Installation &amp; Offline-Nutzung (PWA)</h2>
+    <p>
+      Die Seite kann als App zum Homescreen hinzugefügt werden. Dafür läuft ein
+      <strong>Service Worker</strong> im Browser, der Karte, Icons und die
+      Restaurantdaten im lokalen Browser-Speicher (Cache Storage) ablegt – damit
+      die Karte auch ohne Netz funktioniert.
+    </p>
+    <ul>
+      <li>Der Cache liegt <strong>ausschließlich auf deinem Gerät</strong>; es wird nichts an einen Server übertragen.</li>
+      <li><strong>Keine Cookies, kein Local-Storage-Profil, keine Kennung</strong> – gespeichert werden nur die abgerufenen Dateien selbst.</li>
+      <li>Die Restaurantdaten werden immer zuerst frisch geladen; die Kopie aus dem Cache kommt nur zum Einsatz, wenn kein Netz verfügbar ist (dann erscheint ein Hinweis mit dem Datenstand).</li>
+      <li>Bereits angezeigte Kartenkacheln werden begrenzt zwischengespeichert (max. 400), damit unterwegs weniger Daten nötig sind. Es wird nichts auf Vorrat heruntergeladen.</li>
+      <li>Der Cache lässt sich jederzeit löschen: App bzw. Verknüpfung entfernen oder in den Browser-Einstellungen die Websitedaten löschen.</li>
     </ul>
 
     <h2>Externe Inhalte</h2>

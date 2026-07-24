@@ -13,6 +13,7 @@ Statt durch Wolt, Uber Eats oder anderen Apps zu bestellen (die Restaurants oft 
 - Direkt beim Restaurant bestellen, keine Provisionen
 - Filter nach Stadtteil, Öffnungszeiten, Lieferstatus und Küchenstil
 - „🆕 Diese Woche": was seit dem letzten Scan neu ist oder sich geändert hat
+- Als App zum Homescreen hinzufügbar, funktioniert auch offline
 - Jede Woche aktualisiert
 
 **Für Restaurants:**
@@ -27,6 +28,20 @@ Statt durch Wolt, Uber Eats oder anderen Apps zu bestellen (die Restaurants oft 
 3. Restaurant anklicken → zur Website und bestellen
 
 Die Seite hat keine Cookie-Banner, kein Tracking, keine Ads. Punkt.
+
+### Als App aufs Handy (optional)
+
+Die Karte lässt sich wie eine App zum Homescreen hinzufügen – ohne App-Store:
+
+- **Android/Chrome:** Button „📲 App installieren" auf der Seite (oder Menü ⋮ →
+  „App installieren").
+- **iPhone/Safari:** Teilen-Symbol ⬆ → „Zum Home-Bildschirm".
+
+Danach startet die Karte im Vollbild und funktioniert **auch ohne Netz** – dann
+mit den zuletzt geladenen Daten (mit Hinweis, von wann sie sind). Gespeichert
+wird alles nur lokal im Browser: keine Cookies, kein Tracking, keine Anmeldung.
+Es gibt außerdem zwei App-Verknüpfungen (langes Tippen auf das Icon):
+„Jetzt geöffnet" und „In meiner Nähe".
 
 ## Fehler melden? Restaurant fehlt?
 
@@ -59,6 +74,8 @@ Das Projekt ist **Open Source** (MIT-Lizenz) – alle Komponenten sind einsehbar
 - `scanner.py` – Overpass-Abfrage (OpenStreetMap), Change Detection
 - `export.py` – JSON-Export für die Karte
 - `web/index.html` – Frontend (Leaflet, Suche, Filter)
+- `web/sw.js` + `web/manifest.webmanifest` – PWA (installierbar, offline-fähig)
+- `tools/make_icons.py` – erzeugt die App-Icons (nur bei Design-Änderung nötig)
 
 Vollständiges Setup: siehe [`TECHNICAL.md`](TECHNICAL.md)
 
@@ -109,11 +126,14 @@ Details & Specs siehe [`IDEEN.md`](IDEEN.md).
 - [x] Änderungs-Feed („Diese Woche neu …") – Knopf „🆕 Diese Woche" öffnet die
   Änderungen der letzten sieben Tage, gruppiert nach Art; ein Klick springt zum
   Restaurant auf der Karte (siehe `IDEEN.md`)
+- [x] **PWA (zum Homescreen hinzufügen)** – Manifest, Icons, Service Worker mit
+  Offline-Betrieb und Update-Hinweis (siehe `IDEEN.md` und `TECHNICAL.md`)
 
-**Offen:**
-
-- [ ] **PWA (zum Homescreen hinzufügen)** *(mittel)* – Manifest, Icons, Service
-  Worker inkl. Update-Strategie für die wöchentlich neuen Daten.
+**Offen:** Damit ist die Roadmap abgearbeitet. Die einzige noch offene
+Produktfrage steht in [`VOR-VEROEFFENTLICHUNG.md`](VOR-VEROEFFENTLICHUNG.md):
+Der Standardfilter „nur mit Lieferservice" trifft nur ~7 % der Restaurants, weil
+das OSM-Tag `delivery` selten gesetzt ist – die Karte wirkt dadurch leerer, als
+die Daten hergeben.
 
 *Bewusst gestrichen:* Manuelle Einträge für Restaurants ohne
 OpenStreetMap-Eintrag – OSM ist bereits eine gepflegte, kostenlose Datenbank;
