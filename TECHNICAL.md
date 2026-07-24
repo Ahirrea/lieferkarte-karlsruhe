@@ -271,6 +271,33 @@ cd web && python3 -m http.server 8000
 Service Worker brauchen HTTPS oder `localhost` – über `file://` lässt sich die
 PWA nicht testen.
 
+### Automatisiert im Browser prüfen (optional, Playwright)
+
+Update-Flow, Offline-Pfad und Installierbarkeit lassen sich statisch nicht
+prüfen – dafür braucht es einen echten Browser. Playwright ist **bewusst keine
+Projekt-Abhängigkeit** (die Suite im Repo läuft nur mit der Standardbibliothek);
+so ein Skript gehört außerhalb des Repos hingeschrieben, wenn man am Service
+Worker etwas Größeres ändert. Drei Fallen, die dabei Zeit gekostet haben:
+
+- **`context.setOffline(true)` taugt nicht für Service-Worker-Tests.** Die
+  Navigation scheitert dann mit `ERR_INTERNET_DISCONNECTED`, bevor der Worker
+  überhaupt gefragt wird – der Cache-Fallback sieht damit immer kaputt aus.
+  Verlässlich ist, den lokalen Testserver zu beenden: Der `fetch` im Worker
+  scheitert, der Cache-Zweig greift – genau wie im Funkloch.
+- **Nicht auf `registration.active` warten.** Diese Bedingung ist erfüllt,
+  bevor Precache und Aktivierung durch sind (Ergebnis: scheinbar leere Caches,
+  scheinbar unkontrollierte Seite – beides nur Timing). Stabil ist das Warten
+  auf `navigator.serviceWorker.controller` plus Polling des Cache-Inhalts.
+- **Ersatzdateien müssen auch in die Precache-Liste.** Wird Leaflet für den Test
+  durch einen lokalen Stub ersetzt (das CDN ist z. B. in einer Sandbox nicht
+  erreichbar), muss dieser Stub in `SHELL_FILES` der Testkopie stehen – sonst
+  fehlt er offline und der Test misst den falschen Fehler.
+
+Objektive Installierbarkeitsprüfung ohne DevTools-Augenmaß: per CDP
+`Page.getAppManifest` (Feld `errors` muss leer sein) und
+`Page.getInstallabilityErrors`. `in-incognito` ist dabei erwartbares Rauschen,
+weil Playwright-Kontexte inkognito-artig sind.
+
 ## Dateistruktur
 
 ```
