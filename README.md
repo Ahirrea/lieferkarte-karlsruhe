@@ -11,7 +11,8 @@ Statt durch Wolt, Uber Eats oder anderen Apps zu bestellen (die Restaurants oft 
 **Für Kunden:**
 - Übersichtliche Karte statt App-Chaos
 - Direkt beim Restaurant bestellen, keine Provisionen
-- Filter nach Stadtteil, Öffnungszeiten, Lieferstatus und Küchenstil
+- Zeigt beim Öffnen, was **jetzt** liefert – Filter für Lieferung, Abholung,
+  Öffnungszeit und Küchenstil, teilbar als Link
 - „🆕 Diese Woche": was seit dem letzten Scan neu ist oder sich geändert hat
 - Als App zum Homescreen hinzufügbar, funktioniert auch offline
 - Jede Woche aktualisiert
@@ -144,13 +145,16 @@ Die Doku liegt in [`docs/`](docs/PRD.md):
   Offline-Betrieb und Update-Hinweis (siehe [`docs/UMGESETZT.md`](docs/UMGESETZT.md)
   und [`docs/TECHNICAL.md`](docs/TECHNICAL.md))
 
+- [x] **Standardfilter „Liefert jetzt"** – die Karte startet mit dem, was gerade
+  liefert (Lieferung **und** jetzt geöffnet), statt mit allem, was irgendwann
+  liefert. Dazu Filter-Chips, ein eigener Abholung-Filter, „unbekannt" als
+  sichtbarer dritter Zustand und teilbare Filter-Links. Entscheidung samt
+  verworfener Alternativen:
+  [`ADR-007`](docs/entscheidungen/ADR-007-standardfilter-liefert-jetzt.md) und
+  [`docs/anforderungen/A-1`](docs/anforderungen/A-1-standardfilter-entschaerfen.md).
+
 **Offen:**
 
-- [ ] **Standardfilter entschärfen** – „nur mit Lieferservice" trifft nur ~7 % der
-  Restaurants, weil das OSM-Tag `delivery` selten gesetzt ist; die Karte wirkt
-  dadurch leerer, als die Daten hergeben. Die wichtigste offene Entscheidung des
-  Projekts, mit Abdeckungszahlen und vier Optionen ausgearbeitet in
-  [`docs/anforderungen/A-1`](docs/anforderungen/A-1-standardfilter-entschaerfen.md).
 - [ ] **UI/UX-Feinschliff** – Punkte aus dem Review vom Juli 2026, gesammelt in
   [`docs/BACKLOG.md`](docs/BACKLOG.md). Vorrang hat die Fußzeile: durch
   `height: 100vh` liegen Attribution und Datenschutz-Link auf dem Handy unter der

@@ -123,7 +123,9 @@ Lieferkarte sonst wenig wert).
 **Umsetzung – drei statische Dateien**, kein Build-Schritt, keine Abhängigkeit:
 - `web/manifest.webmanifest` – Name, Icons, `display: standalone`, Farben und
   zwei App-Verknüpfungen („Jetzt geöffnet" → `?open=1`, „In meiner Nähe" →
-  `?nearby=1`).
+  `?nearby=1`). *(Die Verknüpfungen sind mit
+  [A-1](./anforderungen/A-1-standardfilter-entschaerfen.md) neu belegt worden –
+  siehe „Standardfilter „Liefert jetzt"" unten.)*
 - `web/sw.js` – Service Worker mit Precache und pro Inhalt passender Strategie.
 - `web/icons/*.png` – erzeugt von `tools/make_icons.py` (nur Standardbibliothek).
 
@@ -154,3 +156,54 @@ installierte App auf dem Datenstand des Installationstags eingefroren. Deshalb:
 - **Keine Push-Nachrichten, keine Background-Sync-Registrierung** – das würde
   dem „kein Tracking, keine Datenerfassung"-Versprechen widersprechen. Der
   Worker cacht ausschließlich, er sendet nichts.
+
+---
+
+## Standardfilter „Liefert jetzt" ✅
+
+**Was:** Der Default „nur mit Lieferservice" ist ersetzt durch **„Liefert
+jetzt"** — liefert **und** hat gerade geöffnet. Die zwei Checkboxen sind drei
+Chips geworden (🚴 Lieferung · 🥡 Abholung · 🕒 Jetzt geöffnet), „unbekannt" ist
+ein sichtbarer dritter Zustand, und der Filterzustand steht in der URL.
+
+Anforderung: [A-1](./anforderungen/A-1-standardfilter-entschaerfen.md) (mit der
+Abdeckungstabelle und den verworfenen Optionen) und
+[A-8](./anforderungen/README.md#übersicht). Grundsatz:
+[ADR-007](./entscheidungen/ADR-007-standardfilter-liefert-jetzt.md).
+
+**Umsetzung:**
+- `web/index.html` — `FILTER_DEFAULTS` (`delivery` und `open` an, `takeaway`
+  aus), Chips mit `aria-pressed` statt Checkboxen, `takeaway` als eigener
+  Filter, Zurücksetzen-Chip, Leerzustand `#empty`,
+  `readUrlState()`/`writeUrlState()` über `history.replaceState`.
+- Popup: `delivery`/`takeaway` werden als **drei** Zustände gezeigt — ja / nein /
+  „unbekannt" (blasses `badge-unknown`). Der Meldetext für die OSM-Notiz nennt
+  jetzt auch „ist gar nicht getaggt", damit sich fehlende Tags melden lassen.
+- `web/manifest.webmanifest` — „Jetzt geöffnet" (`?open=1`) entsprach dem neuen
+  Default und ist ersetzt durch „Alle Restaurants" (`?delivery=0&open=0`) und
+  „Abholung jetzt" (`?delivery=0&takeaway=1`); `CACHE_VERSION` → `v2`.
+- Mitgenommen: **R7** (150 ms Debounce auf die Suche, `bindPopup(() => …)` statt
+  vorab gebautem Popup-HTML) und der `aria-live`/Leerzustand-Teil von **R5**.
+
+**Der Haken:** Der neue Default ist **enger** als der alte, nicht weiter — statt
+63 zeigt er tageszeitabhängig etwa 25–40 von 883, nachts null. Das ist die
+bewusste Antwort auf die Frage, ob diese Karte ein Verzeichnis oder ein
+Jetzt-Werkzeug ist: wer sie öffnet, will bestellen, und ein geschlossenes
+Restaurant ist kein Treffer, sondern ein Fehlklick. Der Gegenvorschlag „alles
+zeigen, nur Badges" war die Empfehlung der Analyse und wurde mit Zahlen
+vorgelegt und verworfen.
+
+Der Preis dafür wird nicht versteckt, sondern bedient: der Zurücksetzen-Chip ist
+sichtbar, sobald irgendein Filter greift, und bei null Treffern erscheint kein
+stummes Loch, sondern der Satz, dass „gerade liefert niemand" eine Aussage über
+die **Datenlage** ist — bei 87 % der Läden steht in OpenStreetMap gar nicht, ob
+sie liefern — plus ein Knopf „Alle Restaurants zeigen". Ein *automatischer*
+Rückfall auf „alle" wurde abgelehnt: er hätte den Filterzustand hinter dem
+Rücken der Nutzerin geändert.
+
+„Liefert jetzt" ist deshalb **kein eigener Filter**, sondern die Vorbelegung von
+zwei getrennten Chips. Ein einziger kombinierter Chip hätte „liefert, egal wann"
+unmöglich gemacht.
+
+**Zahlen (echte `web/restaurants.json`, Playwright mit `L`-Stub):** Default 35,
+nur Lieferung 63, nur Abholung 237, ohne Filter 883 von 883 in 197 ms.

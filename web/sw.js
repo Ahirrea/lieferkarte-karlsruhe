@@ -24,7 +24,7 @@
  * werden die alten Caches beim Aktivieren aufgeräumt.
  */
 
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const SHELL_CACHE = `lieferkarte-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `lieferkarte-data-${CACHE_VERSION}`;
 const TILE_CACHE = `lieferkarte-tiles-${CACHE_VERSION}`;

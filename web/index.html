@@ -75,12 +75,28 @@
       border-radius: 6px;
       font-size: 0.9rem;
     }
-    .controls label {
+    /* Filter-Chips statt Checkboxen: ein Tipp pro Filter, der aktive Zustand
+       ist ohne Häkchen erkennbar (Farbe + aria-pressed für Screenreader). */
+    .controls .chip {
+      padding: 0.45rem 0.7rem;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 999px;
+      cursor: pointer;
       font-size: 0.85rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
+      color: var(--text);
       white-space: nowrap;
+    }
+    .controls .chip:hover { background: #f0f0ee; }
+    .controls .chip[aria-pressed="true"] {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .controls .chip[aria-pressed="true"]:hover { background: #c23b37; }
+    .controls .chip-reset {
+      border-style: dashed;
+      color: var(--muted);
     }
     .controls button,
     .controls select {
@@ -261,6 +277,9 @@
     .badge-status { background: #fff3cd; color: #856404; }
     .badge-open { background: #e6f4ea; color: var(--ok); }
     .badge-closed { background: #f4e6e6; color: var(--accent); }
+    /* „unbekannt" ist ein eigener, bewusst blasser Zustand – es darf nie wie
+       ein „nein" aussehen (siehe A-1). */
+    .badge-unknown { background: #efefec; color: var(--muted); }
     .popup-link {
       display: inline-block;
       margin-top: 0.4rem;
@@ -302,6 +321,39 @@
       font-size: 0.95rem; color: var(--muted);
       z-index: 500; pointer-events: none;
     }
+    /* Leerzustand: der Standardfilter „liefert jetzt" kann nachts null Treffer
+       haben. Dann darf die Karte nicht stumm leer bleiben, sondern muss den
+       Weg zurück zu allen Restaurants anbieten. */
+    #empty[hidden] { display: none; }
+    #empty {
+      position: absolute; inset: 0; display: flex;
+      flex-direction: column; gap: 0.6rem;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 1rem;
+      z-index: 500; pointer-events: none;
+    }
+    #empty p {
+      margin: 0;
+      max-width: 22rem;
+      font-size: 0.95rem;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.6rem 0.8rem;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+    }
+    #empty button {
+      pointer-events: auto;
+      padding: 0.5rem 0.9rem;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -310,13 +362,18 @@
     <div class="sub" id="meta">Restaurants mit eigenem Lieferservice – direkt bestellen, ohne Provisions-Plattformen.</div>
     <div class="controls">
       <input type="search" id="search" placeholder="Restaurant oder Adresse suchen …" autocomplete="off">
-      <label><input type="checkbox" id="onlyDelivery" checked> nur mit Lieferservice</label>
-      <label><input type="checkbox" id="onlyOpen"> nur jetzt geöffnet</label>
+      <!-- Standardfilter „Liefert jetzt" = Lieferung + Jetzt geöffnet (A-1).
+           Beide Chips bleiben einzeln schaltbar, damit auch „liefert, egal
+           wann" und „hat jetzt offen, egal wie" möglich bleiben. -->
+      <button type="button" class="chip" id="fDelivery" aria-pressed="true">🚴 Lieferung</button>
+      <button type="button" class="chip" id="fTakeaway" aria-pressed="false">🥡 Abholung</button>
+      <button type="button" class="chip" id="fOpen" aria-pressed="true">🕒 Jetzt geöffnet</button>
       <!-- Küchenstil-Filter: wird aus den Daten aufgebaut und bleibt versteckt,
            solange kein Restaurant einen cuisine-Tag hat. -->
       <select id="cuisine" aria-label="Nach Küchenstil filtern" hidden>
         <option value="">🍽️ Alle Küchen</option>
       </select>
+      <button type="button" class="chip chip-reset" id="resetFilters" hidden>✕ Alle zeigen</button>
       <button id="nearMe" type="button">📍 In meiner Nähe</button>
       <button id="feedToggle" type="button" aria-expanded="false" aria-controls="feed" hidden>
         🆕 Diese Woche<span class="pill" id="feedPill" hidden></span>
@@ -324,7 +381,7 @@
       <!-- Wird nur eingeblendet, wenn der Browser das Installieren anbietet
            (bzw. auf iOS, wo es die Anleitung dazu zeigt). -->
       <button id="install" type="button" hidden>📲 App installieren</button>
-      <span class="count" id="count"></span>
+      <span class="count" id="count" role="status" aria-live="polite"></span>
     </div>
   </header>
 
@@ -336,6 +393,10 @@
 
   <div id="map">
     <div class="loading" id="loading">Lade Restaurants …</div>
+    <div id="empty" hidden>
+      <p id="emptyText"></p>
+      <button type="button" id="emptyReset">Alle Restaurants zeigen</button>
+    </div>
   </div>
 
   <aside id="feed" hidden aria-labelledby="feedTitle">
@@ -367,12 +428,16 @@
     let meMarker = null;
 
     const $search = document.getElementById("search");
-    const $onlyDelivery = document.getElementById("onlyDelivery");
-    const $onlyOpen = document.getElementById("onlyOpen");
+    const $fDelivery = document.getElementById("fDelivery");
+    const $fTakeaway = document.getElementById("fTakeaway");
+    const $fOpen = document.getElementById("fOpen");
+    const $reset = document.getElementById("resetFilters");
     const $cuisine = document.getElementById("cuisine");
     const $count = document.getElementById("count");
     const $meta = document.getElementById("meta");
     const $loading = document.getElementById("loading");
+    const $empty = document.getElementById("empty");
+    const $emptyText = document.getElementById("emptyText");
     const $feed = document.getElementById("feed");
     const $feedToggle = document.getElementById("feedToggle");
     const $feedPill = document.getElementById("feedPill");
@@ -679,8 +744,10 @@
       const ist = [];
       if (r.delivery === true) ist.push("Lieferung (delivery) ist als „ja“ getaggt");
       else if (r.delivery === false) ist.push("Lieferung (delivery) ist als „nein“ getaggt");
+      else ist.push("Lieferung (delivery) ist gar nicht getaggt");
       if (r.takeaway === true) ist.push("Abholung (takeaway) ist als „ja“ getaggt");
       else if (r.takeaway === false) ist.push("Abholung (takeaway) ist als „nein“ getaggt");
+      else ist.push("Abholung (takeaway) ist gar nicht getaggt");
 
       const adr = r.address ? ", " + r.address : "";
       let t = `Lieferkarte Karlsruhe – mögliche falsche Angabe bei „${r.name}“${adr}. `;
@@ -702,13 +769,22 @@
         html += `<div class="popup-cuisine"><span class="label">🍽️ Küche:</span> ` +
                 `${esc(cuisines.map(cuisineLabel).join(", "))}</div>`;
       }
+      // Lieferung und Abholung sind drei Zustände, nicht zwei: ja / nein /
+      // unbekannt. 87 % der Restaurants sind in OSM nicht getaggt – das als
+      // „nein" darzustellen wäre schlicht falsch (A-1).
       if (r.delivery === true) {
         html += `<span class="badge badge-delivery">✔ Lieferservice</span>`;
       } else if (r.delivery === false) {
         html += `<span class="badge badge-nodelivery">kein Lieferservice</span>`;
+      } else {
+        html += `<span class="badge badge-unknown">Lieferung unbekannt</span>`;
       }
       if (r.takeaway === true) {
         html += `<span class="badge badge-takeaway">🥡 Abholung</span>`;
+      } else if (r.takeaway === false) {
+        html += `<span class="badge badge-nodelivery">keine Abholung</span>`;
+      } else {
+        html += `<span class="badge badge-unknown">Abholung unbekannt</span>`;
       }
       if (r.businessStatus && r.businessStatus !== "OPERATIONAL") {
         const label = r.businessStatus === "CLOSED_TEMPORARILY"
@@ -863,19 +939,62 @@
       if (btn) focusPlace(btn.dataset.place);
     });
 
+    // ---- Filterzustand ----------------------------------------------------
+    // Standard ist „Liefert jetzt": Lieferung + Jetzt geöffnet (A-1). Das ist
+    // bewusst ein enger Default – wer bestellen will, will jetzt bestellen.
+    // Der Preis dafür sind wenige Treffer (nachts null), deshalb gibt es den
+    // Leerzustand mit „Alle Restaurants zeigen" weiter unten.
+    const FILTER_DEFAULTS = { delivery: true, takeaway: false, open: true };
+
+    function chipOn($chip) {
+      return $chip.getAttribute("aria-pressed") === "true";
+    }
+
+    function setChip($chip, on) {
+      $chip.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+
+    function currentFilters() {
+      return {
+        delivery: chipOn($fDelivery),
+        takeaway: chipOn($fTakeaway),
+        open: chipOn($fOpen),
+      };
+    }
+
+    function anyFilterActive() {
+      const f = currentFilters();
+      return f.delivery || f.takeaway || f.open ||
+             !!$cuisine.value || !!$search.value.trim();
+    }
+
+    // Alles zurück auf „nichts gefiltert" – bewusst *nicht* auf die Defaults,
+    // denn genau die sind ja der Grund, warum die Karte leer wirken kann.
+    function clearFilters() {
+      setChip($fDelivery, false);
+      setChip($fTakeaway, false);
+      setChip($fOpen, false);
+      $cuisine.value = "";
+      $search.value = "";
+      render();
+    }
+
     function render() {
       const q = $search.value.trim().toLowerCase();
-      const onlyDelivery = $onlyDelivery.checked;
-      const onlyOpen = $onlyOpen.checked;
+      const f = currentFilters();
       const cuisine = $cuisine.value;
       layer.clearLayers();
       let shown = 0;
 
       for (const r of restaurants) {
         if (r.lat == null || r.lng == null) continue;
-        if (onlyDelivery && r.delivery !== true) continue;
+        // Lieferung/Abholung: nur sicher getaggte Treffer. „unbekannt" (null)
+        // ist kein Ja – es fällt bei aktivem Filter heraus, wird im Popup aber
+        // ausdrücklich als unbekannt und nie als Nein ausgewiesen.
+        if (f.delivery && r.delivery !== true) continue;
+        if (f.takeaway && r.takeaway !== true) continue;
         // Filter „nur jetzt geöffnet": nur sicher offene zeigen (unbekannt fällt raus).
-        if (onlyOpen && !(r.openingHours && openStateNow(r.openingHours) === true)) continue;
+        if (f.open && !(r.openingHours && openStateNow(r.openingHours) === true)) continue;
         // Küchenstil: ungetaggte Restaurants fallen bei aktivem Filter heraus –
         // die Abdeckung ist lückenhaft, „unbekannt" ist kein Treffer.
         if (cuisine && !cuisinesOf(r).includes(cuisine)) continue;
@@ -888,10 +1007,33 @@
                        styles.map(cuisineLabel).join(" ")).toLowerCase();
           if (!hay.includes(q)) continue;
         }
-        L.marker([r.lat, r.lng]).bindPopup(popupHtml(r)).addTo(layer);
+        // Popup faul bauen (R7): ohne Filter sind das 883 Marker, und für jeden
+        // vorab das komplette HTML samt openStateNow()-Parsing zu erzeugen war
+        // der teuerste Teil von render(). Leaflet akzeptiert eine Funktion und
+        // ruft sie erst beim Öffnen auf.
+        L.marker([r.lat, r.lng]).bindPopup(() => popupHtml(r)).addTo(layer);
         shown++;
       }
       $count.textContent = `${shown} von ${restaurants.length} angezeigt`;
+      $reset.hidden = !anyFilterActive();
+      updateEmptyState(shown);
+      writeUrlState();
+    }
+
+    // Leerzustand statt stumm leerer Karte. Tritt beim Standardfilter
+    // regelmäßig auf – nachts liefert niemand.
+    function updateEmptyState(shown) {
+      if (shown > 0 || !restaurants.length) {
+        $empty.hidden = true;
+        return;
+      }
+      const f = currentFilters();
+      $emptyText.textContent = (f.delivery && f.open)
+        ? "Gerade liefert kein erfasstes Restaurant. Das heißt nicht, dass "
+          + "nichts geöffnet hat – bei 87 % der Läden ist in OpenStreetMap "
+          + "gar nicht hinterlegt, ob sie liefern."
+        : "Keine Treffer für die gewählten Filter.";
+      $empty.hidden = false;
     }
 
     function locateMe() {
@@ -916,10 +1058,22 @@
 
     document.getElementById("nearMe").addEventListener("click", locateMe);
 
-    $search.addEventListener("input", render);
-    $onlyDelivery.addEventListener("change", render);
-    $onlyOpen.addEventListener("change", render);
+    // Suche gedrosselt (R7): ohne aktive Filter durchläuft render() alle
+    // Restaurants, das muss nicht bei jedem Tastendruck passieren.
+    let searchTimer = null;
+    $search.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(render, 150);
+    });
+    for (const $chip of [$fDelivery, $fTakeaway, $fOpen]) {
+      $chip.addEventListener("click", () => {
+        setChip($chip, !chipOn($chip));
+        render();
+      });
+    }
     $cuisine.addEventListener("change", render);
+    $reset.addEventListener("click", clearFilters);
+    document.getElementById("emptyReset").addEventListener("click", clearFilters);
 
     // Meldelink: Text in die Zwischenablage kopieren, dann OSM-Notiz öffnen.
     // Kein preventDefault -> der Link öffnet den OSM-Editor wie gewohnt im neuen Tab.
@@ -959,6 +1113,47 @@
       $banner.hidden = true;
     });
 
+    // ---- Filter im URL-Zustand (A-8) -------------------------------------
+    // Reine Query-Parameter, nichts wird gespeichert – das „keine Cookies"-
+    // Versprechen bleibt unberührt. Geschrieben wird nur, was vom Standard
+    // abweicht, damit geteilte Links kurz und lesbar bleiben:
+    //   ?delivery=0&open=0        -> alle Restaurants
+    //   ?delivery=0&takeaway=1    -> was jetzt zur Abholung offen hat
+    //   ?cuisine=thai&q=lotus     -> Küchenstil und Suchtext
+    // `nearby` und unbekannte Parameter bleiben unangetastet.
+    const URL_CHIPS = [["delivery", $fDelivery], ["takeaway", $fTakeaway], ["open", $fOpen]];
+    let urlStateReady = false;
+
+    // Gibt den gewünschten Küchenstil zurück – der lässt sich erst setzen,
+    // wenn buildCuisineOptions() die Optionen aus den Daten erzeugt hat.
+    function readUrlState() {
+      const p = new URLSearchParams(window.location.search);
+      for (const [key, $chip] of URL_CHIPS) {
+        const v = p.get(key);
+        setChip($chip, v === "1" || v === "0" ? v === "1" : FILTER_DEFAULTS[key]);
+      }
+      if (p.get("q")) $search.value = p.get("q");
+      return p.get("cuisine") || "";
+    }
+
+    function writeUrlState() {
+      if (!urlStateReady) return;
+      const p = new URLSearchParams(window.location.search);
+      for (const key of ["delivery", "takeaway", "open", "cuisine", "q"]) p.delete(key);
+      const f = currentFilters();
+      for (const [key] of URL_CHIPS) {
+        if (f[key] !== FILTER_DEFAULTS[key]) p.set(key, f[key] ? "1" : "0");
+      }
+      if ($cuisine.value) p.set("cuisine", $cuisine.value);
+      if ($search.value.trim()) p.set("q", $search.value.trim());
+      const qs = p.toString();
+      history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+    }
+
+    // ---- Startparameter (App-Verknüpfungen aus dem Manifest, geteilte Links) ----
+    const wantedCuisine = readUrlState();
+    if (new URLSearchParams(window.location.search).get("nearby") === "1") locateMe();
+
     // ---- Restaurantdaten laden ----
     // `no-store`: kein HTTP-Cache. Ohne Netz antwortet der Service Worker mit
     // seiner Kopie und markiert das per Header – dann kommt der Offline-Hinweis.
@@ -974,6 +1169,9 @@
         feedItems = (data.feed && data.feed.items) || [];
         $loading.remove();
         buildCuisineOptions();
+        // Erst jetzt existiert die Option – vorher würde die Zuweisung verpuffen.
+        if (wantedCuisine) $cuisine.value = wantedCuisine;
+        urlStateReady = true;
         // Älteres restaurants.json (noch ohne `feed`): Knopf bleibt versteckt.
         if (data.feed) renderFeed(data.feed);
         let when = null;
@@ -992,16 +1190,6 @@
       .catch(err => {
         $loading.textContent = "Konnte Restaurantdaten nicht laden (" + err.message + ").";
       });
-
-    // ---- Startparameter (App-Verknüpfungen aus dem Manifest) ----
-    // "?open=1" -> direkt mit dem Filter „nur jetzt geöffnet" starten,
-    // "?nearby=1" -> direkt den Standort abfragen.
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("open") === "1") {
-      $onlyOpen.checked = true;
-      render();
-    }
-    if (params.get("nearby") === "1") locateMe();
 
     // ---- PWA: Service Worker + Installation ------------------------------
     // Der Service Worker cacht ausschließlich lokal im Browser (Karte, Icons,

@@ -125,6 +125,43 @@ in `restaurants` nur noch mit `active = 0` stehen und im Bestands-Export fehlen.
 `items` ist nach Änderungsart gruppiert (Reihenfolge: `FEED_TYPE_ORDER`),
 innerhalb einer Gruppe neueste zuerst.
 
+## Filter und URL-Parameter (Frontend)
+
+Die Filter im Kopf sind Chips (`aria-pressed`), UND-verknüpft. Vorbelegt ist
+**„Liefert jetzt"** = `delivery` + `open`
+([ADR-007](./entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)):
+
+| Chip / Feld | Element | Trifft | Standard |
+|---|---|---|---|
+| 🚴 Lieferung | `#fDelivery` | `delivery === true` | **an** |
+| 🥡 Abholung | `#fTakeaway` | `takeaway === true` | aus |
+| 🕒 Jetzt geöffnet | `#fOpen` | `openStateNow(openingHours) === true` | **an** |
+| 🍽️ Küche | `#cuisine` | Schlüssel in `cuisines` | leer |
+| Suche | `#search` | Name, Adresse, Küchenstil (Schlüssel + Label) | leer |
+
+`null` ist bei allen Filtern **kein Treffer** — aber im Popup ausdrücklich
+„unbekannt" (`badge-unknown`) und nie „nein".
+
+Der Zustand steht in der URL (`readUrlState()` / `writeUrlState()`, geschrieben
+per `history.replaceState`). Geschrieben wird nur, was vom Standard **abweicht**;
+`nearby` und unbekannte Parameter bleiben erhalten. Reine Query-Parameter, nichts
+wird gespeichert — das „keine Cookies"-Versprechen bleibt unberührt.
+
+| Parameter | Werte | Bedeutung |
+|---|---|---|
+| `delivery`, `takeaway`, `open` | `1` / `0` | Chip an/aus; fehlt = Standard |
+| `cuisine` | Küchenschlüssel | wird erst nach `buildCuisineOptions()` gesetzt |
+| `q` | Freitext | Suchfeld |
+| `nearby` | `1` | fragt beim Laden den Standort ab (nicht gefiltert) |
+
+Beispiele: `?delivery=0&open=0` = alle Restaurants ·
+`?delivery=0&takeaway=1` = was jetzt zur Abholung offen hat. Beide sind auch
+App-Verknüpfungen im Manifest.
+
+Bei null Treffern zeigt `#empty` einen Leerzustand mit „Alle Restaurants zeigen".
+Das ist beim Standardfilter der Regelfall (nachts liefert niemand) und darf nicht
+entfernt werden.
+
 ## Kostenübersicht
 
 **0 €.** Die Overpass-API ist kostenlos und ohne API-Key nutzbar. Ein Scan =

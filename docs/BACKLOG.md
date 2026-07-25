@@ -39,9 +39,13 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   – assistiv also namenlos. Sichtbar ist außerdem nur „Restaurant oder Adresse
   sucl", weil `flex: 1 1 200px` (`web/index.html:71`) neben der Checkbox
   zerdrückt wird. Unter 640 px sollte die Suche eine eigene, volle Zeile bekommen.
-- [ ] **R5 – Trefferzahl wird nicht angekündigt, 0 Treffer sind ein Loch.**
-  `#count` braucht `aria-live="polite"`; `render()` braucht einen Empty State
-  („Keine Treffer – Filter zurücksetzen") statt einer stumm leeren Karte.
+- [x] **R5 – Trefferzahl wird nicht angekündigt, 0 Treffer sind ein Loch.**
+  Erledigt mit [A-1](./anforderungen/A-1-standardfilter-entschaerfen.md):
+  `#count` hat `role="status"` + `aria-live="polite"`, und bei null Treffern
+  erscheint `#empty` mit „Alle Restaurants zeigen" statt einer stumm leeren
+  Karte. Der neue Standardfilter „Liefert jetzt" hat null Treffer zum
+  Regelfall gemacht (nachts liefert niemand) – ohne Leerzustand wäre er nicht
+  vertretbar gewesen.
 - [ ] **R14 – `alert()` für Geolocation-Fehler ersetzen.** `locateMe()` nutzt
   zwei `alert()` (`web/index.html:899` und `:912`); der Banner-Mechanismus
   (`showBanner`) existiert bereits.
@@ -54,13 +58,13 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   und „⚑ Falsche Angabe melden" sind beide `var(--accent)`, fett, gleich groß und
   stehen direkt untereinander. Die Bestellaktion als gefüllter Button, den
   Melde-Link klein und `--muted` unter die Fakten.
-- [ ] **R7 – Suche drosseln, Popups faul bauen.** `render()` läuft ungedrosselt
-  bei jedem `input` und baut für **jeden** Marker vorab das komplette Popup-HTML
-  inklusive `openStateNow()`-Parsing (`web/index.html:891`). Fix: ~150 ms
-  Debounce und `bindPopup(() => popupHtml(r))` – Leaflet akzeptiert eine
-  Funktion. **Wird dringlich, sobald [A-1](./anforderungen/A-1-standardfilter-entschaerfen.md)
-  entschieden ist** (dann 883 statt 63 Marker); Clustering/Canvas ist
-  [A-6](./anforderungen/A-6-clustering-oder-canvas.md).
+- [x] **R7 – Suche drosseln, Popups faul bauen.** Erledigt mit
+  [A-1](./anforderungen/A-1-standardfilter-entschaerfen.md): 150 ms Debounce auf
+  das Suchfeld, `bindPopup(() => popupHtml(r))` statt vorab gebautem HTML samt
+  `openStateNow()`-Parsing. Ohne Filter zeichnet `render()` damit 883 Marker in
+  ~197 ms (gemessen mit `L`-Stub). Clustering/Canvas bleibt
+  [A-6](./anforderungen/A-6-clustering-oder-canvas.md) – durch den engen Default
+  aber nur noch „nice to have".
 
 ## Niedrig – Feinschliff
 

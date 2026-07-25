@@ -20,6 +20,7 @@ einer einzelnen Anforderung bleiben in der Anforderungsdatei.
 | [ADR-004](./ADR-004-oeffnungszeiten-eigener-parser.md) | Öffnungszeiten: eigener Mini-Parser, fest Europe/Berlin | akzeptiert | Konservativ: unsicher → „unbekannt", nie → „geöffnet". Ein falsches „jetzt offen" schickt jemanden vor eine verschlossene Tür. |
 | [ADR-005](./ADR-005-cuisine-nicht-protokollieren.md) | Küchenstil-Änderungen werden nicht protokolliert | akzeptiert | Eine neue Spalte erzeugt beim ersten Scan Massen-Ereignisse (245 × `TAKEAWAY_CHANGED`). Der Feed soll Neuigkeiten zeigen, keine Datenlage. |
 | [ADR-006](./ADR-006-pwa-network-first.md) | PWA: `restaurants.json` immer network-first | akzeptiert | Die Daten werden wöchentlich ersetzt. Cache ist reiner Offline-Fallback und wird als solcher gekennzeichnet. `CACHE_VERSION` hochzählen, kein `skipWaiting()`. |
+| [ADR-007](./ADR-007-standardfilter-liefert-jetzt.md) | Standardfilter ist „Liefert jetzt" | akzeptiert | Die Karte ist ein Jetzt-Werkzeug, kein Verzeichnis: Default = liefert **und** jetzt geöffnet. Der enge Default ist gewollt — dafür sind Leerzustand und Zurücksetzen-Chip Pflicht. |
 
 ## Neuen ADR anlegen
 

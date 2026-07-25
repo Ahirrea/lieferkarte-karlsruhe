@@ -45,10 +45,17 @@
   ],
   "shortcuts": [
     {
-      "name": "Jetzt geöffnet",
-      "short_name": "Geöffnet",
-      "description": "Nur Restaurants zeigen, die gerade geöffnet haben",
-      "url": "./index.html?open=1",
+      "name": "Alle Restaurants",
+      "short_name": "Alle",
+      "description": "Ohne Filter starten – alle erfassten Restaurants zeigen",
+      "url": "./index.html?delivery=0&open=0",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Abholung jetzt",
+      "short_name": "Abholung",
+      "description": "Restaurants, die jetzt geöffnet haben und Abholung anbieten",
+      "url": "./index.html?delivery=0&takeaway=1",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {

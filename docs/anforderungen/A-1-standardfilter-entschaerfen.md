@@ -7,7 +7,8 @@
 sehen, welche Restaurants es in meiner Nähe überhaupt gibt, um nicht vor einer
 fast leeren Karte zu stehen und den Eindruck zu bekommen, es gäbe hier nichts.
 
-**Verfeinert am:** — (Optionen stehen, **Produktentscheidung offen**)
+**Verfeinert am:** 2026-07-25 · **entschieden am:** 2026-07-25
+(→ [Entscheidung](#entscheidung-2026-07-25), [ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md))
 **Bedient PRD:** „Kernschleife" Schritt 1 („Schritt 1 muss ohne Interaktion
 nützlich sein")
 **Eingeschränkt durch:** [ADR-001](../entscheidungen/ADR-001-openstreetmap-statt-google-places.md)
@@ -102,22 +103,82 @@ für **jeden** Marker vorab das komplette Popup-HTML inklusive
 erst nach dieser Entscheidung: vorher steht nicht fest, welche Zustände überhaupt
 nebeneinander vorkommen.
 
-## Offen — von der Ideengeberin zu entscheiden
+> **Nachtrag nach der Entscheidung:** Dieser Abschnitt ging von Option C aus.
+> Mit dem Default „Liefert jetzt" zeichnet die Karte beim Öffnen ~35 Marker, die
+> 883 sieht nur, wer die Filter abschaltet. [A-6](./A-6-clustering-oder-canvas.md)
+> bleibt damit „nice to have" statt Voraussetzung; R7 (Debounce, faule Popups)
+> ist gleich miterledigt worden. Für [A-5](./A-5-pins-nach-zustand.md) steht die
+> Zustandsmenge jetzt fest: liefert / holt ab / beides / unbekannt, jeweils offen
+> oder geschlossen.
 
-1. Welche Option (Empfehlung: C + B)?
-2. Falls C: Wie heißt „ungetaggt" in der Oberfläche? „unbekannt", „nicht
-   angegeben" oder gar kein Badge?
-3. Sollen die Filter im URL-Zustand landen (siehe
-   [A-8](./README.md#übersicht))?
+## Entscheidung (2026-07-25)
+
+Die Produktverantwortung hat sich gegen die Empfehlung entschieden — für eine
+**fünfte Option, „Liefert jetzt"**: Der Standardfilter kombiniert *Lieferung*
+mit *jetzt geöffnet*.
+
+| Frage | Entscheidung |
+|---|---|
+| 1. Option | **Default „Liefert jetzt"** = `delivery=yes/only` **und** aktuell geöffnet. Dazu die Filter aus B (Abholung) und die ehrlichen Badges aus C. |
+| 2. Label für ungetaggt | **„unbekannt"** — eigenes, blasses Badge („Lieferung unbekannt" / „Abholung unbekannt"). |
+| 3. Filter in der URL | **Direkt mitgebaut** — [A-8](./README.md#übersicht) ist damit erledigt. |
+
+**Begründung der Produktverantwortung:** Wer die Karte öffnet, will *jetzt*
+bestellen. Ein Treffer, bei dem geschlossen ist, ist kein Treffer. Die Karte ist
+ein Jetzt-Werkzeug, kein Verzeichnis.
+
+**Ausdrücklich in Kauf genommen:** Der Default ist damit **enger** als der alte,
+nicht weiter — statt 63 zeigt er tageszeitabhängig **etwa 25–40 von 883**, nachts
+null. Der Einwand aus diesem Dokument („die Karte wirkt fälschlich leer") wurde
+vorgelegt, mit Zahlen belegt und bewusst verworfen. Die erste Zeile der
+Definition of Done unten („beim ersten Öffnen erkennbar gefüllt") ist damit
+**gegenstandslos** und wurde durch die überarbeitete Fassung ersetzt.
+
+Der Ausgleich passiert nicht über den Default, sondern über den Ausweg daraus:
+ein sichtbarer Zurücksetzen-Chip, ein Leerzustand, der ausdrücklich sagt, dass
+„niemand liefert" eine Aussage über die *Datenlage* ist, und ein
+Manifest-Shortcut „Alle Restaurants". Der automatische Rückfall auf „alle" bei
+zu wenigen Treffern wurde ebenfalls angeboten und verworfen — er hätte den
+Filterzustand hinter dem Rücken der Nutzerin geändert.
+
+Grundsätzlicher Teil der Entscheidung: [ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md).
+
+## Umsetzung
+
+Die zwei Checkboxen sind **drei Chips** geworden — „🚴 Lieferung",
+„🥡 Abholung", „🕒 Jetzt geöffnet", UND-verknüpft, `aria-pressed` als Zustand.
+„Liefert jetzt" ist nicht ein eigener Filter, sondern die **Vorbelegung** von
+Lieferung + Jetzt geöffnet. Das war der Weg, die Entscheidung umzusetzen, ohne
+„liefert, egal wann" zu verlieren — was mit einem einzigen kombinierten Chip
+nicht mehr möglich gewesen wäre.
+
+- `web/index.html` — Chips statt Checkboxen, `FILTER_DEFAULTS`, `render()` mit
+  eigenständigem `takeaway`-Filter, „unbekannt"-Badges, `#empty`-Leerzustand,
+  `readUrlState()`/`writeUrlState()`, Reset über `clearFilters()`.
+- `web/manifest.webmanifest` — der Shortcut „Jetzt geöffnet" (`?open=1`) ist
+  sinnlos geworden, weil er dem Default entspricht; an seine Stelle treten
+  „Alle Restaurants" (`?delivery=0&open=0`) und „Abholung jetzt"
+  (`?delivery=0&takeaway=1`). `CACHE_VERSION` in `web/sw.js` auf `v2`.
+- Mitgenommen, weil ohne Filter nun 883 Marker möglich sind: **R7** aus dem
+  [Backlog](../BACKLOG.md) (150 ms Debounce, `bindPopup(() => …)`) und der
+  `aria-live`/Leerzustand-Teil von **R5**.
+
+**Gemessen (echte `web/restaurants.json`, Playwright mit `L`-Stub):** Default 35,
+nur Lieferung 63, nur Abholung 237, ohne Filter 883 von 883 in 197 ms.
 
 ## Definition of Done
 
-- Beim ersten Öffnen ohne Interaktion ist die Karte erkennbar gefüllt.
+- ~~Beim ersten Öffnen ohne Interaktion ist die Karte erkennbar gefüllt.~~
+  Mit der Entscheidung vom 2026-07-25 hinfällig — ersetzt durch: **beim ersten
+  Öffnen ohne Interaktion ist entweder mindestens ein Treffer sichtbar oder ein
+  Leerzustand, der den Weg zu allen Restaurants anbietet.** ✅
 - `delivery === null` und `takeaway === null` werden nachweislich als
-  *unbekannt* dargestellt, nie als *nein*.
-- Die Trefferzahl (`#count`) stimmt mit den gezeichneten Markern überein.
-- Mit 883 Markern bleibt die Seite auf dem Handy bedienbar (siehe A-6 / R7).
-- Test mit synthetischen Daten **und** mit der echten `web/restaurants.json`.
+  *unbekannt* dargestellt, nie als *nein*. ✅
+- Die Trefferzahl (`#count`) stimmt mit den gezeichneten Markern überein. ✅
+- Mit 883 Markern bleibt die Seite auf dem Handy bedienbar (siehe A-6 / R7). ✅
+  R7 ist umgesetzt; A-6 bleibt offen, ist durch den engen Default aber wieder
+  „nice to have" statt Voraussetzung.
+- Test mit synthetischen Daten **und** mit der echten `web/restaurants.json`. ✅
 
 ---
 

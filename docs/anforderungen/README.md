@@ -23,25 +23,27 @@ Reihenfolge = was als Nächstes sinnvoll wäre. Kein Zeitplan.
 
 | Nr. | Anforderung | Status | Worum es geht |
 |---|---|---|---|
-| A-1 | [Standardfilter entschärfen](./A-1-standardfilter-entschaerfen.md) | 💡 Idee — **Entscheidung offen** | Der Default „nur mit Lieferservice" zeigt 63 von 883 Restaurants, weil 87 % in OSM ungetaggt sind — die Karte wirkt fälschlich leer. Vier Optionen samt Abdeckungstabelle, Empfehlung C+B. **Blockiert A-5 und A-6.** |
+| A-1 | [Standardfilter entschärfen](./A-1-standardfilter-entschaerfen.md) | 🏁 erledigt | Entschieden am 2026-07-25 gegen die Empfehlung: Default ist **„Liefert jetzt"** (Lieferung **und** jetzt geöffnet) — die Karte ist ein Jetzt-Werkzeug, kein Verzeichnis ([ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)). Dazu Chips statt Checkboxen, eigener Abholung-Filter, „unbekannt"-Badges, Leerzustand. |
 | A-2 | [Ergebnisliste neben der Karte](./A-2-ergebnisliste.md) | 💡 Idee | Die Karte ist für Tastatur und Screenreader leer. Dieselben gefilterten Daten zusätzlich als Liste — löst gleichzeitig „was ist in der Nähe?". |
 | A-3 | [Header-Umbau: eine Zeile + Bottom Sheet](./A-3-header-umbau.md) | 💡 Idee | Der Header frisst 23 % des Bildschirms. Gehört zusammen mit dem Feed-Panel entworfen, das auf Mobil fast die ganze Karte verdeckt. |
 | A-4 | [Farbsystem entflechten](./A-4-farbsystem.md) | 💡 Idee | `--accent` bedeutet vier Dinge gleichzeitig. Zustandsfarben gehören von der Markenfarbe getrennt. Voraussetzung für A-5. |
-| A-5 | [Pins nach Zustand unterscheiden](./A-5-pins-nach-zustand.md) | 💡 Idee | Liefert / holt ab / gerade geschlossen sieht man erst nach dem Antippen. Hängt an A-1 **und** A-4. |
-| A-6 | [Marker-Clustering oder Canvas-Renderer](./A-6-clustering-oder-canvas.md) | 💡 Idee | Mit entschärftem Default zeichnet die Karte 883 statt 63 Marker. Wird durch A-1 von „nice to have" zur Voraussetzung. |
+| A-5 | [Pins nach Zustand unterscheiden](./A-5-pins-nach-zustand.md) | 💡 Idee | Liefert / holt ab / gerade geschlossen sieht man erst nach dem Antippen. Durch A-1 entblockt — die Zustandsmenge steht jetzt fest; hängt noch an A-4. |
+| A-6 | [Marker-Clustering oder Canvas-Renderer](./A-6-clustering-oder-canvas.md) | 💡 Idee | Durch A-1 entblockt, aber **entschärft**: mit dem Default „Liefert jetzt" sind es beim Öffnen ~35 Marker, die 883 sieht nur, wer die Filter abschaltet (883 in 197 ms gemessen). Bleibt „nice to have". |
 | A-7 | [Telefonnummer in die Pipeline](./A-7-telefonnummer.md) | 💡 Idee | `phone`/`contact:phone` kommen beim Scan gratis mit; für „schnell bestellen" so nützlich wie die Website. Braucht eine neue DB-Spalte. |
-| A-8 | Filterzustand teilbar und wiederherstellbar machen | 💡 Idee | Bisher gibt es nur `?open=1` / `?nearby=1`; `?delivery=0&cuisine=thai` passt ins bestehende Muster und verletzt das „keine Cookies"-Versprechen nicht (reine URL-Parameter, keine Speicherung). Sinnvoll erst nach A-1, weil dann erst feststeht, welche Filter es gibt. |
+| A-8 | Filterzustand teilbar und wiederherstellbar machen | 🏁 erledigt | Zusammen mit A-1 gebaut: `?delivery=`/`?takeaway=`/`?open=`/`?cuisine=`/`?q=`, geschrieben per `history.replaceState` und nur dort, wo vom Standard abgewichen wird. Reine URL-Parameter, nichts wird gespeichert. `?nearby=1` bleibt erhalten. |
 
 ## Abhängigkeiten auf einen Blick
 
 ```
-A-1 (Standardfilter)  ──┬──►  A-5 (Pins nach Zustand)  ◄──  A-4 (Farbsystem)
-                        ├──►  A-6 (Clustering/Canvas)
-                        └──►  A-8 (Filter in der URL)
+A-1 (Standardfilter) 🏁 ─┬──►  A-5 (Pins nach Zustand)  ◄──  A-4 (Farbsystem)
+                         ├──►  A-6 (Clustering/Canvas) — entschärft
+                         └──►  A-8 (Filter in der URL) 🏁 mitgebaut
 ```
 
-**A-1 ist der Flaschenhals.** Solange die Entscheidung offen ist, sind drei
-weitere Anforderungen nicht sinnvoll zu verfeinern.
+**Der Flaschenhals ist weg.** A-1 ist am 2026-07-25 entschieden
+([ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)) und
+umgesetzt, A-8 gleich mit. A-5 hängt jetzt nur noch an A-4; A-6 ist keine
+Voraussetzung mehr, weil der Default eng geblieben ist.
 
 ## Neue Anforderung aufnehmen
 
