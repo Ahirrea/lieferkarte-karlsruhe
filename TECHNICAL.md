@@ -73,7 +73,7 @@ nichtssagende Werte (`yes`, `no`, `unknown`, `fixme`, `other`) fallen weg,
 `NULL` = nicht getaggt. `export.py` gibt das Feld als Liste `cuisines` aus
 (leere Liste = unbekannt), die deutschen Bezeichnungen liegen im Frontend
 (`CUISINE_LABELS`). Änderungen am Küchenstil werden **nicht** protokolliert
-(siehe `IDEEN.md`).
+(siehe `backlog/DONE.md`).
 
 Der Endpoint ist per Umgebungsvariable überschreibbar, falls ein Spiegelserver
 nötig wird:

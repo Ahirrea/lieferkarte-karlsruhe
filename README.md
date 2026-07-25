@@ -113,26 +113,29 @@ MIT – du darfst den Code nutzen, ändern und weitergeben. Siehe [`LICENSE`](LI
 
 ## Roadmap (Karlsruhe)
 
-Details & Specs siehe [`IDEEN.md`](IDEEN.md).
+Details & Specs siehe [`backlog/`](backlog/README.md) – aufgeteilt in
+[💡 Ideen](backlog/IDEEN.md), [🔨 Ready for Dev](backlog/READY-FOR-DEV.md) und
+[✅ Done](backlog/DONE.md).
 
 **Bereits umgesetzt:**
 
-- [x] Öffnungszeiten im Popup + „jetzt geöffnet"-Anzeige und -Filter (siehe `IDEEN.md`)
+- [x] Öffnungszeiten im Popup + „jetzt geöffnet"-Anzeige und -Filter (siehe
+  `backlog/DONE.md`)
 - [x] „In meiner Nähe"-Button (zentriert die Karte auf den eigenen Standort)
 - [x] Filter nach Küchenstil (Pizza, Thai, Burger, …) – OSM-Tag `cuisine` läuft
-  durch die komplette Pipeline (siehe `IDEEN.md`). Die Auswahlliste baut sich aus
-  den vorhandenen Daten und bleibt versteckt, solange kein Restaurant getaggt
-  ist – die Werte füllt der nächste wöchentliche Scan.
+  durch die komplette Pipeline (siehe `backlog/DONE.md`). Die Auswahlliste baut
+  sich aus den vorhandenen Daten und bleibt versteckt, solange kein Restaurant
+  getaggt ist – die Werte füllt der nächste wöchentliche Scan.
 - [x] Änderungs-Feed („Diese Woche neu …") – Knopf „🆕 Diese Woche" öffnet die
   Änderungen der letzten sieben Tage, gruppiert nach Art; ein Klick springt zum
-  Restaurant auf der Karte (siehe `IDEEN.md`)
+  Restaurant auf der Karte (siehe `backlog/DONE.md`)
 - [x] **PWA (zum Homescreen hinzufügen)** – Manifest, Icons, Service Worker mit
-  Offline-Betrieb und Update-Hinweis (siehe `IDEEN.md` und `TECHNICAL.md`)
+  Offline-Betrieb und Update-Hinweis (siehe `backlog/DONE.md` und `TECHNICAL.md`)
 
 **Offen:**
 
 - [ ] **UI/UX-Feinschliff** – Punkte aus dem Review vom Juli 2026, gesammelt in
-  [`IDEEN.md`](IDEEN.md) (Abschnitt „Ready for Dev"). Vorrang hat die
+  [`backlog/READY-FOR-DEV.md`](backlog/READY-FOR-DEV.md). Vorrang hat die
   Fußzeile: durch `height: 100vh` liegen Attribution und Datenschutz-Link auf dem
   Handy unter der Browserleiste.
 - [ ] **Standardfilter** – „nur mit Lieferservice" trifft nur ~7 % der Restaurants,
