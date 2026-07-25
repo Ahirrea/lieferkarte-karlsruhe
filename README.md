@@ -132,7 +132,7 @@ Details & Specs siehe [`IDEEN.md`](IDEEN.md).
 **Offen:**
 
 - [ ] **UI/UX-Feinschliff** – Punkte aus dem Review vom Juli 2026, gesammelt in
-  [`IDEEN.md`](IDEEN.md) (Abschnitt „UI/UX-Review (Juli 2026)"). Vorrang hat die
+  [`IDEEN.md`](IDEEN.md) (Abschnitt „Ready for Dev"). Vorrang hat die
   Fußzeile: durch `height: 100vh` liegen Attribution und Datenschutz-Link auf dem
   Handy unter der Browserleiste.
 - [ ] **Standardfilter** – „nur mit Lieferservice" trifft nur ~7 % der Restaurants,
