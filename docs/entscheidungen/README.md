@@ -30,8 +30,12 @@ einer einzelnen Anforderung bleiben in der Anforderungsdatei.
 2. Datei nach dem Muster unten anlegen.
 3. Zeile in der Tabelle oben ergänzen.
 4. Kehrt der ADR eine frühere Entscheidung um: im alten ADR `Status:` auf
-   `ersetzt durch ADR-<Nr>` setzen — das ist die **einzige** erlaubte Änderung an
-   einem bestehenden ADR.
+   `ersetzt durch ADR-<Nr>` setzen.
+5. **Nur der `Status:` darf sich je ändern, der Text nie.** Erlaubt sind genau
+   zwei Übergänge: `vorgeschlagen` → `akzeptiert`, sobald die Entscheidung
+   umgesetzt ist, und `akzeptiert` → `ersetzt durch ADR-<Nr>`. Ein ADR darf
+   `vorgeschlagen` sein, wenn die Entscheidung getroffen, die beschriebene
+   Lösung aber noch nicht gebaut ist.
 
 ## Aufbau
 
