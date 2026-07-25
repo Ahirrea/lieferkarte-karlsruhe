@@ -26,8 +26,8 @@ Reihenfolge = was als Nächstes sinnvoll wäre. Kein Zeitplan.
 | A-1 | [Standardfilter entschärfen](./A-1-standardfilter-entschaerfen.md) | 🏁 erledigt | Entschieden am 2026-07-25 gegen die Empfehlung: Default ist **„Liefert jetzt"** (Lieferung **und** jetzt geöffnet) — die Karte ist ein Jetzt-Werkzeug, kein Verzeichnis ([ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)). Dazu Chips statt Checkboxen, eigener Abholung-Filter, „unbekannt"-Badges, Leerzustand. |
 | A-2 | [Ergebnisliste neben der Karte](./A-2-ergebnisliste.md) | 💡 Idee | Die Karte ist für Tastatur und Screenreader leer. Dieselben gefilterten Daten zusätzlich als Liste — löst gleichzeitig „was ist in der Nähe?". |
 | A-3 | [Karte im Vollbild: Overlay + Bottom Sheets](./A-3-header-umbau.md) | ✅ bereit | Der Header frisst gemessen 23,9 % (360 px: 35 %), das Feed-Panel verdeckt 77–88 % der Karte, alle Bedienelemente sind 32,4 px statt 44 px. Entschieden am 2026-07-25 gegen die Empfehlung: **Karten-Overlay ohne Header** unter 640 px ([ADR-008](../entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md)). Zieht R2/R3/R4 und zwei P3-Punkte aus dem Backlog mit rein. |
-| A-4 | [Farbsystem entflechten](./A-4-farbsystem.md) | ✅ bereit | Gemessen trägt `--accent` **fünf** Rollen auf 15 CSS-Stellen, `--ok` zwei, und 8 von 15 Farbpaaren verfehlen 4,5:1. Entschieden am 2026-07-25: drei Token-Ebenen **Marke / Interaktion / Zustand**, „geschlossen" wird Slate statt Rot, alle Kontrastverstöße mit ([ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)). Wird **vor A-3** gebaut und entblockt A-5. |
-| A-5 | [Pins nach Zustand unterscheiden](./A-5-pins-nach-zustand.md) | 💡 Idee | Liefert / holt ab / gerade geschlossen sieht man erst nach dem Antippen. Durch A-1 entblockt — die Zustandsmenge steht jetzt fest; wartet auf die Zustandstokens aus A-4 (✅ bereit) und ist ab dann an [ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md) gebunden: Farbe trägt den Zustand, nie allein. |
+| A-4 | [Farbsystem entflechten](./A-4-farbsystem.md) | 🏁 erledigt | Umgesetzt am 2026-07-25: drei Token-Ebenen **Marke / Interaktion / Zustand** ([ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)). `--accent` (fünf Rollen) und `--ok` (zwei) sind weg, kein Farbwert liegt mehr außerhalb von `:root`, „geschlossen" ist Slate statt Rot, „unbekannt" ein gestrichelter Umriss, alle Kontrastpaare ≥ 4,5:1. Entblockt A-5 und liefert A-3 die Tokens. |
+| A-5 | [Pins nach Zustand unterscheiden](./A-5-pins-nach-zustand.md) | 💡 Idee | Liefert / holt ab / gerade geschlossen sieht man erst nach dem Antippen. **Beide Blocker sind weg** (A-1 🏁, A-4 🏁): die Zustandsmenge steht fest, die `--zustand-*`-Tokens und `cssVar()` existieren. Gebunden an [ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md): Farbe trägt den Zustand, nie allein. **Nächste Verfeinerung.** |
 | A-6 | [Marker-Clustering oder Canvas-Renderer](./A-6-clustering-oder-canvas.md) | 💡 Idee | Durch A-1 entblockt, aber **entschärft**: mit dem Default „Liefert jetzt" sind es beim Öffnen ~35 Marker, die 883 sieht nur, wer die Filter abschaltet (883 in 197 ms gemessen). Bleibt „nice to have". |
 | A-7 | [Telefonnummer in die Pipeline](./A-7-telefonnummer.md) | 💡 Idee | `phone`/`contact:phone` kommen beim Scan gratis mit; für „schnell bestellen" so nützlich wie die Website. Braucht eine neue DB-Spalte. |
 | A-8 | Filterzustand teilbar und wiederherstellbar machen | 🏁 erledigt | Zusammen mit A-1 gebaut: `?delivery=`/`?takeaway=`/`?open=`/`?cuisine=`/`?q=`, geschrieben per `history.replaceState` und nur dort, wo vom Standard abgewichen wird. Reine URL-Parameter, nichts wird gespeichert. `?nearby=1` bleibt erhalten. |
@@ -35,24 +35,25 @@ Reihenfolge = was als Nächstes sinnvoll wäre. Kein Zeitplan.
 ## Abhängigkeiten auf einen Blick
 
 ```
-A-1 (Standardfilter) 🏁 ─┬──►  A-5 (Pins nach Zustand)  ◄──  A-4 (Farbsystem) ✅
+A-1 (Standardfilter) 🏁 ─┬──►  A-5 (Pins nach Zustand)  ◄──  A-4 (Farbsystem) 🏁
                          ├──►  A-6 (Clustering/Canvas) — entschärft
                          └──►  A-8 (Filter in der URL) 🏁 mitgebaut
 
-A-4 (Farbsystem) ✅ ──────────►  A-3 (Overlay + Sheets) ✅ ──►  A-2 (Ergebnisliste)
+A-4 (Farbsystem) 🏁 ──────────►  A-3 (Overlay + Sheets) ✅ ──►  A-2 (Ergebnisliste)
                                  erbt die Tokens              erbt die Sheet-Mechanik
 ```
 
-**Der Flaschenhals ist weg.** A-1 ist am 2026-07-25 entschieden
+**Keine Anforderung ist mehr blockiert.** A-1 ist am 2026-07-25 entschieden
 ([ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)) und
-umgesetzt, A-8 gleich mit. A-5 hängt jetzt nur noch an A-4; A-6 ist keine
-Voraussetzung mehr, weil der Default eng geblieben ist.
+umgesetzt, A-8 gleich mit; A-4 ist am selben Tag umgesetzt
+([ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)). Damit
+sind **beide Kanten auf A-5 erledigt** — A-5 ist die nächste Verfeinerung. A-6
+ist keine Voraussetzung mehr, weil der Default eng geblieben ist.
 
-**A-4 kommt vor A-3.** Beide fassen denselben `<style>`-Block an, aber A-4 ändert
-kein Layout — in dieser Reihenfolge baut A-3 direkt auf den neuen Farbrollen auf
-statt die alten Namen erst zu übernehmen und später zu ersetzen
-([ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)).
-Praktische Folge: A-4 verbraucht `CACHE_VERSION` `v3`, A-3 rückt auf `v4`.
+**A-4 kam vor A-3**, weil beide denselben `<style>`-Block anfassen, A-4 aber kein
+Layout ändert: A-3 baut jetzt direkt auf den Farbrollen auf, statt die alten
+Namen erst zu übernehmen und später zu ersetzen. Praktische Folge: A-4 hat
+`CACHE_VERSION` `v3` verbraucht, A-3 nimmt `v4`.
 
 **A-3 ist keine Voraussetzung für A-2, aber der günstigere Weg dorthin:** die
 Bottom-Sheet-Mechanik aus A-3 ist die Hülle, in der die Ergebnisliste auf Mobil

@@ -29,14 +29,51 @@
           crossorigin=""></script>
 
   <style>
+    /* Farbrollen sind getrennt (A-4, ADR-009): Marke, Interaktion und
+       Datenzustand haben je eigene Tokens, und keine Rolle borgt sich die Farbe
+       einer anderen. Zwei Regeln gelten dauerhaft:
+       1. Kein Farbwert außerhalb dieses Blocks – Ausnahme sind die
+          `theme-color`-Metas und manifest.webmanifest, wo kein var() geht.
+       2. Farbe allein trägt nie einen Zustand; Symbol, Form oder Text muss mit
+          (Rot-Grün-Blindheit: der Helligkeitsabstand ja/nein ist nur 1,92). */
     :root {
+      /* ---- Flächen und Text ---- */
       --bg: #f7f7f5;
       --panel: #ffffff;
-      --accent: #d64541;
       --text: #1e1e1e;
       --muted: #6b6b6b;
-      --ok: #2e8b4f;
       --border: #e3e3df;
+      --flaeche-hover: #f0f0ee;     /* Hover von Chips, Buttons, Panels */
+      --auf-farbe: #ffffff;         /* Text auf gefüllter Fläche */
+      --schatten-weich: 0 6px 24px rgba(0, 0, 0, 0.12);
+      --schatten-stark: 0 6px 24px rgba(0, 0, 0, 0.18);
+
+      /* ---- Ebene 1: Marke. Steckt zusätzlich in den PWA-Icons, in
+              manifest.theme_color und in drei theme-color-Metas – wer sie
+              ändert, muss alle vier Orte plus tools/make_icons.py mitziehen
+              (ACCENT dort). Nie für einen Zustand verwenden. ---- */
+      --marke: #d64541;
+
+      /* ---- Ebene 2: Interaktion. Dieselbe Rot-Familie eine Stufe dunkler,
+              weil Weiß auf --marke nur 4,39:1 erreicht, auf --aktion 5,85:1. ---- */
+      --aktion: #b8352f;
+      --aktion-hover: #9c2b26;
+      --aktion-schwach: #fdf0ef;
+
+      /* ---- Ebene 3: Datenzustand. Nur diese drei für ja/nein/unbekannt.
+              „nein" ist Slate, nicht Rot: zu Grün ist der Helligkeitsabstand
+              1,92 statt 1,03, und die Marke bleibt als Zustand unverwechselbar.
+              „unbekannt" hat keine Fläche – es trennt sich von „nein" über die
+              Form (gestrichelter Umriss), nicht über den Farbton (ADR-007). ---- */
+      --zustand-ja: #1d6b3a;          --zustand-ja-bg: #e6f4ea;
+      --zustand-nein: #33333b;        --zustand-nein-bg: #dcdce1;
+      --zustand-unbekannt: #6b6b6b;
+
+      /* ---- Betriebsstatus und Hinweisleiste (Amber, je eigene Rolle) ---- */
+      --status: #856404;            --status-bg: #fff3cd;
+      --hinweis: #6b5a1f;           --hinweis-bg: #fff8e6;
+      --hinweis-border: #f0e2bd;    --hinweis-btn-border: #d9c68f;
+      --hinweis-btn-hover: #fdf7e6;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; }
@@ -55,10 +92,13 @@
       flex: 0 0 auto;
     }
     header h1 {
-      font-size: 1.15rem;
+      /* 1,2 rem fett = 19,2 px liegt über der WCAG-Grenze für „großen Text"
+         (18,66 px fett), wo 3:1 genügt – die Markenfarbe erreicht auf Weiß
+         4,39:1 und ist damit konform, ohne die Marke zu verschieben. */
+      font-size: 1.2rem;
       margin: 0 0 0.15rem;
     }
-    header h1 .accent { color: var(--accent); }
+    header h1 .accent { color: var(--marke); }
     header .sub { font-size: 0.8rem; color: var(--muted); }
     .controls {
       display: flex;
@@ -87,13 +127,13 @@
       color: var(--text);
       white-space: nowrap;
     }
-    .controls .chip:hover { background: #f0f0ee; }
+    .controls .chip:hover { background: var(--flaeche-hover); }
     .controls .chip[aria-pressed="true"] {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
+      background: var(--aktion);
+      border-color: var(--aktion);
+      color: var(--auf-farbe);
     }
-    .controls .chip[aria-pressed="true"]:hover { background: #c23b37; }
+    .controls .chip[aria-pressed="true"]:hover { background: var(--aktion-hover); }
     .controls .chip-reset {
       border-style: dashed;
       color: var(--muted);
@@ -109,13 +149,13 @@
       color: var(--text);
       max-width: 14rem;
     }
-    .controls button:hover { background: #f0f0ee; }
-    .controls button[aria-expanded="true"] { background: #f0f0ee; border-color: var(--accent); }
+    .controls button:hover { background: var(--flaeche-hover); }
+    .controls button[aria-expanded="true"] { background: var(--flaeche-hover); border-color: var(--aktion); }
     .controls .count { font-size: 0.85rem; color: var(--muted); margin-left: auto; }
     .pill {
       display: inline-block;
-      background: var(--accent);
-      color: #fff;
+      background: var(--aktion);
+      color: var(--auf-farbe);
       border-radius: 999px;
       font-size: 0.7rem;
       font-weight: 600;
@@ -137,7 +177,7 @@
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 10px;
-      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+      box-shadow: var(--schatten-stark);
       overflow: hidden;
     }
     .feed-head {
@@ -198,11 +238,11 @@
     }
     /* Installations-Button: nur sichtbar, wenn Installieren möglich ist. */
     .controls button#install {
-      border-color: var(--accent);
-      color: var(--accent);
+      border-color: var(--aktion);
+      color: var(--aktion);
       font-weight: 600;
     }
-    .controls button#install:hover { background: #fdf0ef; }
+    .controls button#install:hover { background: var(--aktion-schwach); }
     /* Hinweisleiste unter dem Kopf: Update verfügbar, Offline-Datenstand,
        Installations-Anleitung für iOS. */
     .banner {
@@ -210,16 +250,16 @@
       display: flex;
       align-items: center;
       gap: 0.6rem;
-      background: #fff8e6;
-      border-bottom: 1px solid #f0e2bd;
+      background: var(--hinweis-bg);
+      border-bottom: 1px solid var(--hinweis-border);
       padding: 0.45rem 1rem;
       font-size: 0.82rem;
-      color: #6b5a1f;
+      color: var(--hinweis);
     }
     .banner[hidden] { display: none; }
     .banner .banner-text { flex: 1 1 auto; }
     .banner button {
-      border: 1px solid #d9c68f;
+      border: 1px solid var(--hinweis-btn-border);
       background: var(--panel);
       color: var(--text);
       border-radius: 6px;
@@ -228,16 +268,16 @@
       cursor: pointer;
       white-space: nowrap;
     }
-    .banner button:hover { background: #fdf7e6; }
+    .banner button:hover { background: var(--hinweis-btn-hover); }
     .banner .banner-close {
       border: 0;
       background: none;
       font-size: 1.1rem;
       line-height: 1;
       padding: 0 0.2rem;
-      color: #6b5a1f;
+      color: var(--hinweis);
     }
-    .banner .banner-close:hover { background: none; color: var(--accent); }
+    .banner .banner-close:hover { background: none; color: var(--aktion); }
     /* Als installierte App: Platz für Statusleiste/Home-Indikator freihalten. */
     @media (display-mode: standalone) {
       header { padding-top: calc(0.6rem + env(safe-area-inset-top)); }
@@ -263,7 +303,7 @@
     }
     .hours-grid .day { color: var(--muted); white-space: nowrap; }
     .hours-grid .time { font-variant-numeric: tabular-nums; }
-    .hours-grid .time.closed { color: var(--accent); }
+    .hours-grid .time.closed { color: var(--zustand-nein); }
     .badge {
       display: inline-block;
       font-size: 0.72rem;
@@ -271,19 +311,30 @@
       border-radius: 4px;
       margin-right: 0.3rem;
     }
-    .badge-delivery { background: #e6f4ea; color: var(--ok); }
-    .badge-nodelivery { background: #f4e6e6; color: var(--accent); }
-    .badge-takeaway { background: #e7eefc; color: #2b5bb5; }
-    .badge-status { background: #fff3cd; color: #856404; }
-    .badge-open { background: #e6f4ea; color: var(--ok); }
-    .badge-closed { background: #f4e6e6; color: var(--accent); }
-    /* „unbekannt" ist ein eigener, bewusst blasser Zustand – es darf nie wie
-       ein „nein" aussehen (siehe A-1). */
-    .badge-unknown { background: #efefec; color: var(--muted); }
+    /* Die Badges laufen auf der Zustandsachse ja / nein / unbekannt, nicht auf
+       der Fähigkeitsachse: „🥡 Abholung" ist genauso ein Ja wie
+       „✔ Lieferservice" und deshalb grün. Unterschieden werden die beiden über
+       Symbol und Text – die Farbe ist für den Zustand reserviert (ADR-009).
+       Sichtbare Folge: wer liefert *und* abholen lässt, hat zwei grüne Badges. */
+    .badge-yes { background: var(--zustand-ja-bg); color: var(--zustand-ja); }
+    .badge-no { background: var(--zustand-nein-bg); color: var(--zustand-nein); }
+    .badge-status { background: var(--status-bg); color: var(--status); }
+    /* „unbekannt" ist der häufigste Zustand (87,5 % bei Lieferung) und darf nie
+       wie ein „nein" aussehen (ADR-007). Weil „nein" jetzt Slate ist, liegen
+       beide im Graubereich – getrennt werden sie deshalb über die Form: „nein"
+       ist gefüllt, „unbekannt" ein gestrichelter Umriss ohne Füllung. Das
+       Padding ist um die Rahmenbreite reduziert, damit das Badge außen genauso
+       groß bleibt wie die gefüllten und die Reihe nicht verrutscht. */
+    .badge-unknown {
+      background: none;
+      border: 1px dashed var(--zustand-unbekannt);
+      padding: calc(0.1rem - 1px) calc(0.4rem - 1px);
+      color: var(--zustand-unbekannt);
+    }
     .popup-link {
       display: inline-block;
       margin-top: 0.4rem;
-      color: var(--accent);
+      color: var(--aktion);
       font-weight: 600;
       text-decoration: none;
     }
@@ -291,7 +342,7 @@
     .meld { margin-top: 0.5rem; }
     .meld summary {
       cursor: pointer;
-      color: var(--accent);
+      color: var(--aktion);
       font-size: 0.8rem;
       font-weight: 600;
     }
@@ -341,14 +392,14 @@
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 0.6rem 0.8rem;
-      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+      box-shadow: var(--schatten-weich);
     }
     #empty button {
       pointer-events: auto;
       padding: 0.5rem 0.9rem;
-      border: 1px solid var(--accent);
-      background: var(--accent);
-      color: #fff;
+      border: 1px solid var(--aktion);
+      background: var(--aktion);
+      color: var(--auf-farbe);
       border-radius: 999px;
       font-size: 0.9rem;
       font-weight: 600;
@@ -448,6 +499,16 @@
       return String(s == null ? "" : s).replace(/[&<>"']/g, c => (
         { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
       ));
+    }
+
+    // Liest ein Farb-Token aus :root, damit Leaflet keine Farbliterale braucht
+    // (A-4: kein Farbwert außerhalb von :root). Der Fallback ist nötig, weil
+    // getPropertyValue in Kontexten ohne aufgelöste Custom-Properties einen
+    // Leerstring liefert – Leaflet würde dann ohne Farbe zeichnen.
+    function cssVar(name, fallback) {
+      const wert = getComputedStyle(document.documentElement)
+        .getPropertyValue(name).trim();
+      return wert || fallback;
     }
 
     // ---- Küchenstil (OSM-Tag `cuisine`) ----
@@ -773,16 +834,16 @@
       // unbekannt. 87 % der Restaurants sind in OSM nicht getaggt – das als
       // „nein" darzustellen wäre schlicht falsch (A-1).
       if (r.delivery === true) {
-        html += `<span class="badge badge-delivery">✔ Lieferservice</span>`;
+        html += `<span class="badge badge-yes">✔ Lieferservice</span>`;
       } else if (r.delivery === false) {
-        html += `<span class="badge badge-nodelivery">kein Lieferservice</span>`;
+        html += `<span class="badge badge-no">kein Lieferservice</span>`;
       } else {
         html += `<span class="badge badge-unknown">Lieferung unbekannt</span>`;
       }
       if (r.takeaway === true) {
-        html += `<span class="badge badge-takeaway">🥡 Abholung</span>`;
+        html += `<span class="badge badge-yes">🥡 Abholung</span>`;
       } else if (r.takeaway === false) {
-        html += `<span class="badge badge-nodelivery">keine Abholung</span>`;
+        html += `<span class="badge badge-no">keine Abholung</span>`;
       } else {
         html += `<span class="badge badge-unknown">Abholung unbekannt</span>`;
       }
@@ -795,9 +856,9 @@
       // sind (true/false). Bei unbekannt (null) bewusst kein Badge.
       const open = r.openingHours ? openStateNow(r.openingHours) : null;
       if (open === true) {
-        html += `<span class="badge badge-open">🟢 Jetzt geöffnet</span>`;
+        html += `<span class="badge badge-yes">🟢 Jetzt geöffnet</span>`;
       } else if (open === false) {
-        html += `<span class="badge badge-closed">🔴 Jetzt geschlossen</span>`;
+        html += `<span class="badge badge-no">🔴 Jetzt geschlossen</span>`;
       }
       const hours = r.openingHours ? formatOpeningHours(r.openingHours) : "";
       if (hours) {
@@ -1047,8 +1108,11 @@
           const here = [pos.coords.latitude, pos.coords.longitude];
           map.setView(here, 14);
           if (meMarker) map.removeLayer(meMarker);
+          // Fallback-Literal: bewusst dieselbe Farbe wie --marke – wer die
+          // Markenfarbe ändert, muss sie hier mitziehen (siehe :root).
+          const marke = cssVar("--marke", "#d64541");
           meMarker = L.circleMarker(here, {
-            radius: 8, color: "#d64541", fillColor: "#d64541", fillOpacity: 0.6,
+            radius: 8, color: marke, fillColor: marke, fillOpacity: 0.6,
           }).addTo(map).bindPopup("Dein Standort").openPopup();
         },
         () => alert("Standort konnte nicht ermittelt werden (Erlaubnis verweigert?)."),

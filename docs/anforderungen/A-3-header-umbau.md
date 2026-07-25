@@ -16,7 +16,25 @@ nützlich sein") und Schritt 2 („In meiner Nähe")
 ins Vollbild darf), [ADR-006](../entscheidungen/ADR-006-pwa-network-first.md)
 (`index.html` ist vorab gecacht → `CACHE_VERSION`),
 [ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)
-(der Leerzustand und der Zurücksetzen-Weg dürfen nicht verschwinden)
+(der Leerzustand und der Zurücksetzen-Weg dürfen nicht verschwinden),
+[ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)
+(die Farbrollen stehen fest — A-3 setzt keine eigenen Farbwerte)
+
+**Nachtrag 2026-07-25: [A-4](./A-4-farbsystem.md) ist umgesetzt.** Drei Dinge
+sind damit für A-3 schon erledigt oder festgelegt:
+
+1. **Die Tokens existieren.** `--marke` / `--aktion` / `--aktion-hover` /
+   `--aktion-schwach` / `--zustand-*` / `--flaeche-hover` / `--auf-farbe` /
+   `--schatten-weich` / `--schatten-stark` / `--hinweis-*` stehen in `:root`.
+   A-3 benutzt sie und legt **keinen** neuen Farbwert außerhalb von `:root` ab —
+   das ist die bindende Regel aus ADR-009, nicht bloß ein Stilwunsch.
+2. **`header h1` ist bereits 1,2 rem** (nicht mehr 1,15 rem), weil die
+   Markenfarbe erst als „großer Text" die WCAG-Schwelle erreicht. Wer die
+   Größe im Umbau anfasst, darf **nicht unter 1,2 rem** gehen, solange das `h1`
+   auf Desktop sichtbar ist und die Markenfarbe trägt (4,39:1 < 4,5:1).
+   Unter 640 px wird das `h1` ohnehin visuell versteckt — dort ist die Grenze
+   gegenstandslos.
+3. **`CACHE_VERSION` steht auf `v3`.** A-3 nimmt `v4`.
 
 ## Der Bestand — gemessen, nicht geschätzt
 

@@ -162,6 +162,61 @@ Bei null Treffern zeigt `#empty` einen Leerzustand mit „Alle Restaurants zeige
 Das ist beim Standardfilter der Regelfall (nachts liefert niemand) und darf nicht
 entfernt werden.
 
+## Farbrollen (Frontend)
+
+Farbe hat **drei getrennte Rollen** mit je eigenem Token-Satz in `:root`
+([ADR-009](./entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md), A-4).
+Keine Rolle borgt sich die Farbe einer anderen; `--accent` und `--ok` existieren
+nicht mehr.
+
+| Rolle | Tokens | Gilt für |
+|---|---|---|
+| **Marke** | `--marke` `#d64541` | Markenwort im `h1`, PWA-Icons, `manifest.theme_color`, `theme-color`-Metas. **Nie für einen Zustand.** |
+| **Interaktion** | `--aktion` `#b8352f`, `--aktion-hover`, `--aktion-schwach` | Links, Knöpfe, aktive Chips, `.pill`, Melde-Flag |
+| **Datenzustand** | `--zustand-ja` / `-ja-bg`, `--zustand-nein` / `-nein-bg`, `--zustand-unbekannt` | Badges, „geschlossen" in der Zeitentabelle, künftig die Pins ([A-5](./anforderungen/A-5-pins-nach-zustand.md)) |
+
+Dazu neutrale Tokens (`--bg`, `--panel`, `--text`, `--muted`, `--border`,
+`--flaeche-hover`, `--auf-farbe`, `--schatten-weich`, `--schatten-stark`) und
+zwei eigenständige Amber-Rollen: `--status*` (Betriebsstatus) und `--hinweis*`
+(Hinweisleiste).
+
+**Vier bindende Regeln:**
+
+1. **Kein Farbwert außerhalb von `:root`.** Jede CSS-Regel benutzt `var()`.
+   Ausnahmen nur, wo kein `var()` möglich ist: die drei `theme-color`-Metas und
+   `manifest.webmanifest`. In JavaScript liest `cssVar(name, fallback)` das
+   Token (`getComputedStyle` liefert ohne aufgelöste Custom-Properties einen
+   Leerstring — daher der Fallback).
+2. **Farbe trägt den Zustand, das Symbol trägt die Fähigkeit.** „🥡 Abholung" ist
+   ein *Ja* und deshalb grün wie „✔ Lieferservice"; unterschieden werden sie
+   durch Symbol und Text. Zwei grüne Badges nebeneinander sind normal, kein
+   Fehler. Blau als „Abholung"-Farbe ist verbraucht.
+3. **Ein Zustand wird nie allein über Farbe codiert.** Der Helligkeitsabstand
+   „ja" gegen „nein" liegt bei 1,92 — besser als die 1,03 von vorher, aber keine
+   tragfähige Einzelcodierung. Symbol, Form oder Text muss mit.
+4. **„unbekannt" trennt sich von „nein" über die Form.** `.badge-no` ist gefüllt,
+   `.badge-unknown` ein gestrichelter Umriss ohne Füllung (Padding um die
+   Rahmenbreite reduziert, damit die Badges gleich groß bleiben). „unbekannt" ist
+   mit 87,5 % bei Lieferung der **häufigste** Zustand und darf nach
+   [ADR-007](./entscheidungen/ADR-007-standardfilter-liefert-jetzt.md) nie wie
+   eine Absage aussehen.
+
+Die Badge-Klassen laufen auf der Zustandsachse, nicht auf der Fähigkeitsachse:
+`.badge-yes`, `.badge-no`, `.badge-unknown`, dazu `.badge-status` als eigene
+Rolle. Alle Text/Flächen-Paare erreichen 4,5:1 (kleiner Text); `header h1` ist
+1,2 rem, weil die Markenfarbe auf Weiß nur 4,39:1 schafft und erst als „großer
+Text" (≥ 18,66 px fett) die dann geltende 3:1-Schwelle erfüllt.
+
+**Die Markenfarbe ist an vier Orten gekoppelt** — `--marke` in beiden
+`:root`-Blöcken, `manifest.theme_color`, die drei `theme-color`-Metas und
+`ACCENT` in `tools/make_icons.py`. Sie zu ändern heißt: alle vier anfassen und
+die Icons neu erzeugen. `tests/test_pwa.py` prüft den Gleichlauf
+Manifest ↔ Meta.
+
+Dark Mode ist damit vorbereitet, aber **nicht gebaut** (P3 im
+[Backlog](./BACKLOG.md)): er wäre ein `@media (prefers-color-scheme: dark)`-Block,
+der ausschließlich `:root` überschreibt.
+
 ## Kostenübersicht
 
 **0 €.** Die Overpass-API ist kostenlos und ohne API-Key nutzbar. Ein Scan =
@@ -320,7 +375,11 @@ Worker etwas Größeres ändert. Drei Fallen, die dabei Zeit gekostet haben:
   Navigation scheitert dann mit `ERR_INTERNET_DISCONNECTED`, bevor der Worker
   überhaupt gefragt wird – der Cache-Fallback sieht damit immer kaputt aus.
   Verlässlich ist, den lokalen Testserver zu beenden: Der `fetch` im Worker
-  scheitert, der Cache-Zweig greift – genau wie im Funkloch.
+  scheitert, der Cache-Zweig greift – genau wie im Funkloch. (Es gibt eine
+  zweite, noch verwirrendere Ausprägung: läuft der Worker bereits, kann die
+  Navigation *gelingen* und sein eigener `fetch` trotzdem echte Netzdaten
+  holen – `X-Lieferkarte-Cache` fehlt dann und der Offline-Hinweis bleibt aus,
+  obwohl beides korrekt ist. Auch hier hilft nur, den Server abzuschalten.)
 - **Nicht auf `registration.active` warten.** Diese Bedingung ist erfüllt,
   bevor Precache und Aktivierung durch sind (Ergebnis: scheinbar leere Caches,
   scheinbar unkontrollierte Seite – beides nur Timing). Stabil ist das Warten

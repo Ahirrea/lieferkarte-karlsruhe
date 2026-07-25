@@ -9,13 +9,20 @@
   <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <style>
+    /* Farbrollen wie in index.html getrennt (A-4, ADR-009): --marke nur für die
+       Marke, --aktion für alles Anklickbare. Diese Seite braucht keine
+       Zustandsfarben. Kein Farbwert außerhalb dieses Blocks. */
     :root {
       --bg: #f7f7f5;
       --panel: #ffffff;
-      --accent: #d64541;
       --text: #1e1e1e;
       --muted: #6b6b6b;
       --border: #e3e3df;
+      /* Marke: identisch zu manifest.theme_color, dem theme-color-Meta oben und
+         ACCENT in tools/make_icons.py – nur gemeinsam änderbar. */
+      --marke: #d64541;
+      /* Interaktion: eine Stufe dunkler, erreicht auf Weiß 5,85:1 statt 4,39:1. */
+      --aktion: #b8352f;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; }
@@ -30,11 +37,12 @@
       border-bottom: 1px solid var(--border);
       padding: 0.7rem 1rem;
     }
-    header h1 { font-size: 1.15rem; margin: 0; }
-    header h1 .accent { color: var(--accent); }
+    /* 1,2 rem fett = „großer Text" nach WCAG, dort genügen 3:1 – siehe A-4. */
+    header h1 { font-size: 1.2rem; margin: 0; }
+    header h1 .accent { color: var(--marke); }
     header a.back {
       font-size: 0.85rem;
-      color: var(--accent);
+      color: var(--aktion);
       text-decoration: none;
       font-weight: 600;
     }
@@ -58,7 +66,7 @@
     p, li { font-size: 0.92rem; }
     ul { padding-left: 1.2rem; }
     li { margin: 0.2rem 0; }
-    a { color: var(--accent); }
+    a { color: var(--aktion); }
     .lead {
       background: var(--panel);
       border: 1px solid var(--border);

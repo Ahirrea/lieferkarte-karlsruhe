@@ -93,14 +93,18 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   → **Teil von [A-3](./anforderungen/A-3-header-umbau.md)**: die gemeinsame
   Sheet-Mechanik führt den Fokus beim Öffnen hinein und beim Schließen zum
   Auslöser zurück – für Filter- und Feed-Sheet in einem.
-- [ ] **P3 – Dark Mode fehlt.** Über die CSS-Variablen (`:root`) wäre
-  `prefers-color-scheme: dark` ein kleiner Eingriff; abends ist die Seite grell.
-  **Wartet auf [A-4](./anforderungen/A-4-farbsystem.md)** – heute stehen 16 rohe
-  Hex-Werte außerhalb von `:root`, ein Dark Mode wäre also eine Suche durch alle
-  Regeln. A-4 ist entschieden und baut Dark Mode ausdrücklich *nicht*, macht ihn
-  aber möglich: danach enthält keine Regel außerhalb `:root` noch einen Farbwert
-  ([ADR-009](./entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)), und
-  dieser Punkt schrumpft auf einen `@media`-Block, der nur `:root` überschreibt.
+- [ ] **P3 – Dark Mode fehlt.** `prefers-color-scheme: dark`; abends ist die
+  Seite grell. **Die Voraussetzung steht seit A-4** (umgesetzt 2026-07-25,
+  [ADR-009](./entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)): kein
+  Farbwert liegt mehr außerhalb von `:root`, die vormals 16 rohen Hex-Werte sind
+  Tokens. Damit ist dieser Punkt **ein `@media`-Block, der ausschließlich `:root`
+  überschreibt** – keine Suche durch alle Regeln mehr. Konkret zu überschreiben
+  sind die Flächen/Text-Tokens (`--bg`, `--panel`, `--text`, `--muted`,
+  `--border`, `--flaeche-hover`) sowie die Hintergrundpaare der Zustände
+  (`--zustand-*-bg`, `--status-bg`, `--hinweis-bg`); `--marke` bleibt, weil sie
+  an Icons und `theme_color` hängt. Zwei Fallen: die Kontrastpaare müssen für
+  dunkel **neu** gerechnet werden (die Werte aus A-4 gelten nur für hell), und
+  `--auf-farbe` ist dann nicht mehr automatisch Weiß.
 - [ ] **„Heute" in der Öffnungszeiten-Tabelle hervorheben.** Bei „Di–Fr / Sa, So
   / Mo" muss man selbst suchen, was gerade gilt – `berlinNow()` kennt den
   Wochentag schon.

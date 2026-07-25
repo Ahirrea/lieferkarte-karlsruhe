@@ -23,7 +23,11 @@ OUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
                        "web", "icons")
 
 # Projektfarben (identisch zu den CSS-Variablen in web/index.html)
-ACCENT = (0xD6, 0x45, 0x41)   # --accent
+# ACHTUNG: --marke ist an vier Orten gekoppelt und nur gemeinsam änderbar –
+# hier, in :root von web/index.html und web/datenschutz.html, in
+# manifest.theme_color und in den drei theme-color-Metas. Eine Änderung heißt
+# außerdem Icons neu generieren; tests/test_pwa.py prüft den Gleichlauf.
+ACCENT = (0xD6, 0x45, 0x41)   # --marke
 CREAM = (0xFF, 0xFF, 0xFF)    # Teller/Besteck
 BG_LIGHT = (0xF7, 0xF7, 0xF5)  # --bg (Apple-Touch-Icon-Rand)
 

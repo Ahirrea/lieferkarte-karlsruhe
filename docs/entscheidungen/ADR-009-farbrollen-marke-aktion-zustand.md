@@ -1,6 +1,6 @@
 # ADR-009: Farbrollen getrennt — Marke, Interaktion, Zustand
 
-**Status:** vorgeschlagen
+**Status:** akzeptiert
 **Datum:** 2026-07-25
 
 Wird mit der Umsetzung von

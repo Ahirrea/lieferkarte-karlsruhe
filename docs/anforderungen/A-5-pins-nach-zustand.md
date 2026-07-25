@@ -7,7 +7,13 @@
 
 **Verfeinert am:** — (noch nicht verfeinert, Ausgangstext unten)
 **Bedient PRD:** „Kernschleife" Schritt 1
-**Eingeschränkt durch:** hängt an [A-1](./A-1-standardfilter-entschaerfen.md)
+**Eingeschränkt durch:**
+[ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)
+(die Zustandstokens und die Regel „Farbe nie allein"),
+[ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)
+(„unbekannt" nie wie ein „nein")
+· **nicht mehr blockiert:** [A-1](./A-1-standardfilter-entschaerfen.md) 🏁 und
+[A-4](./A-4-farbsystem.md) 🏁 sind beide umgesetzt
 
 ## Ausgangstext (aus `backlog/IDEEN.md`, Idee 5)
 
@@ -24,7 +30,9 @@ trägt, ist keine Farbe für „Zustand" frei.
 ---
 
 **Nachtrag 2026-07-25 (aus der A-4-Verfeinerung), vor der eigenen Verfeinerung
-zu berücksichtigen:** A-4 ist entschieden und liefert die Grundlage. Drei
+zu berücksichtigen:** ~~A-4 ist entschieden und liefert die Grundlage.~~
+→ **A-4 ist am 2026-07-25 umgesetzt**; die Tokens und `cssVar()` stehen im Code,
+die folgenden Vorgaben sind damit keine Ankündigung mehr, sondern Bestand. Drei
 Vorgaben binden A-5 damit schon jetzt
 ([ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)):
 
@@ -35,12 +43,16 @@ Vorgaben binden A-5 damit schon jetzt
    Rot-Grün-Blindheit reicht das nicht. Form, Größe oder Symbol muss mit. Die
    Idee „blass = jetzt geschlossen" aus dem Ausgangstext geht in die richtige
    Richtung, weil sie Helligkeit statt Farbton nutzt.
-3. **Blau ist verbraucht:** „Abholung" verliert in A-4 seine eigene Farbe, weil
-   Farbe ab dann den *Zustand* codiert und das Symbol die *Fähigkeit*. Ein Pin
+3. **Blau ist verbraucht:** „Abholung" hat in A-4 seine eigene Farbe verloren,
+   weil Farbe jetzt den *Zustand* codiert und das Symbol die *Fähigkeit*. Ein Pin
    kann nicht „blau = Abholung" und „grün/slate = offen/zu" gleichzeitig sagen.
 
-Außerdem entsteht in A-4 der Helfer `cssVar(name, fallback)` — der Weg, eine
-Tokenfarbe in JavaScript zu lesen, den `L.circleMarker` für die Pins braucht.
+Der Helfer `cssVar(name, fallback)` existiert seit A-4 in `web/index.html` (neben
+`esc()`) — der Weg, eine Tokenfarbe in JavaScript zu lesen, den `L.circleMarker`
+für die Pins braucht. `locateMe()` benutzt ihn bereits als Vorlage. Ebenfalls
+schon vorhanden: das Muster „gefüllt gegen gestrichelter Umriss" trennt bei den
+Badges „nein" von „unbekannt" — für die Pins ist das der naheliegende
+Formunterschied, der Vorgabe 2 erfüllt.
 
 Die Zustandsmengen aus `data/restaurants.db` (883 aktiv, Scan 2026-07-21):
 Lieferung 63 ja / 47 nein / **773 unbekannt**, Abholung 237 / 8 / **638**.

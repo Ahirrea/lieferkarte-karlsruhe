@@ -207,3 +207,103 @@ unmöglich gemacht.
 
 **Zahlen (echte `web/restaurants.json`, Playwright mit `L`-Stub):** Default 35,
 nur Lieferung 63, nur Abholung 237, ohne Filter 883 von 883 in 197 ms.
+
+---
+
+## Farbsystem entflechten ✅
+
+**Was:** Farbe hat jetzt **drei getrennte Rollen** — Marke, Interaktion,
+Datenzustand — mit je eigenem Token-Satz. `--accent`, das fünf Bedeutungen
+gleichzeitig trug, und `--ok`, das zwei trug, existieren nicht mehr. „Nicht
+geöffnet / liefert nicht" ist **Slate statt Rot**, „unbekannt" ein gestrichelter
+Umriss ohne Füllung, und kein Farbwert steht mehr außerhalb von `:root`.
+
+Anforderung: [A-4](./anforderungen/A-4-farbsystem.md) (mit der vollständigen
+Zuordnungstabelle aller 15 Stellen). Grundsatz:
+[ADR-009](./entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md). Löst
+**R12** aus dem UI/UX-Review vom Juli 2026.
+
+**Umsetzung:**
+- `web/index.html` — neuer `:root`-Block mit `--marke` / `--aktion*` /
+  `--zustand-*` plus neutralen Tokens (`--flaeche-hover`, `--auf-farbe`,
+  `--schatten-weich`/`-stark`) und den beiden Amber-Rollen `--status*` und
+  `--hinweis*`. Die 15 `var(--accent)`-Stellen sind nach Rolle umgehängt, die 16
+  rohen Hex-Werte und die zwei `rgba()`-Schatten sind Tokens.
+- Badge-Klassen laufen auf der **Zustandsachse**: `.badge-yes` / `.badge-no` /
+  `.badge-unknown` ersetzen die sechs alten (`badge-delivery`, `-nodelivery`,
+  `-takeaway`, `-open`, `-closed`). `.badge-status` bleibt eine eigene Rolle.
+- `cssVar(name, fallback)` liest ein Token in JavaScript; der Standort-Marker in
+  `locateMe()` nutzt es statt eines Farbliterals. Der Fallback ist nötig, weil
+  `getComputedStyle` ohne aufgelöste Custom-Properties einen Leerstring liefert.
+- `header h1` von 1,15 auf **1,2 rem** — auch in `web/datenschutz.html`.
+- Mitgezogen: `web/datenschutz.html` (eigener `:root`), das Wurzel-`index.html`,
+  ein Kopplungs-Kommentar an `ACCENT` in `tools/make_icons.py`,
+  `CACHE_VERSION` → `v3`.
+
+**Der Haken:** „Geschlossen" verliert die gewohnte Signalfarbe Rot. Das ist der
+Preis für zwei Dinge, die schwerer wiegen. Erstens war *keine* Farbe für „Zustand"
+frei: solange Markenfarbe und „geschlossen" derselbe Wert `#d64541` waren, hätte
+ein roter Pin gleichzeitig „geschlossen" und „das ist unsere Farbe" bedeutet —
+und genau das blockierte [A-5](./anforderungen/A-5-pins-nach-zustand.md).
+Zweitens, und wichtiger: Rot `#d64541` und Grün `#2e8b4f` haben zueinander einen
+Helligkeitskontrast von **1,03**, sind also praktisch gleich hell. Bei
+Rot-Grün-Blindheit (rund 8 % der Männer) war die Unterscheidung damit nicht schwer,
+sondern unmöglich — es blieb keine Rückfallebene. Slate `#33333b` bringt den
+Abstand auf 1,92.
+
+Die Marke behält das Rot, weil der Zustand es billiger abgeben kann: `#d64541`
+steckt in den PWA-Icons, im Manifest, in drei Metas und in `make_icons.py`. Die
+Verwechslung löst sich genauso auf, wenn der *Zustand* wechselt — nur ohne
+Icon-Neugenerierung. Ein dunkleres Rot für den Zustand wurde geprüft und
+verworfen: 1,07 zu Grün und 1,59 zur Marke hätten R12 halb gelöst und das
+Rot-Grün-Problem gar nicht.
+
+1,92 ist besser, aber nicht genug, deshalb die bindende Regel: **Farbe allein
+trägt einen Zustand nie.** Jeder Zustand führt Symbol, Form oder Text mit
+(✔ / 🥡 / 🟢 / 🔴). Und weil „nein" jetzt ebenfalls im Graubereich liegt, trennt
+sich „unbekannt" davon über die **Form** statt über den Farbton — gefüllt gegen
+gestrichelten Umriss. Das war kein Detail, sondern Pflicht: „unbekannt" ist mit
+87,5 % bei Lieferung der häufigste Zustand, und
+[ADR-007](./entscheidungen/ADR-007-standardfilter-liefert-jetzt.md) verbietet, ihn
+wie eine Absage aussehen zu lassen. Der gestrichelte Rahmen nutzt
+`--zustand-unbekannt` (5,33:1) statt `--border` (1,15:1) — ein unsichtbarer
+Rahmen hätte die Formtrennung als Mechanismus wertlos gemacht.
+
+Sichtbare Nebenwirkung, gewollt: Badges und Links sind **merklich dunkler**, weil
+alle acht Kontrastverstöße im selben Schritt behoben wurden statt in einem
+zweiten Durchgang, den A-5 sonst mit den falschen Werten geerbt hätte. Und wer
+liefert *und* abholen lässt (47 Restaurants), hat jetzt **zwei grüne Badges**
+nebeneinander — Farbe codiert den Zustand, Symbol und Text die Fähigkeit.
+
+**Kontrast vorher / nachher** (WCAG 2.1, Badges sind 0,72 rem ≈ 11,5 px → kleiner
+Text, Schwelle 4,5:1):
+
+| Paar | Vorher | Nachher |
+|---|---|---|
+| Badge „ja" (Lieferung / Abholung / geöffnet) | 3,76 ❌ | **5,75** ✔ |
+| Badge „nein" | 3,62 ❌ | **9,16** ✔ |
+| Badge „unbekannt" | 4,63 ✔ | **5,33** ✔ |
+| Aktiver Filter-Chip | 4,39 ❌ | **5,85** ✔ |
+| Aktiver Chip, Hover | 5,28 ✔ | **7,53** ✔ |
+| `.popup-link` / `.meld summary` / `#install` | 4,39 ❌ | **5,85** ✔ |
+| `#empty button` | 4,39 ❌ | **5,85** ✔ |
+| „geschlossen" in der Zeitentabelle | 4,39 ❌ | **12,52** ✔ |
+| `header h1 .accent` | 4,39 ❌ (Schwelle 4,5) | 4,39 ✔ (Schwelle 3,0 bei 1,2 rem fett) |
+
+Und der Punkt, um den es in R12 eigentlich ging — die Unterscheidbarkeit
+untereinander:
+
+| Unterscheidbarkeit | Vorher | Nachher |
+|---|---|---|
+| „ja" gegen „nein" | 1,03 | **1,92** + Symbol |
+| „nein" gegen „unbekannt" | 1,21 | **2,35** + Formunterschied |
+| Marke gegen Datenzustand | Marke *war* der Datenzustand | **2,85** |
+
+**Geprüft:** 59 Unittests grün · 82 Browser-Prüfungen (Playwright mit `L`-Stub)
+gegen synthetische Daten **und** die echte `restaurants.json` — alle neun
+Kombinationen `delivery` × `takeaway`, jedes der 773 `delivery === null` rendert
+`badge-unknown` und keines `badge-no`, jede Rolle über `getComputedStyle`
+nachgewiesen (kein `var()` fällt auf `initial` zurück) · Kontrastwerte
+nachgerechnet, nicht geschätzt · PWA-Update `v2` → `v3` durchgespielt: der neue
+Worker wartet, die Seite fragt, erst der Klick schaltet um, danach sind die
+`v2`-Caches aufgeräumt.

@@ -5,7 +5,13 @@
 
 **User Story:** Als Nutzerin möchte ich Zustände (liefert / liefert nicht / geöffnet / geschlossen / unbekannt) farblich von der Markenfarbe unterscheiden können, um nicht rot mit rot zu verwechseln.
 
-**Verfeinert am:** 2026-07-25
+**Verfeinert am:** 2026-07-25 · **umgesetzt am:** 2026-07-25
+(→ [Kurzprotokoll in UMGESETZT.md](../UMGESETZT.md#farbsystem-entflechten-),
+[ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md) ist damit
+`akzeptiert`). Bei der Umsetzung wurden **drei Kontrastzahlen dieses Textes
+korrigiert** und **zwei Details bei `.badge-unknown` abweichend gelöst** — beides
+unten an der jeweiligen Stelle durchgestrichen und begründet, nicht stillschweigend
+ersetzt.
 **Bedient PRD:** „Ziele" — Zustände auf einen Blick; Voraussetzung für „Kernschleife" Schritt 1
 **Eingeschränkt durch:** [ADR-006](../entscheidungen/ADR-006-pwa-network-first.md) (`CACHE_VERSION`),
 [ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md) („unbekannt" nie als „nein"),
@@ -256,7 +262,7 @@ und kein `var(--ok)` mehr im Repo stehen.
 | 274 `.badge-delivery` + 278 `.badge-open` | **`.badge-yes`** → `--zustand-ja` / `--zustand-ja-bg` |
 | 275 `.badge-nodelivery` + 279 `.badge-closed` | **`.badge-no`** → `--zustand-nein` / `--zustand-nein-bg` |
 | 276 `.badge-takeaway` | entfällt als eigene Farbe → `.badge-yes` (siehe unten) |
-| 282 `.badge-unknown` | bleibt `.badge-unknown`, aber `background: none` + `border: 1px dashed var(--border)` + `color: var(--zustand-unbekannt)` |
+| 282 `.badge-unknown` | bleibt `.badge-unknown`, aber `background: none` + ~~`border: 1px dashed var(--border)`~~ → **`border: 1px dashed var(--zustand-unbekannt)`** (Begründung unten) + `color: var(--zustand-unbekannt)`, dazu Padding um 1 px reduziert |
 | 277 `.badge-status` | `--status` / `--status-bg` |
 | 266 `.hours-grid .time.closed` | `--zustand-nein` |
 | 213/214/217/222/231/238 Hinweisleiste | die fünf `--hinweis-*`-Tokens |
@@ -271,6 +277,25 @@ den Zustand reserviert ist. Ohne diesen Schnitt wäre A-5 nicht baubar: ein Pin
 kann nicht gleichzeitig „blau = Abholung" und „grün/slate = offen/zu" codieren.
 Sichtbare Folge im Popup: bei Restaurants mit beidem stehen zwei grüne Badges
 nebeneinander.
+
+**Zwei Abweichungen bei `.badge-unknown`, entschieden bei der Umsetzung am
+2026-07-25** — beide dienen genau dem Zweck, für den die Formtrennung überhaupt
+da ist:
+
+1. **Der gestrichelte Rahmen nutzt `--zustand-unbekannt`, nicht `--border`.**
+   `--border` `#e3e3df` erreicht auf `--panel` nur **1,15:1** und wäre praktisch
+   unsichtbar — die Form, die nach
+   [ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md) „unbekannt"
+   von „nein" trennen *soll*, hätte man nicht gesehen, und der Mechanismus wäre
+   wertlos gewesen. `--zustand-unbekannt` `#6b6b6b` erreicht **5,33:1** und
+   erfüllt damit auch WCAG 1.4.11 (3:1 für Zustandsanzeigen), das für einen
+   bedeutungstragenden Rahmen gilt. Kein neues Token, nur das der eigenen Rolle.
+2. **Das Padding wird um die Rahmenbreite reduziert**
+   (`calc(0.1rem - 1px) calc(0.4rem - 1px)`). Sonst wäre das einzige Badge mit
+   Rahmen 2 px größer als die gefüllten daneben und die Badge-Reihe verrutschte —
+   bei 87,5 % „unbekannt" der Normalfall, nicht der Ausnahmefall. So bleibt die
+   Außengröße identisch, und die Zusage „keine Layoutänderung außer `header h1`"
+   hält (nachgemessen: beide Badge-Typen 17 px hoch).
 
 ### Zustände und ihre Darstellung
 
@@ -304,7 +329,7 @@ Alle Werte gerechnet nach WCAG 2.1 (relative Luminanz). Badges sind 0,72 rem
 | Aktiver Chip, Hover | 5,28 ✔ | **7,53** ✔ |
 | `.popup-link`, `.meld summary`, `#install` | 4,39 ❌ | **5,85** ✔ |
 | `#empty button` | 4,39 ❌ | **5,85** ✔ |
-| `.hours-grid .time.closed` | 4,39 ❌ | **8,78** ✔ |
+| `.hours-grid .time.closed` | 4,39 ❌ | ~~**8,78** ✔~~ → **12,52** ✔ (bei der Umsetzung nachgerechnet, siehe unten) |
 | `header h1 .accent` | 4,39 ❌ (Schwelle 4,5) | 4,39 ✔ (Schwelle 3,0 bei 1,2 rem fett) |
 | Badge „Betriebsstatus" | 4,96 ✔ | 4,96 ✔ |
 | Hinweisleiste | 6,38 ✔ | 6,38 ✔ |
@@ -314,14 +339,31 @@ Und der Punkt, um den es in R12 eigentlich geht:
 | Unterscheidbarkeit | Vorher | Nachher |
 |---|---|---|
 | „ja" gegen „nein" (Helligkeitsabstand) | 1,03 | **1,92** |
-| „nein" gegen „unbekannt" | 1,65 | **2,35** + Formunterschied |
-| Marke gegen Datenzustand | Marke *war* der Datenzustand | **2,00** (rot gegen slate) |
+| „nein" gegen „unbekannt" | ~~1,65~~ → **1,21** | **2,35** + Formunterschied |
+| Marke gegen Datenzustand | Marke *war* der Datenzustand | ~~**2,00**~~ → **2,85** (rot gegen slate) |
 
 1,92 ist besser, aber nicht genug: **Farbe allein trägt einen Zustand nie.**
 Deshalb steht in [ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)
 die Regel, dass jeder Zustand zusätzlich ein Symbol, eine Form oder Text
 mitführt — was das Popup heute schon tut (✔ / 🥡 / 🟢 / 🔴) und was A-5 für die
 Pins übernehmen muss.
+
+**Drei Zahlen dieser Tabellen waren falsch — bei der Umsetzung am 2026-07-25
+nachgerechnet und oben durchgestrichen statt stillschweigend ersetzt.** Alle drei
+weichen zugunsten der Entscheidung ab, keine gegen sie; die Schwellwerte wurden
+nie verfehlt, und die Zahlen in
+[ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md) sind
+sämtlich korrekt:
+
+| Genannt | Gemessen | Warum das nichts umwirft |
+|---|---|---|
+| `.time.closed` **8,78** | **12,52** | Slate `#33333b` steht im Popup auf `--panel` (weiß), nicht auf der Badge-Fläche. Der Wert ist besser als angesetzt. |
+| „nein" gegen „unbekannt" vorher **1,65** | **1,21** | Der Ausgangszustand war *schlechter* als dokumentiert — das Argument für die Formtrennung wird dadurch stärker, nicht schwächer. |
+| Marke gegen Zustand **2,00** | **2,85** | Rot gegen Slate trennt deutlicher als angesetzt; R12 ist damit klarer gelöst. |
+
+Nachgerechnet mit einem Wegwerf-Skript nach WCAG 2.1 (relative Luminanz), wie im
+Testplan vorgesehen — inklusive Gegenprobe der *alten* Werte, die die Befunde
+oben bestätigt hat (3,76 / 3,62 / 4,63 / 4,39 / 1,03).
 
 ### Datenmodell, externe Abhängigkeiten
 
@@ -429,34 +471,34 @@ trotzdem, weil `tests/test_pwa.py` `web/index.html` liest.
 
 ## Definition of Done
 
-- [ ] `web/index.html` enthält den neuen `:root`-Block; **kein `var(--accent)`
+- [x] `web/index.html` enthält den neuen `:root`-Block; **kein `var(--accent)`
       und kein `var(--ok)`** mehr im Repo.
-- [ ] **Kein Farbwert außerhalb von `:root`** in beiden `<style>`-Blöcken —
+- [x] **Kein Farbwert außerhalb von `:root`** in beiden `<style>`-Blöcken —
       Literale nur noch in den `theme-color`-Metas und in `manifest.webmanifest`.
-- [ ] Alle 15 Stellen der Zuordnungstabelle sind umgehängt; die Rolle jeder
+- [x] Alle 15 Stellen der Zuordnungstabelle sind umgehängt; die Rolle jeder
       Stelle ist am Tokennamen ablesbar.
-- [ ] `.badge-yes` / `.badge-no` / `.badge-unknown` ersetzen die sechs alten
+- [x] `.badge-yes` / `.badge-no` / `.badge-unknown` ersetzen die sechs alten
       Badge-Klassen; `.badge-unknown` ist Umriss + gestrichelt, **nicht** gefüllt.
-- [ ] `delivery === null` / `takeaway === null` rendern `badge-unknown`, nie
+- [x] `delivery === null` / `takeaway === null` rendern `badge-unknown`, nie
       `badge-no` — per Playwright über alle sechs Kombinationen belegt
       ([ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)).
-- [ ] Alle Paare der Kontrasttabelle erreichen ≥ 4,5:1, `header h1` bei 1,2 rem
+- [x] Alle Paare der Kontrasttabelle erreichen ≥ 4,5:1, `header h1` bei 1,2 rem
       ≥ 3:1. Nachgerechnet, nicht geschätzt.
-- [ ] Markenfarbe unverändert `#d64541` in Icons, `manifest.theme_color` und den
+- [x] Markenfarbe unverändert `#d64541` in Icons, `manifest.theme_color` und den
       drei `theme-color`-Metas; `tests/test_pwa.py` grün.
-- [ ] `cssVar()` existiert mit Fallback-Parameter; der Standort-Marker nutzt es.
-- [ ] `web/datenschutz.html` und das Wurzel-`index.html` sind mitgezogen.
-- [ ] `CACHE_VERSION` in `web/sw.js` hochgezählt
+- [x] `cssVar()` existiert mit Fallback-Parameter; der Standort-Marker nutzt es.
+- [x] `web/datenschutz.html` und das Wurzel-`index.html` sind mitgezogen.
+- [x] `CACHE_VERSION` in `web/sw.js` hochgezählt
       ([ADR-006](../entscheidungen/ADR-006-pwa-network-first.md)); kein
       `skipWaiting()` beim Install dazugekommen.
-- [ ] „© OpenStreetMap-Mitwirkende" in der Fußzeile unverändert sichtbar und
+- [x] „© OpenStreetMap-Mitwirkende" in der Fußzeile unverändert sichtbar und
       lesbar (die Fußzeile nutzt `--muted`, das sich nicht ändert).
-- [ ] `python3 -m unittest discover -s tests -v` grün.
-- [ ] Frontend gegengeprüft mit synthetischen Daten **und** der echten
+- [x] `python3 -m unittest discover -s tests -v` grün.
+- [x] Frontend gegengeprüft mit synthetischen Daten **und** der echten
       `web/restaurants.json`.
-- [ ] Keine Cookies, kein Tracking, kein `localStorage` dazugekommen; keine
+- [x] Keine Cookies, kein Tracking, kein `localStorage` dazugekommen; keine
       Layout- oder Logikänderung außer `header h1`s Schriftgröße.
-- [ ] ADR-009 angelegt und in `docs/entscheidungen/README.md` verlinkt;
+- [x] ADR-009 angelegt und in `docs/entscheidungen/README.md` verlinkt;
       TECHNICAL/UMGESETZT/BACKLOG/A-3/A-5 nachgezogen; Status in der
       [Übersicht](./README.md#übersicht) auf 🏁.
 
