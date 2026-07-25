@@ -73,7 +73,7 @@ nichtssagende Werte (`yes`, `no`, `unknown`, `fixme`, `other`) fallen weg,
 `NULL` = nicht getaggt. `export.py` gibt das Feld als Liste `cuisines` aus
 (leere Liste = unbekannt), die deutschen Bezeichnungen liegen im Frontend
 (`CUISINE_LABELS`). Änderungen am Küchenstil werden **nicht** protokolliert
-(siehe `backlog/DONE.md`).
+(siehe [`UMGESETZT.md`](./UMGESETZT.md)).
 
 Der Endpoint ist per Umgebungsvariable überschreibbar, falls ein Spiegelserver
 nötig wird:
@@ -303,7 +303,10 @@ weil Playwright-Kontexte inkognito-artig sind.
 ```
 lieferkarte-karlsruhe/
 ├── README.md                    # Öffentliche Doku (was ist das?)
-├── TECHNICAL.md                 # Das hier – technische Doku
+├── docs/TECHNICAL.md            # Das hier – technische Doku
+├── docs/PRD.md                  # Produktziel & Nicht-Ziele
+├── docs/anforderungen/          # was als Nächstes gebaut wird (Status lebt dort)
+├── docs/entscheidungen/         # ADRs, append-only
 ├── DATENSCHUTZ.md               # Datenschutz & Hinweise (kein Impressum – privat)
 ├── index.html                   # Root-Weiterleitung -> web/index.html (für Pages)
 ├── .nojekyll                    # Pages statisch ausliefern, ohne Jekyll

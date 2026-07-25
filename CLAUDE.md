@@ -14,21 +14,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `data/restaurants.db` — the SQLite store (three tables; ~880 active restaurants from real Overpass scans)
 - `.github/workflows/weekly-scan.yml`, MIT `LICENSE`
 
-**The launch has happened.** The repo is **public** and GitHub Pages serves the map at <https://ahirrea.github.io/lieferkarte-karlsruhe/web/index.html>; the weekly workflow runs and keeps ~880 real restaurants in `main`. The launch checklist in `VOR-VEROEFFENTLICHUNG.md` is fully ticked off: author email is a GitHub `noreply` address, real OSM data is committed, and (as a private, non-commercial project) there is no Impressum — `DATENSCHUTZ.md` is a personal-data-free privacy/notes page instead. (No API key or billing setup — the data source is free.)
+**The launch has happened.** The repo is **public** and GitHub Pages serves the map at <https://ahirrea.github.io/lieferkarte-karlsruhe/web/index.html>; the weekly workflow runs and keeps ~880 real restaurants in `main`. The launch checklist (now archived at `docs/archiv/VOR-VEROEFFENTLICHUNG.md`) is fully ticked off: author email is a GitHub `noreply` address, real OSM data is committed, and (as a private, non-commercial project) there is no Impressum — `DATENSCHUTZ.md` is a personal-data-free privacy/notes page instead. (No API key or billing setup — the data source is free.)
 
-What's still open is **product work, not launch prep**: the roadmap in `README.md` (specs in `backlog/`) and one undecided question in `VOR-VEROEFFENTLICHUNG.md` — the default `delivery` filter only matches ~7 % of restaurants, so the map looks emptier than the data warrants.
+What's still open is **product work, not launch prep**: the requirements in `docs/anforderungen/` and the tasks in `docs/BACKLOG.md`. The one big undecided question is `docs/anforderungen/A-1-standardfilter-entschaerfen.md` — the default `delivery` filter only matches ~7 % of restaurants, so the map looks emptier than the data warrants.
 
-**The backlog lives in `backlog/`, split by stage** — `backlog/IDEEN.md` (needs a decision or a draft first), `backlog/READY-FOR-DEV.md` (spec'd, buildable as-is), `backlog/DONE.md` (shipped; kept as a log of *why* it was solved that way), plus `backlog/README.md` as the index and the conventions for moving items between them. It used to be one root-level `IDEEN.md`. When an item ships, move its text into `backlog/DONE.md` rather than rewriting it, and keep the idea numbering stable (items cross-reference each other by number).
+## Requirements engineering (`docs/`)
+
+The `docs/` layout is identical across all four projects — Maschinell,
+PositiveParentingReminders, lieferkarte-karlsruhe, BauWatch-KA. It separates by
+rate of change:
+
+| Layer | Path | Rate of change |
+|---|---|---|
+| Why & what | `docs/PRD.md` | rarely |
+| How it was decided | `docs/entscheidungen/` | **append-only** |
+| What's next | `docs/anforderungen/` | fluid |
+| Technical tasks | `docs/BACKLOG.md` | fluid |
+| What's shipped, and why that way | `docs/UMGESETZT.md` | grows |
+| Implementation spec | `docs/TECHNICAL.md` | with the code |
+
+- **Requirements go through `docs/PROZESS.md`, not straight into code.** A non-trivial idea — even phrased as a question („Können wir X?") — gets refined first: survey the code, name the tensions with the non-goals in `docs/PRD.md`, lay out options with a recommendation, let the product owner decide the open questions, then **its own file** `docs/anforderungen/A-<n>-<kurz-titel>.md` (from `_vorlage.md`) plus a row in `docs/anforderungen/README.md` (status lives **only** there). **Implementation only on explicit green light** — a pre-assigned branch name is not one. The `/anforderung` slash command runs the process.
+- Small fixes and technical chores go straight into `docs/BACKLOG.md`; the dividing line is in the process file („Anforderung oder Aufgabe? Der Test").
+- Architectural decisions become an ADR in `docs/entscheidungen/`. That folder is **append-only** — an ADR is never rewritten; if a decision is reversed, write a new ADR and set the old one's `Status:` to `ersetzt durch ADR-<Nr>`.
+- **Raw ideas need no file**, just a row in the overview table with status `💡 Idee`.
+- **A-1 (Standardfilter entschärfen) is the bottleneck.** It is the project's most important open decision and blocks A-5, A-6 and A-8. Read `docs/anforderungen/A-1-standardfilter-entschaerfen.md` before touching filter logic.
+
+> Until 2026-07-25 the backlog lived in `backlog/`, split into three stage files (`IDEEN.md` → `READY-FOR-DEV.md` → `DONE.md`). Those are dissolved: a status change is now one word in the overview table instead of moving text between files, which is what previously forced the special rules about relative links and stable numbering. `DONE.md` became `docs/UMGESETZT.md` unchanged. The `R…`/`P…` labels from the July 2026 UI/UX review are preserved throughout.
 
 **Data source: OpenStreetMap via the Overpass API** (not Google Places). This was a deliberate switch: Google's Maps Platform terms forbid storing paid Places data >30 days, redistributing it, or showing it off a Google map — all of which a public repo with a committed DB/JSON would do. OpenStreetMap is under the **ODbL**, which explicitly permits public (even commercial) redistribution as long as "© OpenStreetMap-Mitwirkende" attribution is shown. That makes the public-repo model licit and free.
 
-`TECHNICAL.md` is the implementation spec — the DB schema, the Overpass query, change-detection rules. Read it (and verify against the actual files) before changing pipeline code.
+`docs/TECHNICAL.md` is the implementation spec — the DB schema, the Overpass query, change-detection rules. Read it (and verify against the actual files) before changing pipeline code.
 
 ## Language
 
 The project and all docs are in **German** (it's a public service for Karlsruhe). Keep user-facing strings, commit messages, and new docs in German to match; code identifiers follow the existing docs (e.g. `sync_places`, `normalize_osm`, `fetch_overpass`).
 
-## Architecture (as specified in TECHNICAL.md)
+## Architecture (as specified in docs/TECHNICAL.md)
 
 A weekly batch pipeline, no backend server. Data flows one direction:
 
@@ -39,9 +60,9 @@ scanner.py  ──> data/restaurants.db ──> export.py ──> web/restaurant
 
 - **scanner.py** — queries the Overpass API (OpenStreetMap) in a single request, upserts into SQLite keyed on `place_id` (an OSM `type/id`, e.g. `node/12345`), and detects changes vs. the previous scan.
 - **SQLite schema** — three tables: `restaurants` (current state, `place_id` = stable key), `changes` (append-only log: `NEW` / `REMOVED` / `ADDRESS_CHANGED` / `DELIVERY_CHANGED` / `TAKEAWAY_CHANGED` / `STATUS_CHANGED`), `scan_runs` (per-scan timestamp + request count).
-- **export.py** — reads the DB, writes `web/restaurants.json` (`{count, generatedAt, ...}`); the workflow's summary step reads those fields via `jq`. It also builds the `feed` block for the „Diese Woche neu"-Panel (`build_feed()`): the `changes` of the last 7 days, **minus the initial import** (the first scan logs every restaurant as `NEW`), capped per change type. Rules documented in `TECHNICAL.md`.
+- **export.py** — reads the DB, writes `web/restaurants.json` (`{count, generatedAt, ...}`); the workflow's summary step reads those fields via `jq`. It also builds the `feed` block for the „Diese Woche neu"-Panel (`build_feed()`): the `changes` of the last 7 days, **minus the initial import** (the first scan logs every restaurant as `NEW`), capped per change type. Rules documented in `docs/TECHNICAL.md`.
 - **web/** — static Leaflet + OpenStreetMap map. Both the map tiles and the restaurant data come from OpenStreetMap (ODbL), so a single "© OpenStreetMap-Mitwirkende" attribution covers everything.
-- **PWA (`web/sw.js` + `web/manifest.webmanifest`)** — installable and offline-capable, no build step. Paths are relative (`./…`) because Pages serves the site from `/<repo>/web/`. Details in `TECHNICAL.md` ("PWA"); design rationale in `backlog/DONE.md`.
+- **PWA (`web/sw.js` + `web/manifest.webmanifest`)** — installable and offline-capable, no build step. Paths are relative (`./…`) because Pages serves the site from `/<repo>/web/`. Details in `docs/TECHNICAL.md` ("PWA"); design rationale in `docs/UMGESETZT.md` and `docs/entscheidungen/ADR-006-pwa-network-first.md`.
 - **Deployment** — GitHub Pages serves from `main` at repo root, so `web/` assets and the JSON are committed into the repo. The DB is also committed (its history *is* the change log — see `fetch-depth: 0` in the workflow). Under ODbL this is fine; it would have breached Google's terms.
 
 ## Commands
@@ -75,12 +96,16 @@ The network policy of a web session blocks both external hosts this project uses
 
 ## Constraints that drive the design
 
-- **Free and republishable is the whole point.** The move off Google Places was to make a *public* repo licit (see top). Don't reintroduce a data source that forbids public redistribution or requires paid per-call SKUs. Overpass is free; be a good citizen (single request per scan, descriptive `User-Agent`, backoff on 429/5xx).
-- **Never let an empty/failed scan wipe the DB.** A full scan marks not-seen restaurants as REMOVED. `scanner.py` therefore aborts (leaves the DB untouched) if Overpass fails or returns zero usable places — preserve this guard in any refactor.
+These are the hard rules. Most of them now also exist as ADRs in
+`docs/entscheidungen/` with full context, rejected alternatives and consequences —
+this list stays as the quick reference.
+
+- **Free and republishable is the whole point.** ([ADR-001](docs/entscheidungen/ADR-001-openstreetmap-statt-google-places.md)) The move off Google Places was to make a *public* repo licit (see top). Don't reintroduce a data source that forbids public redistribution or requires paid per-call SKUs. Overpass is free; be a good citizen (single request per scan, descriptive `User-Agent`, backoff on 429/5xx).
+- **Never let an empty/failed scan wipe the DB.** ([ADR-003](docs/entscheidungen/ADR-003-scan-darf-db-nie-leeren.md)) A full scan marks not-seen restaurants as REMOVED. `scanner.py` therefore aborts (leaves the DB untouched) if Overpass fails or returns zero usable places — preserve this guard in any refactor.
 - **`--light` mode intentionally does not mark REMOVED.** An incomplete Overpass response must not delete entries; removals are only trusted from the full scan. Preserve this asymmetry.
 - **`delivery` (Lieferung) and `takeaway` (Abholung) come from the OSM tags of the same name** (`yes`/`only` → true, `no` → false, untagged → unknown/`NULL`), parsed via `_osm_yesno`. Both are separate, independent tags. Coverage is patchy (most restaurants are untagged) — the frontend must handle `delivery === null` / `takeaway === null` gracefully. The default filter only acts on `delivery`; `takeaway` currently shows as a popup badge only.
-- **`cuisine` (Küchenstil) is normalized in the scanner** (`_osm_cuisine`): the OSM tag allows multiple values in arbitrary spelling (`pizza;italian`, `Ice Cream`, `coffee-shop`) → the DB column holds a canonical `;`-separated list of lowercase keys (`NULL` = untagged); junk values (`yes`/`no`/`unknown`/`fixme`/`other`) and duplicates are dropped. `export.py` emits it as the list `cuisines` (empty list = unknown); the German labels live in the frontend (`CUISINE_LABELS`), the DB stays raw. The frontend's filter dropdown is built from the values actually present and stays hidden while none are tagged. Cuisine changes are deliberately **not** logged in `changes`.
+- **`cuisine` (Küchenstil) is normalized in the scanner** (`_osm_cuisine`): the OSM tag allows multiple values in arbitrary spelling (`pizza;italian`, `Ice Cream`, `coffee-shop`) → the DB column holds a canonical `;`-separated list of lowercase keys (`NULL` = untagged); junk values (`yes`/`no`/`unknown`/`fixme`/`other`) and duplicates are dropped. `export.py` emits it as the list `cuisines` (empty list = unknown); the German labels live in the frontend (`CUISINE_LABELS`), the DB stays raw. The frontend's filter dropdown is built from the values actually present and stays hidden while none are tagged. Cuisine changes are deliberately **not** logged in `changes` ([ADR-005](docs/entscheidungen/ADR-005-cuisine-nicht-protokollieren.md)).
 - **The `changes` table has two traps — anything that reads it must handle both.** (1) The **initial import**: the first scan logged all 883 restaurants as `NEW` on a single timestamp. That's the starting inventory, not news — `build_feed()` drops everything at the first `scan_runs` timestamp. (2) **Mass events when a column is introduced**: the scan that first read the existing `takeaway` tags logged 245 × `TAKEAWAY_CHANGED` ("unbekannt → ja") at once. The feed therefore caps items per change type (`FEED_MAX_PER_TYPE`) and reports the true number in `counts`. Any *new* change type will cause the same burst on the scan that first reads the tag — which is one reason `cuisine` deliberately logs nothing. A new type also has to be registered in **two** places: `FEED_TYPE_ORDER` (`export.py`) and `FEED_GROUPS` (`web/index.html`) — otherwise the panel shows the raw type string as its group heading.
-- **The PWA must never serve stale restaurant data.** `restaurants.json` is network-first in `sw.js`; the cache is a fallback for offline only and is surfaced as such in the UI. Never switch it to cache-first — the data is replaced weekly. Same for HTML/manifest. **Bump `CACHE_VERSION` in `web/sw.js` whenever a precached file changes**, and keep the "no `skipWaiting()` on install" rule (the page asks before switching version).
-- **Attribution is mandatory (ODbL).** "© OpenStreetMap-Mitwirkende" must stay visible in the frontend footer, the JSON `attribution` field, and DATENSCHUTZ.md. Don't remove it.
+- **The PWA must never serve stale restaurant data.** ([ADR-006](docs/entscheidungen/ADR-006-pwa-network-first.md)) `restaurants.json` is network-first in `sw.js`; the cache is a fallback for offline only and is surfaced as such in the UI. Never switch it to cache-first — the data is replaced weekly. Same for HTML/manifest. **Bump `CACHE_VERSION` in `web/sw.js` whenever a precached file changes**, and keep the "no `skipWaiting()` on install" rule (the page asks before switching version).
+- **Attribution is mandatory (ODbL).** ([ADR-001](docs/entscheidungen/ADR-001-openstreetmap-statt-google-places.md)) "© OpenStreetMap-Mitwirkende" must stay visible in the frontend footer, the JSON `attribution` field, and DATENSCHUTZ.md. Don't remove it.
 - **No cookies, no tracking, no analytics, no server-side data collection** is a hard product promise (README + DATENSCHUTZ.md). Geolocation stays browser-only. Don't add anything that breaks this.

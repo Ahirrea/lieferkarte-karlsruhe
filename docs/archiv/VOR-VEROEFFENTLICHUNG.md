@@ -1,5 +1,12 @@
 # Vor der Veröffentlichung – Checkliste
 
+> **Archiv.** Diese Checkliste ist vollständig abgearbeitet — der Launch hat
+> stattgefunden. Sie liegt hier als Nachweis, was vor der Veröffentlichung geprüft
+> wurde. Die einzige damals noch offene Entscheidung („Filter für Abdeckung
+> anpassen") ist als Anforderung
+> [A-1](../anforderungen/A-1-standardfilter-entschaerfen.md) ausgearbeitet worden,
+> inklusive der Abdeckungstabelle und der vier Optionen.
+
 Diese Datei hält fest, was vor dem Umstellen des Repos auf **public** (und dem
 Aktivieren von GitHub Pages) zu prüfen bzw. zu entscheiden ist.
 

@@ -1,10 +1,20 @@
-# ✅ Done (Umgesetzt)
+# ✅ Umgesetzt
 
 Fertig und live. Die Abschnitte bleiben als Kurzprotokoll stehen – interessant
 ist jeweils **der Haken**: warum es so gelöst ist und nicht anders.
 
-**Backlog:** [💡 Ideen](IDEEN.md) · [🔨 Ready for Dev](READY-FOR-DEV.md) ·
-✅ Done · [Übersicht](README.md)
+Die Architekturentscheidungen, die in diesen Haken stecken, sind zusätzlich als
+ADRs herausgezogen: [ADR-004](./entscheidungen/ADR-004-oeffnungszeiten-eigener-parser.md)
+(Öffnungszeiten-Parser, Europe/Berlin), [ADR-005](./entscheidungen/ADR-005-cuisine-nicht-protokollieren.md)
+(Küchenstil wird nicht protokolliert), [ADR-006](./entscheidungen/ADR-006-pwa-network-first.md)
+(PWA network-first). Der Text hier bleibt unverändert.
+
+**Doku:** [PRD](./PRD.md) · [Anforderungen](./anforderungen/README.md) ·
+[Entscheidungen](./entscheidungen/README.md) · [Backlog](./BACKLOG.md) ·
+✅ Umgesetzt · [Technik](./TECHNICAL.md)
+
+> Hieß bis 2026-07-25 `backlog/DONE.md`. Inhaltlich unverändert bis auf diesen
+> Kopf und die aktualisierten Querverweise.
 
 ---
 
@@ -35,7 +45,7 @@ der Zeitzone des Nutzers, inklusive Sommer-/Winterzeit, komplett im Browser
 
 **Abdeckung:** 741 Restaurants haben Zeiten, davon sind ~90 % eindeutig
 auswertbar; ~10 % bleiben „unbekannt". (Volle Abdeckung wäre
-[Idee 9](IDEEN.md#9-ausbau-von-bereits-umgesetztem).)
+[Ausbau von bereits Umgesetztem](./BACKLOG.md#ausbau-von-bereits-umgesetztem).)
 
 ## Filter nach Küchenstil ✅
 
@@ -71,7 +81,7 @@ komplett versteckt. Bei aktivem Filter fallen ungetaggte Restaurants heraus
 **Bewusst nicht gemacht:** kein `CUISINE_CHANGED` im Änderungsprotokoll –
 Umtaggen in OSM (`pizza` → `pizza;italian`) ist häufig und für den Feed ohne
 Aussagekraft; der aktuelle Wert genügt. (Zur Abdeckung siehe
-[Idee 8](IDEEN.md#8-küchenstil-abdeckung-prüfen).)
+[A-8](./anforderungen/README.md#übersicht).)
 
 ## Änderungs-Feed „Diese Woche neu …" ✅
 
@@ -84,7 +94,7 @@ Woche" in einem Panel – gruppiert nach Änderungsart; ein Klick zentriert die
 Karte auf das Restaurant und öffnet das Popup (auch wenn der Marker gerade
 weggefiltert ist). Datenquelle ist die `changes`-Tabelle, die `scanner.py`
 ohnehin füllt – reine Export- und Anzeigearbeit, kein neuer Request.
-Feldbeschreibung: [`TECHNICAL.md`](../TECHNICAL.md).
+Feldbeschreibung: [`TECHNICAL.md`](./TECHNICAL.md).
 
 **Die drei Haken:**
 
@@ -140,7 +150,7 @@ installierte App auf dem Datenstand des Installationstags eingefroren. Deshalb:
   geladen (Rücksicht auf die kostenlosen OSM-Tile-Server).
 - **Leaflet kommt weiterhin vom CDN** (mit `integrity`-Hash), der Worker cacht es
   „best effort" mit. Vendoren wäre der nächste Schritt
-  ([Idee 9](IDEEN.md#9-ausbau-von-bereits-umgesetztem)).
+  ([Ausbau von bereits Umgesetztem](./BACKLOG.md#ausbau-von-bereits-umgesetztem)).
 - **Keine Push-Nachrichten, keine Background-Sync-Registrierung** – das würde
   dem „kein Tracking, keine Datenerfassung"-Versprechen widersprechen. Der
   Worker cacht ausschließlich, er sendet nichts.

@@ -77,7 +77,11 @@ Das Projekt ist **Open Source** (MIT-Lizenz) – alle Komponenten sind einsehbar
 - `web/sw.js` + `web/manifest.webmanifest` – PWA (installierbar, offline-fähig)
 - `tools/make_icons.py` – erzeugt die App-Icons (nur bei Design-Änderung nötig)
 
-Vollständiges Setup: siehe [`TECHNICAL.md`](TECHNICAL.md)
+Vollständiges Setup: siehe [`docs/TECHNICAL.md`](docs/TECHNICAL.md)
+
+Produktziel und Nicht-Ziele: [`docs/PRD.md`](docs/PRD.md) ·
+was als Nächstes gebaut wird: [`docs/anforderungen/`](docs/anforderungen/README.md) ·
+warum es so gelöst ist: [`docs/entscheidungen/`](docs/entscheidungen/README.md)
 
 ### Lokale Entwicklung / Test
 
@@ -113,35 +117,47 @@ MIT – du darfst den Code nutzen, ändern und weitergeben. Siehe [`LICENSE`](LI
 
 ## Roadmap (Karlsruhe)
 
-Details & Specs siehe [`backlog/`](backlog/README.md) – aufgeteilt in
-[💡 Ideen](backlog/IDEEN.md), [🔨 Ready for Dev](backlog/READY-FOR-DEV.md) und
-[✅ Done](backlog/DONE.md).
+Die Doku liegt in [`docs/`](docs/PRD.md):
+
+| Was | Wo |
+|---|---|
+| Produktziel, Ziele, **Nicht-Ziele** | [`docs/PRD.md`](docs/PRD.md) |
+| Was als Nächstes gebaut wird (Status lebt dort) | [`docs/anforderungen/`](docs/anforderungen/README.md) |
+| Warum es so gelöst ist (ADRs, append-only) | [`docs/entscheidungen/`](docs/entscheidungen/README.md) |
+| Technische Aufgaben und Fixes | [`docs/BACKLOG.md`](docs/BACKLOG.md) |
+| Was schon umgesetzt ist, mit Begründung | [`docs/UMGESETZT.md`](docs/UMGESETZT.md) |
+| Von der Idee zur umsetzungsreifen Anforderung | [`docs/PROZESS.md`](docs/PROZESS.md) |
 
 **Bereits umgesetzt:**
 
 - [x] Öffnungszeiten im Popup + „jetzt geöffnet"-Anzeige und -Filter (siehe
-  `backlog/DONE.md`)
+  [`docs/UMGESETZT.md`](docs/UMGESETZT.md))
 - [x] „In meiner Nähe"-Button (zentriert die Karte auf den eigenen Standort)
 - [x] Filter nach Küchenstil (Pizza, Thai, Burger, …) – OSM-Tag `cuisine` läuft
-  durch die komplette Pipeline (siehe `backlog/DONE.md`). Die Auswahlliste baut
-  sich aus den vorhandenen Daten und bleibt versteckt, solange kein Restaurant
-  getaggt ist – die Werte füllt der nächste wöchentliche Scan.
+  durch die komplette Pipeline (siehe [`docs/UMGESETZT.md`](docs/UMGESETZT.md)). Die
+  Auswahlliste baut sich aus den vorhandenen Daten und bleibt versteckt, solange
+  kein Restaurant getaggt ist – die Werte füllt der nächste wöchentliche Scan.
 - [x] Änderungs-Feed („Diese Woche neu …") – Knopf „🆕 Diese Woche" öffnet die
   Änderungen der letzten sieben Tage, gruppiert nach Art; ein Klick springt zum
-  Restaurant auf der Karte (siehe `backlog/DONE.md`)
+  Restaurant auf der Karte (siehe [`docs/UMGESETZT.md`](docs/UMGESETZT.md))
 - [x] **PWA (zum Homescreen hinzufügen)** – Manifest, Icons, Service Worker mit
-  Offline-Betrieb und Update-Hinweis (siehe `backlog/DONE.md` und `TECHNICAL.md`)
+  Offline-Betrieb und Update-Hinweis (siehe [`docs/UMGESETZT.md`](docs/UMGESETZT.md)
+  und [`docs/TECHNICAL.md`](docs/TECHNICAL.md))
 
 **Offen:**
 
+- [ ] **Standardfilter entschärfen** – „nur mit Lieferservice" trifft nur ~7 % der
+  Restaurants, weil das OSM-Tag `delivery` selten gesetzt ist; die Karte wirkt
+  dadurch leerer, als die Daten hergeben. Die wichtigste offene Entscheidung des
+  Projekts, mit Abdeckungszahlen und vier Optionen ausgearbeitet in
+  [`docs/anforderungen/A-1`](docs/anforderungen/A-1-standardfilter-entschaerfen.md).
 - [ ] **UI/UX-Feinschliff** – Punkte aus dem Review vom Juli 2026, gesammelt in
-  [`backlog/READY-FOR-DEV.md`](backlog/READY-FOR-DEV.md). Vorrang hat die
-  Fußzeile: durch `height: 100vh` liegen Attribution und Datenschutz-Link auf dem
-  Handy unter der Browserleiste.
-- [ ] **Standardfilter** – „nur mit Lieferservice" trifft nur ~7 % der Restaurants,
-  weil das OSM-Tag `delivery` selten gesetzt ist; die Karte wirkt dadurch leerer,
-  als die Daten hergeben. Optionen und Abdeckungszahlen stehen in
-  [`VOR-VEROEFFENTLICHUNG.md`](VOR-VEROEFFENTLICHUNG.md).
+  [`docs/BACKLOG.md`](docs/BACKLOG.md). Vorrang hat die Fußzeile: durch
+  `height: 100vh` liegen Attribution und Datenschutz-Link auf dem Handy unter der
+  Browserleiste.
+- [ ] **Größere UX-Umbauten** als Anforderungen: Ergebnisliste neben der Karte,
+  Header auf eine Zeile, Farbsystem entflechten, Pins nach Zustand unterscheiden —
+  siehe [`docs/anforderungen/`](docs/anforderungen/README.md).
 
 *Bewusst gestrichen:* Manuelle Einträge für Restaurants ohne
 OpenStreetMap-Eintrag – OSM ist bereits eine gepflegte, kostenlose Datenbank;

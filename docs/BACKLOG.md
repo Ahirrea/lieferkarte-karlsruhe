@@ -1,20 +1,24 @@
-# 🔨 Ready for Dev
+# Backlog
 
-Spezifiziert und direkt baubar: Problem, betroffene Datei und Lösung sind jeweils
-benannt. Es geht ausschließlich um das Frontend – Pipeline und Datenmodell
-bleiben unberührt. Ist ein Punkt gebaut und live, zieht er als Kurzprotokoll nach
-[`DONE.md`](DONE.md).
+Technische Aufgaben und Fixes — Verhalten bleibt gleich oder die Lösung ist
+offensichtlich. **Ausgearbeitete Anforderungen** stehen in
+[`anforderungen/README.md`](./anforderungen/README.md) und entstehen über den
+festen [Refinement-Prozess](./PROZESS.md); die Trennlinie steht dort unter
+„Anforderung oder Aufgabe? Der Test".
 
-**Backlog:** [💡 Ideen](IDEEN.md) · 🔨 Ready for Dev ·
-[✅ Done](DONE.md) · [Übersicht](README.md)
+Stand: 2026-07-25. Reihenfolge = Priorität. Die Kürzel `R…`/`P…` stammen aus dem
+UI/UX-Review vom Juli 2026 (Mobil-Screenshot, Android/Chrome, 1080 × 2340, im
+Abgleich mit `web/index.html`) und bleiben erhalten, damit Rückfragen zuordenbar sind.
 
----
+**Vor jedem Push von Pipeline-Änderungen:**
+`python3 -m unittest discover -s tests -v`
 
 ## Hoch – die Pflicht-Attribution ist auf dem Handy unsichtbar
 
 Diese drei Punkte gehören zusammen: sie betreffen alle die ODbL-pflichtige
 Angabe „© OpenStreetMap-Mitwirkende" im Footer. Deshalb Vorrang vor allem
-anderen.
+anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
+(siehe [ADR-001](./entscheidungen/ADR-001-openstreetmap-statt-google-places.md)).
 
 - [ ] **R2 – `100dvh` statt `100vh`.** `body { height: 100vh }`
   (`web/index.html:49`) meint auf Android Chrome die *große* Viewport-Höhe (ohne
@@ -54,8 +58,9 @@ anderen.
   bei jedem `input` und baut für **jeden** Marker vorab das komplette Popup-HTML
   inklusive `openStateNow()`-Parsing (`web/index.html:891`). Fix: ~150 ms
   Debounce und `bindPopup(() => popupHtml(r))` – Leaflet akzeptiert eine
-  Funktion. (Clustering/Canvas ist
-  [Idee 6](IDEEN.md#6-marker-clustering-oder-canvas-renderer).)
+  Funktion. **Wird dringlich, sobald [A-1](./anforderungen/A-1-standardfilter-entschaerfen.md)
+  entschieden ist** (dann 883 statt 63 Marker); Clustering/Canvas ist
+  [A-6](./anforderungen/A-6-clustering-oder-canvas.md).
 
 ## Niedrig – Feinschliff
 
@@ -69,12 +74,49 @@ anderen.
   nicht in das Panel (Escape schließt immerhin schon).
 - [ ] **P3 – Dark Mode fehlt.** Über die CSS-Variablen (`:root`) wäre
   `prefers-color-scheme: dark` ein kleiner Eingriff; abends ist die Seite grell.
+  Berührt sich mit [A-4](./anforderungen/A-4-farbsystem.md) – wer die Tokens
+  ohnehin entflechtet, sollte Dark Mode gleich mitdenken.
 - [ ] **„Heute" in der Öffnungszeiten-Tabelle hervorheben.** Bei „Di–Fr / Sa, So
   / Mo" muss man selbst suchen, was gerade gilt – `berlinNow()` kennt den
   Wochentag schon.
 - [ ] **„Jetzt geschlossen – öffnet wieder um 16:30".** Die Intervalle sind in
   `parseIntervals()` bereits geparst; die Zusatzinfo entscheidet, ob jemand bleibt.
-- [ ] **Filterzustand teilbar und wiederherstellbar machen.** Bisher gibt es nur
-  `?open=1` / `?nearby=1`; `?delivery=0&cuisine=thai` passt ins bestehende Muster
-  und verletzt das „keine Cookies"-Versprechen nicht (reine URL-Parameter, keine
-  Speicherung).
+
+## Datenqualität nachsehen
+
+- [ ] **Küchenstil: Abdeckung prüfen.** Die `cuisine`-Pipeline ist
+  [fertig](./UMGESETZT.md) („Filter nach Küchenstil"), aber in
+  `data/restaurants.db` sind nach vier Scans (letzter: 2026-07-21) **0 von 883**
+  aktiven Restaurants getaggt – während `opening_hours` bei 741 gefüllt ist. Für
+  Karlsruhe sind null Küchenstil-Tags unplausibel; das deutet eher auf ein
+  Pipeline-Problem als auf fehlende OSM-Daten. Der Filter bleibt so lange
+  versteckt (das ist gewollt), aber der Befund gehört nachgesehen:
+
+  ```bash
+  python3 -c "import sqlite3; c=sqlite3.connect('data/restaurants.db'); \
+  print(c.execute('SELECT cuisine, COUNT(*) FROM restaurants WHERE active=1 \
+  GROUP BY cuisine ORDER BY 2 DESC LIMIT 20').fetchall())"
+  ```
+
+## Ausbau von bereits Umgesetztem
+
+Drei bewusst zurückgestellte Erweiterungen – jeweils erst nötig, wenn der
+aktuelle Kompromiss nicht mehr reicht:
+
+- [ ] **`opening_hours.js` vendoren** (lokal, kein CDN) für die volle
+  `opening_hours`-Abdeckung. Aktuell nicht nötig: ~90 % der getaggten Fälle
+  wertet der eigene Mini-Parser schon eindeutig aus (siehe
+  [ADR-004](./entscheidungen/ADR-004-oeffnungszeiten-eigener-parser.md)).
+- [ ] **Leaflet lokal ins Repo legen** – macht die Offline-Fähigkeit unabhängig vom
+  CDN. Bisher genügt der „best effort"-Precache. (BauWatch-KA macht das schon so,
+  unter `vendor/leaflet/` – dort ist es das Muster.)
+- [ ] **Küchenstil-Synonyme gruppieren** (`sushi` unter `japanese`, `doner` unter
+  `kebab`). Wäre Interpretation der OSM-Daten; erst sinnvoll, wenn die
+  Auswahlliste zu lang wirkt.
+
+---
+
+> Diese Liste ersetzt seit 2026-07-25 `backlog/READY-FOR-DEV.md` sowie die Ideen 8
+> und 9 aus `backlog/IDEEN.md` — sie sind Aufgaben, keine Anforderungen. Die
+> UX-Umbauten aus derselben Datei (R6, R9, R12, R13) sind zu
+> [Anforderungen](./anforderungen/README.md) geworden.
