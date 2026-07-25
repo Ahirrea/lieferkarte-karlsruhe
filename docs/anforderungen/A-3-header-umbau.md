@@ -211,10 +211,14 @@ Grundsätzlicher Teil der Entscheidung:
   Karten-Control · Fokus-Führung und `Escape` für beide Sheets · Fußzeile
   einzeilig mit Stand · `100dvh` + `viewport-fit=cover` (R2/R3, weil blockierend)
   · `aria-label` am Suchfeld (R4) · Fußzeilen-Schriftgröße auf 0,8 rem (P3) ·
-  `CACHE_VERSION` → `v3`.
+  ~~`CACHE_VERSION` → `v3`.~~ → **`CACHE_VERSION` → `v4`**: [A-4](./A-4-farbsystem.md)
+  wird am 2026-07-25 vor A-3 eingeplant und verbraucht `v3`
+  ([ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)).
 - **Raus:** Ergebnisliste ([A-2](./A-2-ergebnisliste.md)) — das Sheet ist ihr
   künftiger Ort, aber sie ist eine eigene Anforderung · Farbsystem
-  ([A-4](./A-4-farbsystem.md)) und Pin-Zustände ([A-5](./A-5-pins-nach-zustand.md))
+  ([A-4](./A-4-farbsystem.md), läuft **vorher** — A-3 benutzt dessen Tokens
+  `--marke`/`--aktion`/`--zustand-*` und setzt keine eigenen Farbwerte) und
+  Pin-Zustände ([A-5](./A-5-pins-nach-zustand.md))
   · Clustering ([A-6](./A-6-clustering-oder-canvas.md)) · Dark Mode · Desktop-Redesign
   · Sheet mit mehreren Rastpunkten (peek/halb/voll) · Änderungen an Filterlogik,
   `FILTER_DEFAULTS`, URL-Parametern oder an der Pipeline · neue Datenfelder ·
@@ -448,7 +452,9 @@ Risiko klein, beseitigt es aber nicht.
 - **`docs/UMGESETZT.md`**: Eintrag bei der Umsetzung.
 - **`docs/anforderungen/README.md`**: Status, und A-3 als Wegbereiter von A-2 im
   Abhängigkeits-Bild.
-- **`web/sw.js`**: `CACHE_VERSION` `v2` → `v3` ([ADR-006](../entscheidungen/ADR-006-pwa-network-first.md)).
+- **`web/sw.js`**: ~~`CACHE_VERSION` `v2` → `v3`~~ → **`v3` → `v4`**
+  ([ADR-006](../entscheidungen/ADR-006-pwa-network-first.md)), weil
+  [A-4](./A-4-farbsystem.md) vorher `v3` setzt.
 - **`docs/TECHNICAL.md`**: nicht betroffen (keine Pipeline-Änderung).
 - Neu: [ADR-008](../entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md),
   Status `vorgeschlagen` → `akzeptiert` mit der Umsetzung.
@@ -504,7 +510,7 @@ Risiko klein, beseitigt es aber nicht.
    Leaflet-Attribution; Auto-Pan-Padding an `bindPopup()` und in `focusPlace()`.
 6. **Randfälle**: `#empty`-Abstand, `matchMedia`-Wechsel bei 640 px,
    `env(safe-area-inset-*)` für den Standalone-Modus, Banner-Platzierung.
-7. **Tests** nach Testplan; `CACHE_VERSION` → `v3`.
+7. **Tests** nach Testplan; `CACHE_VERSION` → `v4` (A-4 hat `v3` verbraucht).
 8. **Doku**: ADR-008 auf `akzeptiert`, `UMGESETZT.md`, Backlog-Punkte abhaken,
    Status in der [Übersicht](./README.md#übersicht) auf 🏁.
 

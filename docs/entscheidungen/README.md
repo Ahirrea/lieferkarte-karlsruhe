@@ -22,6 +22,7 @@ einer einzelnen Anforderung bleiben in der Anforderungsdatei.
 | [ADR-006](./ADR-006-pwa-network-first.md) | PWA: `restaurants.json` immer network-first | akzeptiert | Die Daten werden wöchentlich ersetzt. Cache ist reiner Offline-Fallback und wird als solcher gekennzeichnet. `CACHE_VERSION` hochzählen, kein `skipWaiting()`. |
 | [ADR-007](./ADR-007-standardfilter-liefert-jetzt.md) | Standardfilter ist „Liefert jetzt" | akzeptiert | Die Karte ist ein Jetzt-Werkzeug, kein Verzeichnis: Default = liefert **und** jetzt geöffnet. Der enge Default ist gewollt — dafür sind Leerzustand und Zurücksetzen-Chip Pflicht. |
 | [ADR-008](./ADR-008-karte-im-vollbild-overlay-und-sheets.md) | Karte im Vollbild — Bedienung als Overlay und Bottom Sheets | vorgeschlagen | Unter 640 px liegt die Bedienung über der Karte statt darüber im Fluss. Vollbild endet, wo die ODbL-Attribution beginnt: die Fußzeile bleibt unverdeckt. Wird mit [A-3](../anforderungen/A-3-header-umbau.md) akzeptiert. |
+| [ADR-009](./ADR-009-farbrollen-marke-aktion-zustand.md) | Farbrollen getrennt — Marke, Interaktion, Zustand | vorgeschlagen | `--accent` trug fünf Rollen. Jetzt drei Token-Ebenen, kein Farbwert außerhalb `:root`, „geschlossen" ist Slate statt Rot. Farbe trägt den Zustand, das Symbol die Fähigkeit — und nie Farbe allein (Rot/Grün liegen 1,03 auseinander). Wird mit [A-4](../anforderungen/A-4-farbsystem.md) akzeptiert. |
 
 ## Neuen ADR anlegen
 

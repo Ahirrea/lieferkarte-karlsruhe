@@ -95,8 +95,12 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   Auslöser zurück – für Filter- und Feed-Sheet in einem.
 - [ ] **P3 – Dark Mode fehlt.** Über die CSS-Variablen (`:root`) wäre
   `prefers-color-scheme: dark` ein kleiner Eingriff; abends ist die Seite grell.
-  Berührt sich mit [A-4](./anforderungen/A-4-farbsystem.md) – wer die Tokens
-  ohnehin entflechtet, sollte Dark Mode gleich mitdenken.
+  **Wartet auf [A-4](./anforderungen/A-4-farbsystem.md)** – heute stehen 16 rohe
+  Hex-Werte außerhalb von `:root`, ein Dark Mode wäre also eine Suche durch alle
+  Regeln. A-4 ist entschieden und baut Dark Mode ausdrücklich *nicht*, macht ihn
+  aber möglich: danach enthält keine Regel außerhalb `:root` noch einen Farbwert
+  ([ADR-009](./entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)), und
+  dieser Punkt schrumpft auf einen `@media`-Block, der nur `:root` überschreibt.
 - [ ] **„Heute" in der Öffnungszeiten-Tabelle hervorheben.** Bei „Di–Fr / Sa, So
   / Mo" muss man selbst suchen, was gerade gilt – `berlinNow()` kennt den
   Wochentag schon.
