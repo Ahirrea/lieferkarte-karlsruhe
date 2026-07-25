@@ -25,7 +25,7 @@ Reihenfolge = was als Nächstes sinnvoll wäre. Kein Zeitplan.
 |---|---|---|---|
 | A-1 | [Standardfilter entschärfen](./A-1-standardfilter-entschaerfen.md) | 🏁 erledigt | Entschieden am 2026-07-25 gegen die Empfehlung: Default ist **„Liefert jetzt"** (Lieferung **und** jetzt geöffnet) — die Karte ist ein Jetzt-Werkzeug, kein Verzeichnis ([ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)). Dazu Chips statt Checkboxen, eigener Abholung-Filter, „unbekannt"-Badges, Leerzustand. |
 | A-2 | [Ergebnisliste neben der Karte](./A-2-ergebnisliste.md) | 💡 Idee | Die Karte ist für Tastatur und Screenreader leer. Dieselben gefilterten Daten zusätzlich als Liste — löst gleichzeitig „was ist in der Nähe?". |
-| A-3 | [Header-Umbau: eine Zeile + Bottom Sheet](./A-3-header-umbau.md) | 💡 Idee | Der Header frisst 23 % des Bildschirms. Gehört zusammen mit dem Feed-Panel entworfen, das auf Mobil fast die ganze Karte verdeckt. |
+| A-3 | [Karte im Vollbild: Overlay + Bottom Sheets](./A-3-header-umbau.md) | ✅ bereit | Der Header frisst gemessen 23,9 % (360 px: 35 %), das Feed-Panel verdeckt 77–88 % der Karte, alle Bedienelemente sind 32,4 px statt 44 px. Entschieden am 2026-07-25 gegen die Empfehlung: **Karten-Overlay ohne Header** unter 640 px ([ADR-008](../entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md)). Zieht R2/R3/R4 und zwei P3-Punkte aus dem Backlog mit rein. |
 | A-4 | [Farbsystem entflechten](./A-4-farbsystem.md) | 💡 Idee | `--accent` bedeutet vier Dinge gleichzeitig. Zustandsfarben gehören von der Markenfarbe getrennt. Voraussetzung für A-5. |
 | A-5 | [Pins nach Zustand unterscheiden](./A-5-pins-nach-zustand.md) | 💡 Idee | Liefert / holt ab / gerade geschlossen sieht man erst nach dem Antippen. Durch A-1 entblockt — die Zustandsmenge steht jetzt fest; hängt noch an A-4. |
 | A-6 | [Marker-Clustering oder Canvas-Renderer](./A-6-clustering-oder-canvas.md) | 💡 Idee | Durch A-1 entblockt, aber **entschärft**: mit dem Default „Liefert jetzt" sind es beim Öffnen ~35 Marker, die 883 sieht nur, wer die Filter abschaltet (883 in 197 ms gemessen). Bleibt „nice to have". |
@@ -38,12 +38,19 @@ Reihenfolge = was als Nächstes sinnvoll wäre. Kein Zeitplan.
 A-1 (Standardfilter) 🏁 ─┬──►  A-5 (Pins nach Zustand)  ◄──  A-4 (Farbsystem)
                          ├──►  A-6 (Clustering/Canvas) — entschärft
                          └──►  A-8 (Filter in der URL) 🏁 mitgebaut
+
+A-3 (Overlay + Sheets) ✅ ────►  A-2 (Ergebnisliste) — erbt die Sheet-Mechanik
 ```
 
 **Der Flaschenhals ist weg.** A-1 ist am 2026-07-25 entschieden
 ([ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)) und
 umgesetzt, A-8 gleich mit. A-5 hängt jetzt nur noch an A-4; A-6 ist keine
 Voraussetzung mehr, weil der Default eng geblieben ist.
+
+**A-3 ist keine Voraussetzung für A-2, aber der günstigere Weg dorthin:** die
+Bottom-Sheet-Mechanik aus A-3 ist die Hülle, in der die Ergebnisliste auf Mobil
+sitzen kann — wer A-2 vorzieht, entwirft dieses Panel zweimal
+([ADR-008](../entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md)).
 
 ## Neue Anforderung aufnehmen
 

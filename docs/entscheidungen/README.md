@@ -21,6 +21,7 @@ einer einzelnen Anforderung bleiben in der Anforderungsdatei.
 | [ADR-005](./ADR-005-cuisine-nicht-protokollieren.md) | Küchenstil-Änderungen werden nicht protokolliert | akzeptiert | Eine neue Spalte erzeugt beim ersten Scan Massen-Ereignisse (245 × `TAKEAWAY_CHANGED`). Der Feed soll Neuigkeiten zeigen, keine Datenlage. |
 | [ADR-006](./ADR-006-pwa-network-first.md) | PWA: `restaurants.json` immer network-first | akzeptiert | Die Daten werden wöchentlich ersetzt. Cache ist reiner Offline-Fallback und wird als solcher gekennzeichnet. `CACHE_VERSION` hochzählen, kein `skipWaiting()`. |
 | [ADR-007](./ADR-007-standardfilter-liefert-jetzt.md) | Standardfilter ist „Liefert jetzt" | akzeptiert | Die Karte ist ein Jetzt-Werkzeug, kein Verzeichnis: Default = liefert **und** jetzt geöffnet. Der enge Default ist gewollt — dafür sind Leerzustand und Zurücksetzen-Chip Pflicht. |
+| [ADR-008](./ADR-008-karte-im-vollbild-overlay-und-sheets.md) | Karte im Vollbild — Bedienung als Overlay und Bottom Sheets | vorgeschlagen | Unter 640 px liegt die Bedienung über der Karte statt darüber im Fluss. Vollbild endet, wo die ODbL-Attribution beginnt: die Fußzeile bleibt unverdeckt. Wird mit [A-3](../anforderungen/A-3-header-umbau.md) akzeptiert. |
 
 ## Neuen ADR anlegen
 

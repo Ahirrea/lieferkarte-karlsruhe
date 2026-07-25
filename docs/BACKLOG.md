@@ -25,12 +25,18 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   URL-Leiste). Der `<footer>` mit Attribution und Datenschutz-Link liegt dadurch
   unter der Browserleiste, ebenso Leaflets eigenes Attribution-Control unten
   rechts. Fix: `height: 100dvh` mit `100vh` als Fallback davor.
+  → **Teil von [A-3](./anforderungen/A-3-header-umbau.md)**, dort Schritt 1: für
+  ein Overlay, das sich an den Viewport-Rändern ausrichtet, ist das keine
+  Kosmetik mehr, sondern Voraussetzung.
 - [ ] **R3 – `viewport-fit=cover` im Viewport-Meta.** Die
   `env(safe-area-inset-*)`-Regeln für `display-mode: standalone` wirken ohne
   `viewport-fit=cover` nicht; als installierte iOS-App klebt der Header unter
-  der Statusleiste.
+  der Statusleiste. → **Teil von [A-3](./anforderungen/A-3-header-umbau.md)**,
+  aus demselben Grund wie R2.
 - [ ] **P3 – Fußzeile zu klein.** `0.72rem` (≈ 11,5 px) ist für eine
   Pflichtangabe zu wenig – mindestens `0.8rem`.
+  → **Teil von [A-3](./anforderungen/A-3-header-umbau.md)**: die Fußzeile wird
+  dort ohnehin umgebaut (einzeilig auf Mobil, mit Datenstand).
 
 ## Mittel – Bedienbarkeit, Struktur, Performance
 
@@ -39,6 +45,10 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   – assistiv also namenlos. Sichtbar ist außerdem nur „Restaurant oder Adresse
   sucl", weil `flex: 1 1 200px` (`web/index.html:71`) neben der Checkbox
   zerdrückt wird. Unter 640 px sollte die Suche eine eigene, volle Zeile bekommen.
+  → **Teil von [A-3](./anforderungen/A-3-header-umbau.md)**: das `aria-label`
+  kommt dort in Schritt 1, und die Breite löst sich, weil in der Bedienzeile nur
+  noch Filter- und Feed-Knopf neben der Suche stehen (gemessen heute: 251 px von
+  393 px, mit Reset-Chip in derselben Zeile).
 - [x] **R5 – Trefferzahl wird nicht angekündigt, 0 Treffer sind ein Loch.**
   Erledigt mit [A-1](./anforderungen/A-1-standardfilter-entschaerfen.md):
   `#count` hat `role="status"` + `aria-live="polite"`, und bei null Treffern
@@ -54,6 +64,10 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   Provisions-Plattformen" auf „883 Restaurants · zuletzt aktualisiert am …"
   überschrieben; die Anzahl steht damit doppelt (Sub-Zeile + `#count`). Claim
   stehen lassen, Datum in die Fußzeile oder hinter ein „ⓘ".
+  → **Auf Mobil von [A-3](./anforderungen/A-3-header-umbau.md) überholt**:
+  dort verschwinden Titel und Claim unter 640 px absichtlich (Entscheidung 2),
+  das Datum wandert in die Fußzeile (Entscheidung 4). Für Desktop bleibt der
+  Punkt offen — dort steht die Anzahl weiter doppelt.
 - [ ] **R11 – Popup hat zwei rote Primäraktionen.** „Zur Website & bestellen →"
   und „⚑ Falsche Angabe melden" sind beide `var(--accent)`, fett, gleich groß und
   stehen direkt untereinander. Die Bestellaktion als gefüllter Button, den
@@ -76,6 +90,9 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   OSM-Tab öffnet aber trotzdem – dann „Text bitte von Hand markieren" zeigen.
 - [ ] **P3 – Fokus-Verwaltung im Feed-Panel.** Beim Öffnen wandert der Fokus
   nicht in das Panel (Escape schließt immerhin schon).
+  → **Teil von [A-3](./anforderungen/A-3-header-umbau.md)**: die gemeinsame
+  Sheet-Mechanik führt den Fokus beim Öffnen hinein und beim Schließen zum
+  Auslöser zurück – für Filter- und Feed-Sheet in einem.
 - [ ] **P3 – Dark Mode fehlt.** Über die CSS-Variablen (`:root`) wäre
   `prefers-color-scheme: dark` ein kleiner Eingriff; abends ist die Seite grell.
   Berührt sich mit [A-4](./anforderungen/A-4-farbsystem.md) – wer die Tokens
