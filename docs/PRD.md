@@ -111,6 +111,13 @@ fälschlich leer. Das ist die offene Kernentscheidung
 - **Sprache:** Deutsch — es ist ein öffentliches Angebot für Karlsruhe. UI-Texte,
   Commits und neue Dokumente auf Deutsch.
 - **Abdeckungsrealität:** Die OSM-Tags sind lückenhaft. `delivery` ist bei 7 %
-  gesetzt, `takeaway` bei 26 %, `cuisine` bei 0 %, `opening_hours` bei 741 von
-  883. Das Frontend **muss** `null` („unbekannt") von `false` („nein")
-  unterscheiden und beides tragfähig darstellen.
+  gesetzt, `takeaway` bei 26 %, ~~`cuisine` bei 0 %~~ **`cuisine` bei 79 %**,
+  `opening_hours` bei ~~741 von 883~~ **742 von 885**. Das Frontend **muss**
+  `null` („unbekannt") von `false` („nein") unterscheiden und beides tragfähig
+  darstellen.
+  *Nachgemessen am 2026-07-26 (fünfter Scan) gegen `data/restaurants.db`:
+  885 aktive Restaurants · `delivery` 64 ja / 47 nein / 774 unbekannt (7,2 %
+  getaggt) · `takeaway` 238 / 8 / 639 (26,9 %) · `cuisine` 699 (79 %) ·
+  `opening_hours` 742. Die 0 % beim Küchenstil stammten aus der Zeit vor den
+  letzten Scans; ein Pipeline-Problem lag nicht vor (siehe
+  [`BACKLOG.md`](./BACKLOG.md), „Datenqualität nachsehen").*

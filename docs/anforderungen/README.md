@@ -28,7 +28,7 @@ Reihenfolge = was als Nächstes sinnvoll wäre. Kein Zeitplan.
 | A-3 | [Karte im Vollbild: Overlay + Bottom Sheets](./A-3-header-umbau.md) | 🏁 erledigt | Umgesetzt am 2026-07-26 gegen die Empfehlung, wie entschieden: **Karten-Overlay ohne Header** unter 640 px ([ADR-008](../entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md), jetzt `akzeptiert`). Bedienzeile 205,7 px → **68 px**, Karte 70,9 % → **96,6 %** (360 px: 62,3 % → 96,1 %), alle Bedienelemente **44 px** statt 32,4 px. Filter und Feed sind Bottom Sheets mit gemeinsamer Mechanik. R2/R3/R4 und zwei P3-Punkte mit erledigt. |
 | A-4 | [Farbsystem entflechten](./A-4-farbsystem.md) | 🏁 erledigt | Umgesetzt am 2026-07-25: drei Token-Ebenen **Marke / Interaktion / Zustand** ([ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)). `--accent` (fünf Rollen) und `--ok` (zwei) sind weg, kein Farbwert liegt mehr außerhalb von `:root`, „geschlossen" ist Slate statt Rot, „unbekannt" ein gestrichelter Umriss, alle Kontrastpaare ≥ 4,5:1. Entblockt A-5 und liefert A-3 die Tokens. |
 | A-5 | [Pins nach Zustand unterscheiden](./A-5-pins-nach-zustand.md) | 🗑 verworfen | Am 2026-07-26 umgesetzt (~~[ADR-010](../entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)~~: Farbe + Strichart = Lieferung, Größe + Füllstärke = geschlossen) und **am selben Tag zurückgenommen** — die Kreise sahen schlechter aus als die blauen Tropfen ([ADR-011](../entscheidungen/ADR-011-pins-wieder-einheitlich.md)). Im Standardbild waren alle 53 Pins ohnehin identisch, aufgeweitet 774 von 885 „unbekannt". Die Messwerte in der Datei bleiben gültig; **R13 ist wieder offen** und wandert zu A-2. |
-| A-6 | [Marker-Clustering oder Canvas-Renderer](./A-6-clustering-oder-canvas.md) | 💡 Idee | Durch A-1 entblockt, aber **entschärft**: mit dem Default „Liefert jetzt" sind es beim Öffnen ~53 Marker, die 885 sieht nur, wer die Filter abschaltet. Bleibt „nice to have" — und ist mit dem Rückbau der Vektor-Pins ([ADR-011](../entscheidungen/ADR-011-pins-wieder-einheitlich.md)) wieder echte Arbeit statt `preferCanvas: true`. |
+| A-6 | [Marker-Clustering ab 300 Treffern](./A-6-clustering-oder-canvas.md) | ✅ bereit | Verfeinert am 2026-07-26: ab 300 Treffern fasst `markercluster` die Marker zu Blasen zusammen, darunter bleibt das Bild **unverändert** ([ADR-012](../entscheidungen/ADR-012-clustering-ab-schwelle.md)). Erstmals mit echtem Leaflet gemessen statt mit dem `L`-Stub: bei 885 Frames über 100 ms von 9/12 auf **0/142**, `render()` 386 → 68 ms (4× gedrosselt). Canvas ist durch ADR-011 versperrt, Culling messbar wertlos. |
 | A-7 | [Telefonnummer in die Pipeline](./A-7-telefonnummer.md) | 💡 Idee | `phone`/`contact:phone` kommen beim Scan gratis mit; für „schnell bestellen" so nützlich wie die Website. Braucht eine neue DB-Spalte. |
 | A-8 | Filterzustand teilbar und wiederherstellbar machen | 🏁 erledigt | Zusammen mit A-1 gebaut: `?delivery=`/`?takeaway=`/`?open=`/`?cuisine=`/`?q=`, geschrieben per `history.replaceState` und nur dort, wo vom Standard abgewichen wird. Reine URL-Parameter, nichts wird gespeichert. `?nearby=1` bleibt erhalten. |
 
@@ -37,8 +37,8 @@ Reihenfolge = was als Nächstes sinnvoll wäre. Kein Zeitplan.
 ```
 A-1 (Standardfilter) 🏁 ─┬──►  A-5 (Pins nach Zustand) 🗑 ◄──  A-4 (Farbsystem) 🏁
                          │     gebaut und zurückgenommen (ADR-011)
-                         ├──►  A-6 (Clustering/Canvas) — entschärft; die Abkürzung
-                         │     preferCanvas: true ist mit A-5 wieder weg
+                         ├──►  A-6 (Clustering) ✅ verfeinert 2026-07-26; Canvas ist
+                         │     durch ADR-011 versperrt, geclustert wird ab 300
                          └──►  A-8 (Filter in der URL) 🏁 mitgebaut
 
 A-4 (Farbsystem) 🏁 ──────────►  A-3 (Overlay + Sheets) 🏁 ──►  A-2 (Ergebnisliste)
@@ -54,6 +54,20 @@ umgesetzt, A-8 gleich mit; A-4 ist am selben Tag umgesetzt
 sind **beide Kanten auf A-5 erledigt** — A-5 ist die nächste Verfeinerung. A-6
 ist keine Voraussetzung mehr, weil der Default eng geblieben ist.
 
+**A-6 ist seit 2026-07-26 verfeinert und wartet auf grünes Licht**
+([ADR-012](../entscheidungen/ADR-012-clustering-ab-schwelle.md), noch
+`vorgeschlagen`). Die Verfeinerung hat den Ausgangstext in zwei Punkten
+widerlegt: `L.canvas()` „ohne neue Lib" gibt es nicht — `preferCanvas` wirkt nur
+auf Vektorlayer, also wäre es der von
+[ADR-011](../entscheidungen/ADR-011-pins-wieder-einheitlich.md) abgewählte
+`circleMarker` —, und Sichtfeld-Culling ist messbar wertlos (bei Zoom 12 liegen
+618 von 885 im Bild). Erstmals wurde gegen **echtes** Leaflet gemessen statt
+gegen den `L`-Stub, der kein DOM erzeugt und die Kosten deshalb nicht sehen kann:
+bei 885 Markern und 4× CPU-Drosselung fallen 9 von 12 Frames über 100 ms, mit
+Clustering 0 von 142. Das Standardbild (21 Treffer) bleibt dabei unangetastet —
+„immer clustern" hätte 14 der 21 Restaurants hinter Zahlen versteckt, ohne dort
+etwas zu gewinnen.
+
 **A-5 wurde am 2026-07-26 umgesetzt und am selben Tag zurückgenommen.**
 [ADR-010](../entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)
 hatte die Pin-Grammatik auf zwei Achsen festgelegt;
@@ -62,7 +76,8 @@ weil die Kreise schlechter aussahen als Leaflets blaue Tropfen — im Standardbi
 waren die 53 sichtbaren Pins ohnehin identisch. Die Pin-Achsen sind seither
 **geschlossen, nicht frei**: sie überhaupt wieder zu belegen — farbig, über die
 Größe, ganz oder teilweise — braucht einen neuen ADR. Damit sind **vier der acht
-Anforderungen erledigt**; offen sind A-2, A-6 und A-7, verworfen ist A-5.
+Anforderungen erledigt**; offen sind A-2, A-6 (verfeinert, wartet auf Freigabe)
+und A-7, verworfen ist A-5.
 
 **Befund R13 ist damit wieder offen** („welche Restaurants liefern / geöffnet
 sind, ist nur nach Antippen sichtbar") — und wird nicht erneut über die Pins

@@ -107,6 +107,24 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   der einmal gebaute `Intl.DateTimeFormat` und die späte Zeitauswertung, jetzt
   zusätzlich über `f.open` kurzgeschlossen, weil nur noch der Filter das Ergebnis
   braucht. Zurückgenommen wurde die Optik, nicht die Technik.*
+  *Wichtige Einordnung, ergänzt am 2026-07-26 bei der Verfeinerung von
+  [A-6](./anforderungen/A-6-clustering-oder-canvas.md): **alle Zahlen oben
+  (197 ms, 5,6 ms, 0,8 ms, 0,60 ms) sind mit dem `L`-Stub gemessen und enthalten
+  kein DOM.** Als Messung des JavaScript-Anteils sind sie korrekt und bleiben
+  stehen; eine Aussage über Flüssigkeit tragen sie nicht, weil das Erzeugen der
+  Marker-Knoten den Löwenanteil ausmacht. Gegen echtes Leaflet 1.9.4 (lokal aus
+  der npm-Registry, Handy-Viewport): **3,3 ms** im Standardfilter und **116 ms**
+  bei 885 Markern — bei 4× CPU-Drosselung 386 ms und 9 von 12 Frames über
+  100 ms.*
+
+- [ ] **Anteile und Zahlen im UI aus den Daten rechnen, nicht hart schreiben.**
+  Die beiden Filter-Hinweise nennen „nur 7 % sind überhaupt getaggt" und
+  „(26 % getaggt)", der Leerzustand „bei 87 % der Läden". Am 2026-07-26
+  nachgerechnet sind **alle drei noch korrekt** (64/885 = 7,2 % · 238/885 =
+  26,9 % · 774/885 = 87,5 %) – sie stehen aber fest im deutschen Text und
+  veralten beim nächsten Scan still. Laut `CLAUDE.md` gehört jede den Nutzern
+  gezeigte Quote in Code, der sie aus der geladenen `restaurants.json` rechnet.
+  Kleine Aufgabe, kein Verhaltenswechsel.
 
 ## Niedrig – Feinschliff
 
@@ -147,10 +165,11 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
 
 ## Datenqualität nachsehen
 
-- [ ] **Küchenstil: Abdeckung prüfen.** Die `cuisine`-Pipeline ist
+- [x] **Küchenstil: Abdeckung prüfen.** ✅ **Erledigt — die Datenlage hat sich
+  selbst geklärt.** Die `cuisine`-Pipeline ist
   [fertig](./UMGESETZT.md) („Filter nach Küchenstil"), aber in
-  `data/restaurants.db` sind nach vier Scans (letzter: 2026-07-21) **0 von 883**
-  aktiven Restaurants getaggt – während `opening_hours` bei 741 gefüllt ist. Für
+  `data/restaurants.db` waren nach vier Scans (letzter: 2026-07-21) ~~**0 von 883**
+  aktiven Restaurants getaggt~~ – während `opening_hours` bei 741 gefüllt ist. Für
   Karlsruhe sind null Küchenstil-Tags unplausibel; das deutet eher auf ein
   Pipeline-Problem als auf fehlende OSM-Daten. Der Filter bleibt so lange
   versteckt (das ist gewollt), aber der Befund gehört nachgesehen:
@@ -160,6 +179,15 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   print(c.execute('SELECT cuisine, COUNT(*) FROM restaurants WHERE active=1 \
   GROUP BY cuisine ORDER BY 2 DESC LIMIT 20').fetchall())"
   ```
+
+  *Nachgemessen am 2026-07-26 bei der Verfeinerung von
+  [A-6](./anforderungen/A-6-clustering-oder-canvas.md), nach dem fünften Scan
+  (2026-07-26): **699 von 885** aktiven Restaurants sind getaggt (79 %),
+  häufigste Werte `italian` 69 · `kebab` 53 · `german` 45 · `regional` 41 ·
+  `pizza` 40 · `greek` 35. Es lag **kein** Pipeline-Problem vor — `_osm_cuisine`
+  hat korrekt gearbeitet, die Tags kamen mit den späteren Scans dazu. Der
+  Küchenstil-Filter ist damit sichtbar, und die Zahl „0 %" in
+  [`PRD.md`](./PRD.md) („Abdeckungsrealität") war überholt und ist korrigiert.*
 
 ## Ausbau von bereits Umgesetztem
 
