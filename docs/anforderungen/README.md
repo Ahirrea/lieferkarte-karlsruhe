@@ -25,7 +25,7 @@ Reihenfolge = was als Nächstes sinnvoll wäre. Kein Zeitplan.
 |---|---|---|---|
 | A-1 | [Standardfilter entschärfen](./A-1-standardfilter-entschaerfen.md) | 🏁 erledigt | Entschieden am 2026-07-25 gegen die Empfehlung: Default ist **„Liefert jetzt"** (Lieferung **und** jetzt geöffnet) — die Karte ist ein Jetzt-Werkzeug, kein Verzeichnis ([ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)). Dazu Chips statt Checkboxen, eigener Abholung-Filter, „unbekannt"-Badges, Leerzustand. |
 | A-2 | [Ergebnisliste neben der Karte](./A-2-ergebnisliste.md) | 💡 Idee | Die Karte ist für Tastatur und Screenreader leer. Dieselben gefilterten Daten zusätzlich als Liste — löst gleichzeitig „was ist in der Nähe?". |
-| A-3 | [Karte im Vollbild: Overlay + Bottom Sheets](./A-3-header-umbau.md) | ✅ bereit | Der Header frisst gemessen 23,9 % (360 px: 35 %), das Feed-Panel verdeckt 77–88 % der Karte, alle Bedienelemente sind 32,4 px statt 44 px. Entschieden am 2026-07-25 gegen die Empfehlung: **Karten-Overlay ohne Header** unter 640 px ([ADR-008](../entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md)). Zieht R2/R3/R4 und zwei P3-Punkte aus dem Backlog mit rein. |
+| A-3 | [Karte im Vollbild: Overlay + Bottom Sheets](./A-3-header-umbau.md) | 🏁 erledigt | Umgesetzt am 2026-07-26 gegen die Empfehlung, wie entschieden: **Karten-Overlay ohne Header** unter 640 px ([ADR-008](../entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md), jetzt `akzeptiert`). Bedienzeile 205,7 px → **68 px**, Karte 70,9 % → **96,6 %** (360 px: 62,3 % → 96,1 %), alle Bedienelemente **44 px** statt 32,4 px. Filter und Feed sind Bottom Sheets mit gemeinsamer Mechanik. R2/R3/R4 und zwei P3-Punkte mit erledigt. |
 | A-4 | [Farbsystem entflechten](./A-4-farbsystem.md) | 🏁 erledigt | Umgesetzt am 2026-07-25: drei Token-Ebenen **Marke / Interaktion / Zustand** ([ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)). `--accent` (fünf Rollen) und `--ok` (zwei) sind weg, kein Farbwert liegt mehr außerhalb von `:root`, „geschlossen" ist Slate statt Rot, „unbekannt" ein gestrichelter Umriss, alle Kontrastpaare ≥ 4,5:1. Entblockt A-5 und liefert A-3 die Tokens. |
 | A-5 | [Pins nach Zustand unterscheiden](./A-5-pins-nach-zustand.md) | 💡 Idee | Liefert / holt ab / gerade geschlossen sieht man erst nach dem Antippen. **Beide Blocker sind weg** (A-1 🏁, A-4 🏁): die Zustandsmenge steht fest, die `--zustand-*`-Tokens und `cssVar()` existieren. Gebunden an [ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md): Farbe trägt den Zustand, nie allein. **Nächste Verfeinerung.** |
 | A-6 | [Marker-Clustering oder Canvas-Renderer](./A-6-clustering-oder-canvas.md) | 💡 Idee | Durch A-1 entblockt, aber **entschärft**: mit dem Default „Liefert jetzt" sind es beim Öffnen ~35 Marker, die 883 sieht nur, wer die Filter abschaltet (883 in 197 ms gemessen). Bleibt „nice to have". |
@@ -39,8 +39,8 @@ A-1 (Standardfilter) 🏁 ─┬──►  A-5 (Pins nach Zustand)  ◄──  A
                          ├──►  A-6 (Clustering/Canvas) — entschärft
                          └──►  A-8 (Filter in der URL) 🏁 mitgebaut
 
-A-4 (Farbsystem) 🏁 ──────────►  A-3 (Overlay + Sheets) ✅ ──►  A-2 (Ergebnisliste)
-                                 erbt die Tokens              erbt die Sheet-Mechanik
+A-4 (Farbsystem) 🏁 ──────────►  A-3 (Overlay + Sheets) 🏁 ──►  A-2 (Ergebnisliste)
+                                 erbt die Tokens               erbt die Sheet-Mechanik
 ```
 
 **Keine Anforderung ist mehr blockiert.** A-1 ist am 2026-07-25 entschieden
@@ -51,14 +51,23 @@ sind **beide Kanten auf A-5 erledigt** — A-5 ist die nächste Verfeinerung. A-
 ist keine Voraussetzung mehr, weil der Default eng geblieben ist.
 
 **A-4 kam vor A-3**, weil beide denselben `<style>`-Block anfassen, A-4 aber kein
-Layout ändert: A-3 baut jetzt direkt auf den Farbrollen auf, statt die alten
-Namen erst zu übernehmen und später zu ersetzen. Praktische Folge: A-4 hat
-`CACHE_VERSION` `v3` verbraucht, A-3 nimmt `v4`.
+Layout ändert: A-3 hat direkt auf den Farbrollen aufgebaut, statt die alten
+Namen erst zu übernehmen und später zu ersetzen — und setzt selbst keinen
+Farbwert außerhalb von `:root`. Praktische Folge: A-4 hat `CACHE_VERSION` `v3`
+verbraucht, A-3 steht auf `v4`. **A-3 ist seit 2026-07-26 umgesetzt**; damit
+sind vier der acht Anforderungen erledigt und keine ist mehr blockiert.
 
-**A-3 ist keine Voraussetzung für A-2, aber der günstigere Weg dorthin:** die
-Bottom-Sheet-Mechanik aus A-3 ist die Hülle, in der die Ergebnisliste auf Mobil
-sitzen kann — wer A-2 vorzieht, entwirft dieses Panel zweimal
+**A-2 erbt die Sheet-Mechanik.** Sie war nie durch A-3 blockiert, aber A-3 ist
+der günstigere Weg dorthin: `openSheet()` samt Griff, Wischen, Fokus-Führung,
+`Escape` und der Regel „nur eines gleichzeitig" ist bewusst wiederverwendbar
+gebaut — die Ergebnisliste wird ihr **dritter** Nutzer und braucht keinen
+eigenen Panel-Entwurf mehr
 ([ADR-008](../entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md)).
+
+**Zwei Layout-Pfade, ab jetzt dauerhaft.** Unter und über 640 px sieht die Seite
+verschieden aus; jede künftige UI-Änderung ist in **beiden** zu prüfen. Die
+Bedienzeile ist außerdem auf drei Elemente fest — neue Bedienelemente gehören
+ins Sheet, sonst wächst sie wieder zu, woran der alte Header gescheitert ist.
 
 ## Neue Anforderung aufnehmen
 

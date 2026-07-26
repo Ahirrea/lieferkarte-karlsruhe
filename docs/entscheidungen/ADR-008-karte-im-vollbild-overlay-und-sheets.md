@@ -1,12 +1,11 @@
 # ADR-008: Karte im Vollbild — Bedienung als Overlay und Bottom Sheets
 
-**Status:** vorgeschlagen
+**Status:** akzeptiert
 **Datum:** 2026-07-25
 
-Wird mit der Umsetzung von
-[A-3](../anforderungen/A-3-header-umbau.md) auf `akzeptiert` gesetzt. Die
-Entscheidung selbst ist getroffen; sie steht als `vorgeschlagen`, solange die
-beschriebene Oberfläche noch nicht existiert.
+Mit der Umsetzung von [A-3](../anforderungen/A-3-header-umbau.md) am 2026-07-26
+von `vorgeschlagen` auf `akzeptiert` gesetzt — die beschriebene Oberfläche
+existiert seitdem.
 
 ## Kontext
 

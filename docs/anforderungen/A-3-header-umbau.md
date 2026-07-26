@@ -45,11 +45,19 @@ oft umbricht:
 
 | Viewport | Header | Anteil | Zeilen in `.controls` | Karte |
 |---|---|---|---|---|
-| 393 × 851 (1080 × 2340 @ 2,75) | 203,7 px | **23,9 %** | 4 | 605,5 px (71,2 %) |
-| 393 × 851, mit „📲 App installieren" | 220,1 px | **25,9 %** | 5 | — |
-| 360 × 740 | 235,1 px | **31,8 %** | 5 | 463,1 px (62,6 %) |
-| 360 × 740, mit „📲 App installieren" | 259,1 px | **35,0 %** | 5 | — |
-| 768 × 1024 | 139,3 px | 13,6 % | 3 | 856,9 px |
+| 393 × 851 (1080 × 2340 @ 2,75) | 205,7 px | **24,2 %** | 4 | 603,5 px (70,9 %) |
+| 393 × 851, mit „📲 App installieren" | 222,1 px | **26,1 %** | 5 | — |
+| 360 × 740 | 237,1 px | **32,0 %** | 5 | 461,1 px (62,3 %) |
+| 360 × 740, mit „📲 App installieren" | 261,1 px | **35,3 %** | 5 | — |
+| 768 × 1024 | 141,3 px | 13,8 % | 3 | 854,9 px |
+
+> **Am 2026-07-26 vor der Umsetzung nachgemessen** (CLAUDE.md: auch eine frisch
+> verfeinerte Spezifikation wird nachgerechnet, nicht übernommen). Die Zahlen
+> oben sind gegenüber der Fassung vom 2026-07-25 um **+2 px** korrigiert:
+> [A-4](./A-4-farbsystem.md) hat `header h1` von 1,15 rem auf 1,2 rem vergrößert,
+> damit die Markenfarbe als „großer Text" die WCAG-Schwelle erreicht. Alles
+> andere reproduziert exakt — Elementhöhen 32,4 px, `#count` 16 px, der
+> Reset-Chip dauerhaft sichtbar, Feed-Panel-Verdeckung 77 % / 88 %.
 
 Drei Befunde, die im Ausgangstext fehlen:
 
@@ -213,11 +221,28 @@ widersprechbar sind:
    Filter-Knopf ist die Rückmeldung; ein Formular-Modell mit Bestätigen wäre ein
    Bruch mit dem heutigen Verhalten und mit `writeUrlState()`.
 8. **Die Fußzeile wird auf Mobil einzeilig** und verliert dort „Keine Cookies,
-   kein Tracking" — die Attribution (Pflicht), der Stand und der
-   Datenschutz-Link bleiben. Das Versprechen selbst steht unverändert in
-   `datenschutz.html`, im `README.md`, in der `<meta name="description">` und im
-   Sheet-Abschnitt „Mehr"; nur seine Platzierung ändert sich. Am Desktop bleibt
-   die Fußzeile vollständig.
+   kein Tracking" — ~~die Attribution (Pflicht), der Stand und der
+   Datenschutz-Link bleiben.~~ → **die Attribution (Pflicht) und der Stand
+   bleiben; der Datenschutz-Link entfällt unter 640 px.** Das Versprechen selbst
+   steht unverändert in `datenschutz.html`, im `README.md`, in der
+   `<meta name="description">` und im Sheet-Abschnitt „Mehr"; nur seine
+   Platzierung ändert sich. Am Desktop bleibt die Fußzeile vollständig.
+
+   *Korrektur bei der Umsetzung (2026-07-26), gemessen:* Alle drei Angaben
+   passen bei 360 px nicht in eine Zeile — der Text braucht **369,3 px**, zur
+   Verfügung stehen **337,6 px** (0,8 rem, Innenabstand 0,7 rem). Auch mit
+   schmalen Trennzeichen und −0,01 em Laufweite bleiben es 356,5 px bei 352 px
+   Platz; unter 0,8 rem zu gehen verbietet der P3-Punkt, der die Schriftgröße
+   überhaupt erst angehoben hat. Eine zweizeilige Fußzeile misst 43,8 px und
+   drückt die Karte bei 360 × 740 auf **94,1 %** — unter die geforderten 95 %.
+   Von den drei Angaben ist der Datenschutz-Link der einzige, der ohne Verlust
+   weichen kann: die Attribution ist ODbL-Pflicht
+   ([ADR-001](../entscheidungen/ADR-001-openstreetmap-statt-google-places.md)),
+   der Stand ist eine eigene Zeile der Definition of Done, und der Link steht
+   auf Mobil ohnehin im Sheet-Abschnitt „Mehr". Ergebnis: „© OpenStreetMap-
+   Mitwirkende · 21.7.2026" = 276,7 px, einzeilig mit Luft auch bei größerer
+   Systemschrift. Der Weg zurück ist eine Zeile CSS, sollte das anders
+   entschieden werden.
 
 Grundsätzlicher Teil der Entscheidung:
 [ADR-008](../entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md).
@@ -383,10 +408,15 @@ Inhalt, Gruppierung und `focusPlace()` bleiben. Änderungen:
 
 ### Fußzeile
 
-- Mobil einzeilig, `font-size: 0.8rem` (P3): „© OpenStreetMap-Mitwirkende ·
-  Stand 21.07.2026 · Datenschutz". Der Stand wird beim Laden aus
+- Mobil einzeilig, `font-size: 0.8rem` (P3): ~~„© OpenStreetMap-Mitwirkende ·
+  Stand 21.07.2026 · Datenschutz"~~ → **„© OpenStreetMap-Mitwirkende ·
+  21.7.2026"** (gemessen, siehe [Entscheidung 8](#entscheidungen-2026-07-25);
+  das Wort „Datenstand" steht als `visually-hidden`-Text davor, damit die
+  Vorlesereihenfolge vollständig bleibt). Der Stand wird beim Laden aus
   `data.lastScanAt` gefüllt (heute schreibt derselbe Code `#meta`).
-- Desktop unverändert vollständig.
+- Desktop unverändert vollständig — mit **einer** Ausnahme: die 0,8 rem gelten
+  auch dort (P3 ist keine reine Mobil-Regel), die Fußzeile wächst deshalb am
+  Desktop von 27,8 px auf 28,8 px.
 - `height: 100dvh` am `body` (R2) und `viewport-fit=cover` im Viewport-Meta (R3),
   damit die Zeile auf Android Chrome und als installierte iOS-App wirklich
   sichtbar ist. Die `env(safe-area-inset-*)`-Regeln für `display-mode: standalone`
@@ -498,7 +528,13 @@ Risiko klein, beseitigt es aber nicht.
 - `delivery === null` / `takeaway === null` erscheinen weiter als *unbekannt*,
   nie als *nein*.
 - Über 640 px ist die Seite unverändert: Chips inline sichtbar,
-  `#filterToggle` versteckt.
+  `#filterToggle` versteckt. ~~Sonst pixelgleich.~~ → **Zwei gewollte
+  Abweichungen, beide gemessen:** „📍 In meiner Nähe" verlässt die Kopfleiste
+  auch am Desktop und wird `#mapControls` (so die Strukturskizze: „≤640 **und**
+  >640: unten rechts über der Karte", und Entscheidung 4 nennt keine Breite) —
+  die Kopfleiste wird dadurch bei 1024 px von 125 px auf **101 px** kürzer und
+  von zwei Zeilen auf eine; und die Fußzeile wächst durch P3 um 1 px. Die Chips
+  selbst sind pixelgleich (101,8 × 32,4 bzw. 126,5 × 32,4, gleiche Oberkante).
 - Frontend im Browser gegengeprüft (Playwright mit `L`-Stub) mit synthetischen
   Daten **und** der echten `web/restaurants.json`; die Leaflet-Punkte aus dem
   Testplan zusätzlich in einem echten Browser.
@@ -531,6 +567,67 @@ Risiko klein, beseitigt es aber nicht.
 7. **Tests** nach Testplan; `CACHE_VERSION` → `v4` (A-4 hat `v3` verbraucht).
 8. **Doku**: ADR-008 auf `akzeptiert`, `UMGESETZT.md`, Backlog-Punkte abhaken,
    Status in der [Übersicht](./README.md#übersicht) auf 🏁.
+
+## Umsetzung (2026-07-26)
+
+Alle acht Schritte gebaut, `web/index.html` und `web/sw.js` berührt, sonst
+nichts. Gemessen nach dem Umbau (Playwright mit `L`-Stub, echte
+`restaurants.json`):
+
+| | vorher | nachher | Ziel |
+|---|---|---|---|
+| Bedienzeile 393 × 851 | 205,7 px (4–5 Zeilen) | **68 px, eine Zeile** | ≤ 72 px |
+| Bedienzeile 360 × 740, mit Install | 261,1 px | **68 px** | ≤ 72 px |
+| `#map` 393 × 851 | 603,5 px (70,9 %) | **822,2 px (96,6 %)** | ≥ 95 % |
+| `#map` 360 × 740 | 461,1 px (62,3 %) | **711,2 px (96,1 %)** | ≥ 95 % |
+| davon unverdeckt (393) | 70,9 % | **88,6 %** | ≥ 85 % |
+| Bedienelemente | 32,4 px | **44 px** | ≥ 44 px |
+| Feed-Verdeckung 393 / 360 | 77 % / 88 % | **54 % / 64 %** | — |
+| Kopfleiste Desktop 1024 | 125 px (2 Zeilen) | **101 px (1 Zeile)** | — |
+
+**Vier Abweichungen von der Spezifikation**, jede gemessen und oben an ihrer
+Stelle mit `~~…~~` eingetragen statt stillschweigend ersetzt:
+
+1. **Datenschutz-Link nicht in der Mobil-Fußzeile** — [Entscheidung 8](#entscheidungen-2026-07-25),
+   dort mit den Zahlen begründet (369,3 px Text auf 337,6 px Platz).
+2. **`#nearMe` wird auch am Desktop Karten-Control** — die Strukturskizze sagt
+   ausdrücklich „≤640 und >640", Entscheidung 4 nennt keine Breite; die
+   Kopfleiste wird dadurch bei 1024 px eine Zeile kürzer. „Desktop unverändert"
+   stimmt damit nicht mehr wörtlich, wohl aber in beiden Punkten, die die
+   Definition of Done und Testplan-Punkt 7 dafür festlegen.
+3. **Suchfeld `flex: 1 1 8rem` statt `flex: 1 1 auto`** — mit `auto` ist die
+   Flex-Basis die intrinsische Feldbreite (≈ 211 px bei `size=20`); zusammen mit
+   den beiden Knöpfen bricht die Zeile schon bei 393 px um und wird 120 px hoch.
+   Mit fester Basis passt sie bei 360 px wie bei 393 px in **eine** Zeile.
+4. **Feed-Einträge auf 44 px** — die Definition of Done sagt „jedes interaktive
+   Element in … Sheets"; `.feed-item` war mit 39,6 px darunter. Innenabstand
+   erhöht statt eine Ausnahme zu formulieren.
+
+**Zwei Fallen, die erst der Test gefunden hat** — beide im Code kommentiert:
+
+- Das Filter-Sheet liegt im DOM in `header`, und `header` ist unter 640 px
+  `pointer-events: none` (damit man zwischen den Pillen die Karte bedient). Ohne
+  ein ausdrückliches `pointer-events: auto` am Sheet ist es **komplett
+  durchklickbar** — sichtbar, aber ohne Wirkung.
+- `setPointerCapture` beim Wischen leitet in Chromium auch das folgende `click`
+  auf das fangende Element um; das ✕ im Sheet-Kopf war dadurch tot. Die Bewegung
+  über `window` zu verfolgen erreicht dasselbe ohne diesen Nebeneffekt.
+
+Dazu eine Spezifitätsfalle, die kein Test, sondern erst der Screenshot zeigte:
+`.controls button` (0,1,1) trifft auch Griff und ✕, weil `#filterPanel` in
+`.controls` liegt — beide wurden zu weißen 14-rem-Kästen. Die Sheet-Regeln
+tragen deshalb `#filterPanel`/`#feed` im Selektor.
+
+**Geprüft:** 145 Browser-Prüfungen grün (Testplan 1–8 plus Karten-Control,
+ARIA/Tab-Reihenfolge, Desktop-Vergleich gegen `origin/main`, Hinweisleiste,
+Ladefehler, URL-/Speicher-Versprechen, Wischen in beide Richtungen,
+`prefers-reduced-motion`, 200 % Zoom), gegen synthetische Daten mit allen neun
+`delivery × takeaway`-Kombinationen **und** die echte `restaurants.json` (883
+Marker, kein Popup mit „undefined", 362 von 400 mit „unbekannt"-Badge).
+59 Unittests unverändert grün. **Offen bleibt** — wie im Testplan angekündigt —
+die Gegenprobe mit echtem Leaflet: Gesten über den Pillen, Auto-Pan-Padding und
+die Position des Attribution-Controls sind hier nur gegen den `L`-Stub geprüft,
+weil die Netzpolitik der Web-Session unpkg blockt.
 
 ---
 

@@ -6,49 +6,60 @@ offensichtlich. **Ausgearbeitete Anforderungen** stehen in
 festen [Refinement-Prozess](./PROZESS.md); die Trennlinie steht dort unter
 „Anforderung oder Aufgabe? Der Test".
 
-Stand: 2026-07-25. Reihenfolge = Priorität. Die Kürzel `R…`/`P…` stammen aus dem
+Stand: 2026-07-26. Reihenfolge = Priorität. Die Kürzel `R…`/`P…` stammen aus dem
 UI/UX-Review vom Juli 2026 (Mobil-Screenshot, Android/Chrome, 1080 × 2340, im
 Abgleich mit `web/index.html`) und bleiben erhalten, damit Rückfragen zuordenbar sind.
 
 **Vor jedem Push von Pipeline-Änderungen:**
 `python3 -m unittest discover -s tests -v`
 
-## Hoch – die Pflicht-Attribution ist auf dem Handy unsichtbar
+## Hoch – die Pflicht-Attribution ist auf dem Handy unsichtbar ✅ erledigt
 
 Diese drei Punkte gehören zusammen: sie betreffen alle die ODbL-pflichtige
 Angabe „© OpenStreetMap-Mitwirkende" im Footer. Deshalb Vorrang vor allem
 anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
 (siehe [ADR-001](./entscheidungen/ADR-001-openstreetmap-statt-google-places.md)).
 
-- [ ] **R2 – `100dvh` statt `100vh`.** `body { height: 100vh }`
+> **Alle drei erledigt mit [A-3](./anforderungen/A-3-header-umbau.md)**
+> (2026-07-26). Die Fußzeile ist seitdem ein Struktur-Element: sie liegt immer
+> im Fluss, ihre gemessene Höhe steht als `--footer-h` bereit, und Sheets wie
+> Karten-Controls richten sich daran aus — geprüft ist, dass sich die Rechtecke
+> von Fußzeile und offenem Sheet **nicht** überschneiden. Der Abschnitt bleibt
+> als Protokoll stehen.
+
+- [x] **R2 – `100dvh` statt `100vh`.** `body { height: 100vh }`
   (`web/index.html:49`) meint auf Android Chrome die *große* Viewport-Höhe (ohne
   URL-Leiste). Der `<footer>` mit Attribution und Datenschutz-Link liegt dadurch
   unter der Browserleiste, ebenso Leaflets eigenes Attribution-Control unten
   rechts. Fix: `height: 100dvh` mit `100vh` als Fallback davor.
-  → **Teil von [A-3](./anforderungen/A-3-header-umbau.md)**, dort Schritt 1: für
-  ein Overlay, das sich an den Viewport-Rändern ausrichtet, ist das keine
-  Kosmetik mehr, sondern Voraussetzung.
-- [ ] **R3 – `viewport-fit=cover` im Viewport-Meta.** Die
+  **Erledigt mit [A-3](./anforderungen/A-3-header-umbau.md)** (2026-07-26):
+  `height: 100vh` steht als Fallback vor `height: 100dvh`. Für das Overlay war
+  das keine Kosmetik mehr, sondern Voraussetzung.
+- [x] **R3 – `viewport-fit=cover` im Viewport-Meta.** Die
   `env(safe-area-inset-*)`-Regeln für `display-mode: standalone` wirken ohne
   `viewport-fit=cover` nicht; als installierte iOS-App klebt der Header unter
-  der Statusleiste. → **Teil von [A-3](./anforderungen/A-3-header-umbau.md)**,
-  aus demselben Grund wie R2.
-- [ ] **P3 – Fußzeile zu klein.** `0.72rem` (≈ 11,5 px) ist für eine
+  der Statusleiste.
+  **Erledigt mit [A-3](./anforderungen/A-3-header-umbau.md)** (2026-07-26);
+  die Bedienzeile und `#mapControls` rücken zusätzlich um die Safe-Area ein.
+- [x] **P3 – Fußzeile zu klein.** `0.72rem` (≈ 11,5 px) ist für eine
   Pflichtangabe zu wenig – mindestens `0.8rem`.
-  → **Teil von [A-3](./anforderungen/A-3-header-umbau.md)**: die Fußzeile wird
-  dort ohnehin umgebaut (einzeilig auf Mobil, mit Datenstand).
+  **Erledigt mit [A-3](./anforderungen/A-3-header-umbau.md)** (2026-07-26):
+  `0.8rem` auf allen Breiten, auf Mobil einzeilig mit Datenstand. Dass die drei
+  Angaben bei 360 px nicht nebeneinander passen, ist dort gemessen und der
+  Datenschutz-Link deshalb ins Sheet gewandert.
 
 ## Mittel – Bedienbarkeit, Struktur, Performance
 
-- [ ] **R4 – Suchfeld ohne Label, Text abgeschnitten.** Das
+- [x] **R4 – Suchfeld ohne Label, Text abgeschnitten.** Das
   `<input type="search">` hat nur ein `placeholder` (kein `<label>`/`aria-label`)
   – assistiv also namenlos. Sichtbar ist außerdem nur „Restaurant oder Adresse
   sucl", weil `flex: 1 1 200px` (`web/index.html:71`) neben der Checkbox
   zerdrückt wird. Unter 640 px sollte die Suche eine eigene, volle Zeile bekommen.
-  → **Teil von [A-3](./anforderungen/A-3-header-umbau.md)**: das `aria-label`
-  kommt dort in Schritt 1, und die Breite löst sich, weil in der Bedienzeile nur
-  noch Filter- und Feed-Knopf neben der Suche stehen (gemessen heute: 251 px von
-  393 px, mit Reset-Chip in derselben Zeile).
+  **Erledigt mit [A-3](./anforderungen/A-3-header-umbau.md)** (2026-07-26):
+  `aria-label="Restaurant oder Adresse suchen"`, und das Feld ist unter 640 px
+  auf 181,3 px von 393 px gewachsen (vorher 251 px geteilt mit Chips und
+  Reset-Chip in derselben Zeile). Die Flex-Basis ist `8rem` statt `auto` — mit
+  `auto` bricht die Zeile schon bei 393 px um.
 - [x] **R5 – Trefferzahl wird nicht angekündigt, 0 Treffer sind ein Loch.**
   Erledigt mit [A-1](./anforderungen/A-1-standardfilter-entschaerfen.md):
   `#count` hat `role="status"` + `aria-live="polite"`, und bei null Treffern
@@ -64,14 +75,16 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   Provisions-Plattformen" auf „883 Restaurants · zuletzt aktualisiert am …"
   überschrieben; die Anzahl steht damit doppelt (Sub-Zeile + `#count`). Claim
   stehen lassen, Datum in die Fußzeile oder hinter ein „ⓘ".
-  → **Auf Mobil von [A-3](./anforderungen/A-3-header-umbau.md) überholt**:
-  dort verschwinden Titel und Claim unter 640 px absichtlich (Entscheidung 2),
-  das Datum wandert in die Fußzeile (Entscheidung 4). Für Desktop bleibt der
-  Punkt offen — dort steht die Anzahl weiter doppelt.
+  **Auf Mobil erledigt mit [A-3](./anforderungen/A-3-header-umbau.md)**
+  (2026-07-26): Titel und Claim sind unter 640 px absichtlich weg
+  (Entscheidung 2), das Datum steht in der Fußzeile (Entscheidung 4). **Für
+  Desktop bleibt der Punkt offen** — dort überschreibt `$meta` weiter den Claim
+  und die Anzahl steht doppelt (Sub-Zeile + `#count`).
 - [ ] **R11 – Popup hat zwei rote Primäraktionen.** „Zur Website & bestellen →"
-  und „⚑ Falsche Angabe melden" sind beide `var(--accent)`, fett, gleich groß und
-  stehen direkt untereinander. Die Bestellaktion als gefüllter Button, den
-  Melde-Link klein und `--muted` unter die Fakten.
+  und „⚑ Falsche Angabe melden" sind beide `var(--aktion)` (bis A-4:
+  `var(--accent)`), fett, gleich groß und stehen direkt untereinander. Die
+  Bestellaktion als gefüllter Button, den Melde-Link klein und `--muted` unter
+  die Fakten. Von A-3 ausdrücklich **nicht** angefasst.
 - [x] **R7 – Suche drosseln, Popups faul bauen.** Erledigt mit
   [A-1](./anforderungen/A-1-standardfilter-entschaerfen.md): 150 ms Debounce auf
   das Suchfeld, `bindPopup(() => popupHtml(r))` statt vorab gebautem HTML samt
@@ -85,14 +98,20 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
 - [ ] **P3 – Emoji-Icons dekorativ auszeichnen.** 🍽️ 📍 🆕 📲 🥡 ⚑ werden
   mitgelesen und rendern plattformabhängig unterschiedlich – mindestens
   `aria-hidden="true"` auf die rein dekorativen.
+  **Teilweise erledigt mit [A-3](./anforderungen/A-3-header-umbau.md)**
+  (2026-07-26): die Emoji in den *neuen* Bedienelementen (⚙ Filter, 🆕 Feed,
+  📍 In meiner Nähe) sind `aria-hidden`, und die Icon-Knöpfe tragen ein
+  `aria-label`. **Offen bleiben** die Emoji in den Filter-Chips (🚴 🥡 🕒), im
+  `h1` (🍽️), im Install-Knopf (📲) und in den Popups (🍽️ ⚑ 🟢 🔴) — dort
+  stecken sie mitten im sichtbaren Text und brauchen je einen eigenen `<span>`.
 - [ ] **P3 – Kopier-Feedback im Fehlerfall.** Schlägt
   `navigator.clipboard.writeText()` fehl, ändert sich am Melde-Link nichts, der
   OSM-Tab öffnet aber trotzdem – dann „Text bitte von Hand markieren" zeigen.
-- [ ] **P3 – Fokus-Verwaltung im Feed-Panel.** Beim Öffnen wandert der Fokus
+- [x] **P3 – Fokus-Verwaltung im Feed-Panel.** Beim Öffnen wandert der Fokus
   nicht in das Panel (Escape schließt immerhin schon).
-  → **Teil von [A-3](./anforderungen/A-3-header-umbau.md)**: die gemeinsame
-  Sheet-Mechanik führt den Fokus beim Öffnen hinein und beim Schließen zum
-  Auslöser zurück – für Filter- und Feed-Sheet in einem.
+  **Erledigt mit [A-3](./anforderungen/A-3-header-umbau.md)** (2026-07-26):
+  `openSheet()` setzt den Fokus auf die Sheet-Überschrift, `closeSheet()` gibt
+  ihn an den Auslöser zurück – für Filter- und Feed-Sheet in einem.
 - [ ] **P3 – Dark Mode fehlt.** `prefers-color-scheme: dark`; abends ist die
   Seite grell. **Die Voraussetzung steht seit A-4** (umgesetzt 2026-07-25,
   [ADR-009](./entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)): kein
