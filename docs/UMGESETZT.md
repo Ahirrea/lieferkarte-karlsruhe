@@ -428,3 +428,104 @@ Leerzustand klickbar, Desktop-Vergleich gegen `origin/main`, Tab-Reihenfolge,
 **Nicht prüfbar in der Web-Session** (unpkg gesperrt): das Verhalten mit echtem
 Leaflet — Gesten über den Pillen, Auto-Pan-Padding, Position des
 Attribution-Controls.
+
+---
+
+## Pins nach Zustand unterscheiden ✅
+
+**Was:** Die Karte zeigte 885 identische blaue Tropfen — ob ein Restaurant
+liefert oder gerade geschlossen ist, stand ausschließlich im Popup. Jetzt trägt
+jeder Pin **zwei Achsen**: Farbe und Strichart sagen, was OpenStreetMap über die
+**Lieferung** weiß (grün gefüllt = liefert · slate gefüllt = liefert nicht ·
+grau **gestrichelt** = nicht eingetragen), Größe und Füllstärke sagen, was
+**gerade geschlossen** ist. Dazu eine Legende im Filter-Sheet.
+
+Anforderung: [A-5](./anforderungen/A-5-pins-nach-zustand.md). Grundsatz:
+[ADR-010](./entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md).
+Löst **R13** aus dem UI/UX-Review vom Juli 2026.
+
+| | vorher | nachher |
+|---|---|---|
+| Pin | Leaflet-Standard-Icon (Bild vom CDN), 885 × identisch | `L.circleMarker` (SVG), **6 Varianten** |
+| Zustand ohne Antippen erkennbar | nichts | Lieferung (3 Zustände) + „jetzt geschlossen" |
+| ohne Filter unterscheidbar | 0 von 885 | 64 grün · 47 slate · 774 gestrichelt, davon **248 klein und blass** |
+| Umriss-Kontrast auf Kacheln | — | **3,32–12,52:1** (nötig: 3:1) |
+| `render()`, alle 885 Pins | 0,4 ms | 5,6 ms |
+| `render()`, Standardfilter (44 Pins) | 4,2 ms | **0,8 ms** |
+| Trefferfläche je Pin | 25 × 41 px | 20 px (geschlossen 14 px) |
+| CDN-Dateien im Service Worker | 5 | **2** |
+
+**Der Haken — warum es so gelöst ist:**
+
+- **Die Farbe trägt die Lieferung, nicht „Lieferung oder Abholung".** Die
+  Sammelachse sähe besser aus — 258 grüne Pins statt 64 —, aber **194 davon
+  liefern nicht**, sie lassen nur abholen. Auf einer Karte namens „Lieferkarte"
+  wäre Grün dann in drei von vier Fällen die falsche Auskunft. Die 774 grauen,
+  gestrichelten Pins sind kein Schönheitsfehler: sie sind der ehrliche Zustand
+  der OSM-Abdeckung, dieselbe Aussage wie im Leerzustand und in den
+  Filter-Hinweisen.
+- **„Blass = geschlossen" (die Idee aus dem Ausgangstext) funktioniert nur zur
+  Hälfte.** Sie zielt richtig — Helligkeit statt Farbton, also auch bei
+  Rot-Grün-Blindheit lesbar —, aber reine Deckkraft reißt den Kontrast:
+  gemessen **2,59:1** bei 60 % auf heller Kachel, nötig sind 3:1 für grafische
+  Objekte (WCAG 1.4.11). Deshalb bleibt der **Umriss voll deckend** und blass
+  wird nur die Füllung; die zweite Hälfte der Aussage trägt die **Größe** — ein
+  Kanal, der überhaupt keinen Kontrast kostet.
+- **Abgewertet wird nur, was sicher geschlossen ist.** 210 der 885 Restaurants
+  haben keine oder unlesbare Öffnungszeiten; sie sehen aus wie die offenen. Der
+  Pin behauptet damit nie „offen", nur „nicht bekannt zu" — ein „unbekannt" darf
+  nie wie eine Absage aussehen
+  ([ADR-007](./entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)).
+- **Legende und Pins hängen an einer Funktion.** Die Farbmuster in der Legende
+  sind Inline-SVG aus derselben `pinStyle()`-Tabelle wie die Marker. Eine zweite,
+  handgepflegte Legende wäre binnen eines Feinschliffs falsch. Der Anteil
+  „nicht eingetragen (87 %)" kommt aus den geladenen Daten, nicht aus dem Text —
+  er ändert sich mit jedem Sonntags-Scan.
+- **`L.circleMarker` statt `L.divIcon`.** Der gestrichelte Umriss ist in SVG ein
+  Attribut und kostet nichts; `divIcon` bräuchte eigenes Markup und 885
+  DOM-Knoten. Nebeneffekt:
+  [A-6](./anforderungen/A-6-clustering-oder-canvas.md) (Canvas-Renderer) ist
+  damit künftig `preferCanvas: true` — eine Zeile. Zweiter Nebeneffekt: die drei
+  Leaflet-Marker-Grafiken sind aus dem Service-Worker-Cache raus, weil
+  `L.marker` nirgends mehr entsteht.
+- **Der Standort-Marker musste die Form wechseln.** Seit die Restaurants Kreise
+  sind, reicht „rot" nicht mehr: Marken-Rot gegen Zustands-Grün hat 1,03
+  Helligkeitsabstand — bei Rot-Grün-Blindheit wäre der eigene Standort ein
+  „liefert"-Pin gewesen. Er ist jetzt ein deutlich größerer, dünn gefüllter Ring.
+- **Schneller im Normalfall, langsamer im Ausnahmefall.** Der Pin braucht den
+  Öffnungszustand jedes Markers, also läuft `openStateNow()` jetzt auch ohne
+  aktiven Zeitfilter. Zwei Änderungen zahlen das über: der `Intl.DateTimeFormat`
+  in `berlinNow()` wird **einmal** gebaut statt bei jedem Aufruf (dieselbe
+  Fassung ohne diese Änderung braucht 62,9 ms statt 5,6 ms für 885 Pins), und die
+  Zeitauswertung steht jetzt **hinter** den billigen Filtern. Unterm Strich ist
+  der Standardfall — der Standardfilter — von 4,2 ms auf 0,8 ms gefallen.
+- **Beim Standardfilter sehen alle Pins gleich aus**, weil „Liefert jetzt" genau
+  danach filtert. Die Grammatik zahlt sich beim Aufweiten aus, also nach „Alle
+  Restaurants zeigen" — nach ADR-007 der übliche Weg aus dem nächtlichen
+  Leerzustand. Kein Fehler, und kein Grund, den Default anzufassen.
+- **Der Pin ist damit voll.** Zwei Achsen sind belegt; eine dritte (Abholung,
+  Küchenstil, …) braucht einen neuen ADR und muss sagen, welche der beiden dafür
+  weicht.
+
+**Bewusst in Kauf genommen:** Die Trefferfläche schrumpft von 25 × 41 px auf
+20 px (14 px bei geschlossenen). Auf einer Karte mit 885 Punkten stehlen große
+Trefferflächen einander die Klicks, und die 44-px-Regel aus
+[ADR-008](./entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md) gilt
+für Bedienelemente, nicht für Datenpunkte. Die barrierefreie Antwort ist nicht
+ein größerer Pin, sondern [A-2](./anforderungen/A-2-ergebnisliste.md). Am
+Desktop kostet die Legendenzeile 34 px Kopfhöhe (`#map` 85,4 % → 81,8 %); unter
+640 px liegt sie im Sheet, dort bleibt `#map` unverändert bei 96,1 % (360 px)
+bzw. 96,6 % (390 px).
+
+**Geprüft:** 59 Unittests unverändert grün (kein Python berührt) · 36
+Browser-Prüfungen (Playwright mit `L`-Stub) gegen synthetische Daten mit allen
+sechs Zustandskombinationen **und** die echte `restaurants.json`: Farbe, Radius,
+Füllung und Strichart je Pin, kein `--marke`/`--aktion` auf Pins, kein `L.marker`
+mehr, Umriss-Kontrast gegen fünf typische Kachelfarben, Legende in beiden
+Layout-Pfaden (Muster, Farben, Strichart, Anteil aus den Daten), Legende im
+Sheet scrollbar erreichbar und nicht durchklickbar (`elementFromPoint`),
+Sheet weiterhin über der Fußzeile, 640-px-Wechsel in beide Richtungen,
+`render()`-Dauer, Screenshots beider Pfade. `CACHE_VERSION` → `v5`.
+**Nicht prüfbar in der Web-Session** (unpkg gesperrt): wie die Kreise mit echtem
+Leaflet über echten Kacheln aussehen — Kontrast und Geometrie sind deshalb
+gerechnet und aus den Legenden-SVGs abgelesen, nicht am gerenderten Marker.
