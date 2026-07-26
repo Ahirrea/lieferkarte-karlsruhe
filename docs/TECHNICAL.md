@@ -173,7 +173,7 @@ nicht mehr.
 |---|---|---|
 | **Marke** | `--marke` `#d64541` | Markenwort im `h1`, PWA-Icons, `manifest.theme_color`, `theme-color`-Metas. **Nie für einen Zustand.** |
 | **Interaktion** | `--aktion` `#b8352f`, `--aktion-hover`, `--aktion-schwach` | Links, Knöpfe, aktive Chips, `.pill`, Melde-Flag |
-| **Datenzustand** | `--zustand-ja` / `-ja-bg`, `--zustand-nein` / `-nein-bg`, `--zustand-unbekannt` | Badges, „geschlossen" in der Zeitentabelle, die Karten-Pins ([A-5](./anforderungen/A-5-pins-nach-zustand.md)) |
+| **Datenzustand** | `--zustand-ja` / `-ja-bg`, `--zustand-nein` / `-nein-bg`, `--zustand-unbekannt` | Badges und „geschlossen" in der Zeitentabelle — **nicht** die Karten-Pins: die sind seit [ADR-011](./entscheidungen/ADR-011-pins-wieder-einheitlich.md) wieder zustandslos, die Tokens leben nur noch in CSS |
 
 Dazu neutrale Tokens (`--bg`, `--panel`, `--text`, `--muted`, `--border`,
 `--flaeche-hover`, `--auf-farbe`, `--schatten-weich`, `--schatten-stark`) und
@@ -217,39 +217,46 @@ Dark Mode ist damit vorbereitet, aber **nicht gebaut** (P3 im
 [Backlog](./BACKLOG.md)): er wäre ein `@media (prefers-color-scheme: dark)`-Block,
 der ausschließlich `:root` überschreibt.
 
-### Pin-Grammatik auf der Karte
+### Pins auf der Karte: bewusst zustandslos
 
-Die Marker sind seit A-5 **SVG-Kreise** (`L.circleMarker`), kein Bild-Icon mehr,
-und tragen genau **zwei Achsen**
-([ADR-010](./entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)):
+Ein Restaurant-Pin ist **Leaflets Standard-Icon** (`L.marker`, Bild vom CDN) und
+trägt **keinen** Zustand — keine Farbe, keine Größenabstufung, keine Strichart,
+keine Legende
+([ADR-011](./entscheidungen/ADR-011-pins-wieder-einheitlich.md)). Die Zustände
+Lieferung, Abholung und „jetzt geöffnet" stehen in **Popup, Badges, Chips und
+Filtern**, also überall in Worten.
 
-| Lieferung | offen **oder** unbekannt | sicher geschlossen |
-|---|---|---|
-| **ja** | `--zustand-ja`, r 10, Füllung 0,85 | r 7, Füllung 0,2 |
-| **nein** | `--zustand-nein`, r 10, Füllung 0,85 | r 7, Füllung 0,2 |
-| **unbekannt** | `--zustand-unbekannt`, r 10, Füllung 0,12, **gestrichelt `3 3`** | r 7, Füllung 0, gestrichelt |
+`render()` erzeugt die Marker deshalb ohne Optionen:
 
-Alles steht in **einer** Tabelle (`PIN`) und **einer** Funktion (`pinStyle()`)
-in `web/index.html`. Vier Dinge sind daran bindend:
+```js
+L.marker([r.lat, r.lng]).bindPopup(() => popupHtml(r), POPUP_OPTS).addTo(layer);
+```
 
-1. **Der Umriss ist immer voll deckend** (2 px, `opacity: 1`). „Blass" allein —
-   die naheliegende Umsetzung von „geschlossen" — erreicht gemessen 2,59:1 und
-   reißt die 3:1-Grenze für grafische Objekte (WCAG 1.4.11). Voll deckend sind
-   es 3,32–12,52:1 über die üblichen Kachelfarben.
-2. **Abgewertet wird nur, was sicher geschlossen ist.** `openStateNow() === null`
-   (gemessen 210 von 885) sieht aus wie „offen" — ein „unbekannt" darf nie wie
-   eine Absage aussehen ([ADR-007](./entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)).
-3. **Die Legende entsteht aus derselben Funktion** (`pinStyle()` → `pinSwatch()`
-   → `buildLegend()`), sonst laufen Karte und Erklärung auseinander. Sie liegt
-   im Filter-Sheet: unter 640 px als Liste, darüber als eigene Zeile mit
-   `order: 1` in der Bedienzeile.
-4. **Der Pin ist voll.** Eine dritte Achse braucht einen neuen ADR.
+Drei Dinge sind daran bindend:
 
-`pinTokens()` liest die drei Farben einmal je `render()` (nicht je Marker —
-`getComputedStyle` ist teuer) und hält dieselben Fallbacks wie `:root`. Der
-Standort-Marker aus `locateMe()` ist deshalb ein großer, dünn gefüllter Ring
-statt eines Punkts: Marken-Rot gegen Zustands-Grün hat nur 1,03
-Helligkeitsabstand, die Unterscheidung muss über die Form laufen.
+1. **Die Pin-Achsen sind geschlossen, nicht frei.** Farbe, Füllung, Strichart und
+   Größe wieder zu belegen — ganz oder teilweise — braucht einen **neuen ADR**.
+   [ADR-010](./entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)
+   hat genau das gebaut (Farbe = Lieferung, Größe = geschlossen) und wurde am
+   Tag der Umsetzung zurückgenommen, weil die Kreise schlechter aussahen; seine
+   Messwerte (Kontrast 3,32–12,52:1, 64/47/774, 427/248/210) bleiben dort als
+   Vorarbeit stehen und sind wiederverwendbar.
+2. **Die drei Marker-Grafiken müssen im Service-Worker-Cache bleiben**
+   (`marker-icon.png`, `-2x`, `-shadow` in `CDN_FILES`). Ohne sie ist die Karte
+   offline pinlos, weil die `cacheFirst`-Regel für unpkg sie erst online
+   nachholt.
+3. **Der Standort-Marker aus `locateMe()` bleibt ein Kreis** (`L.circleMarker`,
+   r 8, Füllung 0,6, `--marke` über `cssVar()`). Er setzt sich über die **Form**
+   von den Restaurant-Tropfen ab, nicht nur über die Farbe — Marken-Rot gegen
+   Grün hat nur 1,03 Helligkeitsabstand. Würden die Restaurants je wieder Kreise,
+   müsste er mit wechseln.
+
+Der Öffnungszustand wird in `render()` **hinter** den billigen Filtern und nur
+bei aktivem Filter „jetzt geöffnet" ausgewertet (Kurzschluss über `f.open`), weil
+`openStateNow()` der teuerste Schritt der Schleife ist. `berlinNow()` baut seinen
+`Intl.DateTimeFormat` **einmal** (`BERLIN_FMT`) statt je Aufruf — gemessen 62,9 →
+5,6 ms über 885 Auswertungen. `render()` liegt im Standardfilter bei 0,60 ms
+(Median von 20 gewärmten Läufen).
 
 ## Kostenübersicht
 

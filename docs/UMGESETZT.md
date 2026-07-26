@@ -431,7 +431,31 @@ Attribution-Controls.
 
 ---
 
-## Pins nach Zustand unterscheiden ✅
+## Pins nach Zustand unterscheiden ↩ *am selben Tag zurückgenommen*
+
+> **Diese Umsetzung ist nicht mehr im Produkt.** Sie stand am 2026-07-26 live und
+> wurde am selben Tag zurückgebaut: die Produktverantwortung hat die fertigen
+> Pins auf dem Telefon angesehen und die dunkelgrün gefüllten Kreise abgelehnt —
+> der vertraute blaue Leaflet-Tropfen sah besser aus.
+> [ADR-011](./entscheidungen/ADR-011-pins-wieder-einheitlich.md) kehrt
+> [ADR-010](./entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)
+> um; die Pins sind wieder `L.marker` ohne Zustand, die Legende ist weg,
+> `CACHE_VERSION` steht auf `v6`. Der Abschnitt bleibt vollständig stehen: die
+> Messwerte und die Begründungen darunter sind weiter gültig und die Grundlage,
+> falls die Frage je wiederkommt — **die Entscheidung ist es nicht.**
+>
+> Zwei Dinge sind aus diesem Rückbau zu behalten:
+>
+> 1. **Die letzte Zeile dieses Abschnitts hat den Ausgang vorhergesagt.** „Nicht
+>    prüfbar in der Web-Session: wie die Kreise mit echtem Leaflet über echten
+>    Kacheln aussehen." Genau dort lag der Einwand. Kontrast und Geometrie waren
+>    gerechnet und stimmten; *ob es gut aussieht* kann keine Rechnung beantworten.
+>    Wo eine Prüfung nachweislich fehlt, ist die Umsetzung nicht fertig, sondern
+>    unbestätigt — ein Screenshot der echten Karte hätte die Frage vorher gestellt.
+> 2. **Die zwei Tempo-Verbesserungen sind geblieben** (`BERLIN_FMT` einmal statt
+>    je Aufruf, Zeitauswertung hinter den billigen Filtern). Ein Rückbau der Optik
+>    ist kein Grund, unsichtbare Technik mitzureißen; `render()` liegt im
+>    Standardfilter jetzt bei **0,60 ms**.
 
 **Was:** Die Karte zeigte 885 identische blaue Tropfen — ob ein Restaurant
 liefert oder gerade geschlossen ist, stand ausschließlich im Popup. Jetzt trägt
@@ -441,8 +465,11 @@ grau **gestrichelt** = nicht eingetragen), Größe und Füllstärke sagen, was
 **gerade geschlossen** ist. Dazu eine Legende im Filter-Sheet.
 
 Anforderung: [A-5](./anforderungen/A-5-pins-nach-zustand.md). Grundsatz:
-[ADR-010](./entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md).
-Löst **R13** aus dem UI/UX-Review vom Juli 2026.
+~~[ADR-010](./entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)~~
+→ [ADR-011](./entscheidungen/ADR-011-pins-wieder-einheitlich.md).
+Sollte **R13** aus dem UI/UX-Review vom Juli 2026 lösen — der Befund ist mit dem
+Rückbau **wieder offen** und wandert zu
+[A-2](./anforderungen/A-2-ergebnisliste.md).
 
 | | vorher | nachher |
 |---|---|---|

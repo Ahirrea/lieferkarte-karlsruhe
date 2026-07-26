@@ -101,6 +101,12 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   die Zeitauswertung hinter den billigen Filtern steht. Die 197 ms von damals
   sind mit dieser Methode nicht vergleichbar – sie wurden ohne Aufwärmrunden
   gemessen.*
+  *Nochmals nachgemessen am selben Tag nach dem Rückbau der Zustands-Pins
+  ([ADR-011](./entscheidungen/ADR-011-pins-wieder-einheitlich.md)): mit
+  Standardfilter **0,60 ms**. Beide Tempo-Änderungen sind absichtlich geblieben —
+  der einmal gebaute `Intl.DateTimeFormat` und die späte Zeitauswertung, jetzt
+  zusätzlich über `f.open` kurzgeschlossen, weil nur noch der Filter das Ergebnis
+  braucht. Zurückgenommen wurde die Optik, nicht die Technik.*
 
 ## Niedrig – Feinschliff
 
@@ -177,6 +183,9 @@ aktuelle Kompromiss nicht mehr reicht:
 > und 9 aus `backlog/IDEEN.md` — sie sind Aufgaben, keine Anforderungen. Die
 > UX-Umbauten aus derselben Datei (R6, R9, R12, R13) sind zu
 > [Anforderungen](./anforderungen/README.md) geworden. **R12** ist mit
-> [A-4](./anforderungen/A-4-farbsystem.md) erledigt, **R13** mit
-> [A-5](./anforderungen/A-5-pins-nach-zustand.md); R2/R3/R4 kamen mit
-> [A-3](./anforderungen/A-3-header-umbau.md) mit.
+> [A-4](./anforderungen/A-4-farbsystem.md) erledigt; R2/R3/R4 kamen mit
+> [A-3](./anforderungen/A-3-header-umbau.md) mit. **R13** war mit
+> [A-5](./anforderungen/A-5-pins-nach-zustand.md) erledigt und ist mit deren
+> Rückbau ([ADR-011](./entscheidungen/ADR-011-pins-wieder-einheitlich.md))
+> **wieder offen** — künftig zu lösen über
+> [A-2](./anforderungen/A-2-ergebnisliste.md), nicht erneut über die Pins.

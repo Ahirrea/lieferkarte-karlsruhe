@@ -15,7 +15,38 @@
 [ADR-008](../entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md)
 (zwei Layout-Pfade, Bedienzeile fest auf drei Elemente)
 · **Ergebnis:**
-[ADR-010](../entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)
+~~[ADR-010](../entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)~~
+→ [ADR-011](../entscheidungen/ADR-011-pins-wieder-einheitlich.md)
+
+> ## ⛔ Am 2026-07-26 umgesetzt und am selben Tag zurückgenommen
+>
+> Die Produktverantwortung hat die fertigen Pins auf dem Telefon angesehen und
+> **abgelehnt**: die dunkelgrün gefüllten Kreise wirken schwerer und unruhiger
+> als der vertraute blaue Leaflet-Tropfen. Entschieden wurde ein **vollständiger
+> Rückbau** der Optik —
+> [ADR-011](../entscheidungen/ADR-011-pins-wieder-einheitlich.md) kehrt ADR-010
+> um, das damit auf `ersetzt durch ADR-011` steht. Die Pins sind wieder
+> `L.marker`, ohne Farbe, ohne Größenabstufung, ohne Legende.
+>
+> Das ging **gegen die Empfehlung dieser Anforderung** und wird deshalb hier
+> festgehalten statt geglättet. Zwei Zahlen aus dieser Datei stützen die
+> Entscheidung allerdings selbst: im Standardfilter sind alle **53 von 885**
+> sichtbaren Pins zwangsläufig identisch (grün, offen — genau danach filtert
+> ADR-007), und aufgeweitet sind **774 von 885** (87,5 %) grau gestrichelt.
+> Der optische Preis fällt also im Hauptbild an, der Nutzen im Randbild.
+>
+> **Was bleibt:** die Messungen unten (64/47/774 · 427/248/210 · die
+> Kontrastwerte) sind unverändert gültig und für die nächste Idee
+> wiederverwendbar. Ebenso bleiben die beiden unsichtbaren Tempo-Verbesserungen
+> (`BERLIN_FMT` einmal statt je Aufruf, Zeitauswertung hinter den billigen
+> Filtern) — sie haben mit dem Aussehen nichts zu tun.
+>
+> **Was offen ist:** Befund **R13** („Zustand nur nach Antippen sichtbar"). Er
+> wird nicht erneut über die Pins gelöst — die Pin-Achsen sind nach ADR-011
+> geschlossen, nicht frei —, sondern über
+> [A-2](./A-2-ergebnisliste.md): eine Liste hat beliebig viele Worte, ein
+> 20-px-Punkt vier Kanäle, und für Screenreader existieren farbige Kreise
+> ohnehin nicht.
 
 ## Ausgangstext (aus `backlog/IDEEN.md`, Idee 5)
 
@@ -251,35 +282,65 @@ in A-3 drei Defekte durchgelassen):
 
 ## Definition of Done
 
-- [x] Pin-Darstellung wie in der Tabelle oben, alle sechs Kombinationen geprüft.
-- [x] Nur `--zustand-*` auf den Pins; kein `--marke`/`--aktion`, kein
+Am 2026-07-26 vollständig erfüllt — und mit dem Rückbau nach
+[ADR-011](../entscheidungen/ADR-011-pins-wieder-einheitlich.md) wieder ungültig.
+Die Optik-Zeilen sind deshalb **gestrichen mit ihrem Ersatz**, nicht gelöscht;
+die drei Zeilen ohne Bezug zur Optik gelten unverändert weiter (und wurden beim
+Rückbau erneut geprüft).
+
+- ~~[x] Pin-Darstellung wie in der Tabelle oben, alle sechs Kombinationen
+      geprüft.~~ → Alle Pins sind wieder Leaflets Standard-Icon; geprüft, dass
+      **885 von 885** `L.marker` ohne Style-Optionen sind.
+- ~~[x] Nur `--zustand-*` auf den Pins; kein `--marke`/`--aktion`, kein
       `--accent`/`--ok` (per `grep` geprüft), kein Farbwert außerhalb `:root`
-      außer den `cssVar()`-Fallbacks.
-- [x] `delivery === null` ist grau **und** gestrichelt, nie „nein".
-- [x] Nur sicher geschlossene Restaurants werden abgewertet; unklare Zeiten
-      bleiben unverändert.
-- [x] Umriss-Kontrast ≥ 3:1 auf allen geprüften Kachelfarben.
-- [x] Legende in beiden Layout-Pfaden sichtbar und aus derselben Funktion wie
-      die Pins erzeugt.
-- [x] Tests grün: `python3 -m unittest discover -s tests -v` (59) und die 36
-      Playwright-Prüfungen, mit synthetischen **und** echten Daten.
+      außer den `cssVar()`-Fallbacks.~~ → Auf den Pins liegt **kein** Token mehr;
+      `pinTokens()` ist weg, `cssVar()` bleibt mit dem einen `--marke`-Fallback
+      in `locateMe()`. Kein Farbwert außerhalb `:root` — weiter per `grep`
+      geprüft.
+- ~~[x] `delivery === null` ist grau **und** gestrichelt, nie „nein".~~ → Steht
+      unverändert in **Badge und Popup** (ADR-007/ADR-009 sind unberührt); der
+      Pin sagt dazu nichts mehr.
+- ~~[x] Nur sicher geschlossene Restaurants werden abgewertet; unklare Zeiten
+      bleiben unverändert.~~ → Kein Restaurant wird auf der Karte mehr
+      abgewertet.
+- ~~[x] Umriss-Kontrast ≥ 3:1 auf allen geprüften Kachelfarben.~~ → Entfällt: es
+      gibt kein selbstgezeichnetes grafisches Objekt mehr, für das WCAG 1.4.11
+      greift. (Der Wert bleibt für die nächste Idee dokumentiert: 3,32–12,52:1.)
+- ~~[x] Legende in beiden Layout-Pfaden sichtbar und aus derselben Funktion wie
+      die Pins erzeugt.~~ → Legende restlos entfernt (DOM, CSS, JS); geprüft,
+      dass die Zeichenkette `legende` im ganzen Dokument nicht mehr vorkommt.
+- [x] Tests grün: `python3 -m unittest discover -s tests -v` (59, kein Python
+      berührt) und die Playwright-Prüfungen, mit synthetischen **und** echten
+      Daten — beim Rückbau **27 Prüfungen** in beiden Layout-Pfaden.
 - [x] Beide Layout-Pfade geprüft, inklusive Screenshots; `#map` unter 640 px
-      unverändert bei 96,1 % (360 px) bzw. 96,6 % (390 px).
+      unverändert bei 96,1 % (360 px).
 - [x] „© OpenStreetMap-Mitwirkende" weiterhin sichtbar (Fußzeile, Attribution
       auf der Karte, JSON-Feld).
-- [x] `CACHE_VERSION` auf `v5` hochgezählt.
+- ~~[x] `CACHE_VERSION` auf `v5` hochgezählt.~~ → Der Rückbau ändert wieder
+      vorgecachte Dateien, also weiter hoch auf **`v6`** (nie zurück auf `v4`).
 - [x] Keine Cookies, kein Tracking, kein `localStorage` dazugekommen.
-- [x] Doku aktualisiert, Status in der [Übersicht](./README.md#übersicht) auf
-      🏁 erledigt.
+- ~~[x] Doku aktualisiert, Status in der [Übersicht](./README.md#übersicht) auf
+      🏁 erledigt.~~ → Status auf **🗑 verworfen**; ADR-011 neu, ADR-010 auf
+      `ersetzt durch`.
 
 ## Umsetzungsschritte
 
-1. `PIN`-Tabelle, `pinTokens()`, `pinStyle()`, `pinSwatch()`, `buildLegend()`,
-   `updateLegendShare()` in `web/index.html`. ✅
-2. `render()` auf `L.circleMarker` umstellen, Öffnungszustand einmal berechnen
-   und durchreichen. ✅
-3. `BERLIN_FMT` einmalig bauen. ✅
-4. Legenden-Markup ins Filter-Sheet, CSS je Layout-Pfad. ✅
-5. Standort-Marker als Ring. ✅
-6. `sw.js`: `CACHE_VERSION` `v5`, Marker-Grafiken raus. ✅
-7. Prüfen (Playwright, Screenshots, Python-Suite), Doku und ADR. ✅
+Die sieben Schritte waren am 2026-07-26 alle erledigt (✅) — und sind mit
+ADR-011 wieder zurückgebaut (↩). Die Liste bleibt stehen, weil sie zeigt, was
+der Rückbau anfassen musste:
+
+1. ~~`PIN`-Tabelle, `pinTokens()`, `pinStyle()`, `pinSwatch()`, `buildLegend()`,
+   `updateLegendShare()` in `web/index.html`.~~ ↩ alle sechs entfernt.
+2. ~~`render()` auf `L.circleMarker` umstellen, Öffnungszustand einmal berechnen
+   und durchreichen.~~ ↩ wieder `L.marker`. Die Zeitauswertung **bleibt** hinter
+   den billigen Filtern, jetzt zusätzlich kurzgeschlossen über `f.open` — nur
+   der Filter braucht das Ergebnis noch, nicht mehr jeder Pin.
+3. `BERLIN_FMT` einmalig bauen. ✅ **bleibt** (rein technisch, 62,9 → 5,6 ms).
+4. ~~Legenden-Markup ins Filter-Sheet, CSS je Layout-Pfad.~~ ↩ Markup und beide
+   CSS-Blöcke entfernt.
+5. ~~Standort-Marker als Ring.~~ ↩ wieder Punkt (Radius 8, Füllung 0,6) —
+   zulässig, weil die Restaurants wieder Tropfen sind, der Unterschied also
+   auch ohne Farbwahrnehmung über die Form trägt.
+6. ~~`sw.js`: `CACHE_VERSION` `v5`, Marker-Grafiken raus.~~ ↩ `v6`, die drei
+   Marker-Grafiken wieder rein (ohne sie wäre die Karte offline pinlos).
+7. Prüfen (Playwright, Screenshots, Python-Suite), Doku und ADR. ✅ erneut.

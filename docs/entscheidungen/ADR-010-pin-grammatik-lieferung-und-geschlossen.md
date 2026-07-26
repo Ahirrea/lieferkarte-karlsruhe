@@ -1,10 +1,14 @@
 # ADR-010: Pin-Grammatik — Farbe trägt die Lieferung, Größe das „jetzt geschlossen"
 
-**Status:** akzeptiert
+**Status:** ersetzt durch [ADR-011](./ADR-011-pins-wieder-einheitlich.md)
 **Datum:** 2026-07-26
 
 Mit der Umsetzung von [A-5](../anforderungen/A-5-pins-nach-zustand.md) am
-2026-07-26 gebaut und direkt auf `akzeptiert` gesetzt.
+2026-07-26 gebaut und direkt auf `akzeptiert` gesetzt — und am selben Tag von
+[ADR-011](./ADR-011-pins-wieder-einheitlich.md) umgekehrt: die Pins sind wieder
+Leaflets Standard-Icon. Der Text unten bleibt unverändert (der Ordner ist
+append-only) und gilt weiter als Protokoll der Messungen; die *Entscheidung*
+gilt nicht mehr.
 
 ## Kontext
 

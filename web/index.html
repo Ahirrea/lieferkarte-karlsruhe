@@ -439,31 +439,6 @@
       cursor: pointer;
     }
 
-    /* --- Legende zu den Karten-Pins (A-5, ADR-010) ---
-       Ohne sie ist der Farbcode nicht entschlüsselbar. Ein Knoten für beide
-       Layout-Pfade: unter 640 px als Liste im Filter-Sheet, darüber als volle
-       Zeile in der Bedienzeile (`order: 1` schiebt sie hinter Zähler und
-       Feed-Knopf, `width: 100%` in eine eigene Reihe). Die Farbmuster werden
-       in JS aus **derselben** Funktion erzeugt wie die Pins (pinSwatch/
-       pinStyle) – so können Legende und Karte nicht auseinanderlaufen.
-       `display` steht bewusst nur in den Pfad-Blöcken weiter unten. */
-    .legende-list { list-style: none; margin: 0; padding: 0; }
-    .legende-item {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-size: 0.78rem;
-      color: var(--muted);
-      line-height: 1.3;
-    }
-    .legende-item svg { flex: 0 0 auto; display: block; }
-    .legende-title {
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--muted);
-      margin: 0;
-    }
-
     /* ==================================================================
        A-3 — Karte im Vollbild: Overlay-Bedienzeile und Bottom Sheets
        (ADR-008). Alles Folgende steht bewusst *nach* den Regeln oben,
@@ -486,23 +461,6 @@
     #filterPanel .filter-hint,
     #feed .sheet-grip,
     .nur-schmal-block { display: none; }
-    /* Legende auf Desktop: eine eigene, volle Zeile *hinter* Zähler und
-       Feed-Knopf. Ohne `order` stünde sie mitten in der Bedienzeile, weil
-       #filterPanel im DOM vor beiden liegt. */
-    #filterPanel .legende {
-      display: flex;
-      order: 1;
-      width: 100%;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.25rem 0.9rem;
-      margin-top: 0.1rem;
-    }
-    #filterPanel .legende-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem 0.9rem;
-    }
 
     /* ---- Karten-Control „In meiner Nähe" (beide Breiten) ----
        Geschwister von #map, deshalb sieht Leaflet seine Events nie. Sitzt
@@ -788,18 +746,6 @@
         width: 100%;
         margin-top: 0.6rem;
       }
-      /* Legende im Sheet: gestapelte Liste unter den Chips. Die Einträge sind
-         reine Erklärung, keine Bedienelemente – die 44-px-Regel gilt für sie
-         nicht (sie gilt für Griff, Chips, ✕ und Feed-Einträge). */
-      #filterPanel .legende {
-        display: block;
-        margin-top: 0.8rem;
-        padding-top: 0.6rem;
-        border-top: 1px solid var(--border);
-      }
-      #filterPanel .legende-list { display: grid; gap: 0.4rem; margin-top: 0.35rem; }
-      #filterPanel .legende-item { font-size: 0.82rem; }
-
       #filterPanel .sheet-more {
         display: block;
         margin-top: 0.8rem;
@@ -892,19 +838,6 @@
               <option value="">🍽️ Alle Küchen</option>
             </select>
             <button type="button" class="chip chip-reset" id="resetFilters" hidden>✕ Alle zeigen</button>
-          </div>
-          <!-- Legende zu den Pins (A-5). Die Farbmuster erzeugt buildLegend()
-               aus derselben pinStyle()-Tabelle wie die Marker; hier steht nur
-               der Text. Die Muster sind dekorativ (aria-hidden), die Aussage
-               trägt der Text – Farbe allein codiert nie einen Zustand. -->
-          <div class="legende" id="legende">
-            <h3 class="legende-title">Pins auf der Karte</h3>
-            <ul class="legende-list">
-              <li class="legende-item"><span class="legende-swatch" data-pin="ja"></span> liefert</li>
-              <li class="legende-item"><span class="legende-swatch" data-pin="nein"></span> liefert nicht</li>
-              <li class="legende-item"><span class="legende-swatch" data-pin="unbekannt"></span> <span id="legendeUnbekannt">Lieferung nicht eingetragen</span></li>
-              <li class="legende-item"><span class="legende-swatch" data-pin="zu"></span> kleiner &amp; blasser: jetzt geschlossen</li>
-            </ul>
           </div>
           <!-- „Mehr": auf Mobil der Ort für alles, was nicht in die drei
                Elemente der Bedienzeile passt. Auf Desktop bleibt davon nur der
@@ -1018,7 +951,6 @@
     const $footerStand = document.getElementById("footerStand");
     const $footerStandText = document.getElementById("footerStandText");
     const $moreStand = document.getElementById("moreStand");
-    const $legendeUnbekannt = document.getElementById("legendeUnbekannt");
 
     // Zwei Layout-Pfade: unter 640 px liegt die Bedienung als Overlay über der
     // Karte, darüber bleibt der bisherige Aufbau (ADR-008). Jede UI-Änderung
@@ -1065,103 +997,6 @@
       const wert = getComputedStyle(document.documentElement)
         .getPropertyValue(name).trim();
       return wert || fallback;
-    }
-
-    // ---- Pins nach Zustand (A-5, ADR-010) --------------------------------
-    // Der Pin trägt zwei Achsen, beide auch ohne Farbwahrnehmung lesbar:
-    //   Farbe + Umriss  = Lieferung — ja gefüllt · nein gefüllt · unbekannt
-    //                     gestrichelt. Dieselbe Form-Grammatik wie die Badges
-    //                     im Popup (ADR-009), damit Karte und Popup dasselbe
-    //                     sagen.
-    //   Größe + Füllung = jetzt geschlossen — kleiner und blass.
-    // Nur der --zustand-*-Satz, nie --marke oder --aktion (ADR-009).
-    // Zwei Dinge sind bewusst so und nicht anders:
-    //  * Der **Umriss bleibt voll deckend**, auch bei „geschlossen". „Blass"
-    //    allein reicht nicht: --zustand-ja bei 60 % Deckkraft erreicht auf
-    //    einer hellen Kachel nur 2,59:1 und reißt die 3:1-Grenze für grafische
-    //    Objekte (WCAG 1.4.11). Voll deckend erreicht --zustand-ja über die
-    //    üblichen Kachelfarben 4,07–6,53:1; über alle drei Zustandsfarben
-    //    liegt die Spanne bei 3,32–12,52:1 (schlechtester Fall: „unbekannt"
-    //    auf Wasser).
-    //  * Abgewertet wird **nur, was sicher geschlossen ist**. Die Restaurants
-    //    mit unklaren oder fehlenden Zeiten (gemessen 210 von 885) sehen aus
-    //    wie die offenen – ein „unbekannt" darf nie wie eine Absage aussehen
-    //    (ADR-007). Der Pin behauptet damit nie „offen", nur „nicht zu".
-    const PIN = {
-      radius: 10, radiusZu: 7,      // 20 px bzw. 14 px Durchmesser
-      weight: 2,
-      fill: 0.85, fillZu: 0.2,
-      fillUnbekannt: 0.12, fillUnbekanntZu: 0,
-      dash: "3 3",
-    };
-
-    // Die drei Tokens einmal je render() lesen statt 885-mal – getComputedStyle
-    // ist teuer. Die Fallbacks sind die Werte aus :root (siehe cssVar()).
-    function pinTokens() {
-      return {
-        ja: cssVar("--zustand-ja", "#1d6b3a"),
-        nein: cssVar("--zustand-nein", "#33333b"),
-        unbekannt: cssVar("--zustand-unbekannt", "#6b6b6b"),
-      };
-    }
-
-    // `offen` ist das Ergebnis von openStateNow() (true/false/null); render()
-    // reicht es durch, weil es dort ohnehin für den Filter gebraucht wird.
-    function pinStyle(r, offen, tokens) {
-      const zu = offen === false;
-      const getaggt = r.delivery === true || r.delivery === false;
-      const farbe = !getaggt ? tokens.unbekannt
-        : (r.delivery ? tokens.ja : tokens.nein);
-      const style = {
-        radius: zu ? PIN.radiusZu : PIN.radius,
-        weight: PIN.weight,
-        opacity: 1,                 // Umriss immer voll deckend (Kontrast)
-        color: farbe,
-        fillColor: farbe,
-        fillOpacity: getaggt
-          ? (zu ? PIN.fillZu : PIN.fill)
-          : (zu ? PIN.fillUnbekanntZu : PIN.fillUnbekannt),
-      };
-      // Gestrichelt = „nicht eingetragen". Der häufigste Zustand (87 %) trennt
-      // sich damit über die Form von „nein", nicht über den Farbton.
-      if (!getaggt) style.dashArray = PIN.dash;
-      return style;
-    }
-
-    // Die Legenden-Muster entstehen aus **derselben** pinStyle()-Tabelle wie
-    // die Marker – sonst laufen Karte und Legende beim nächsten Feinschliff
-    // auseinander, ohne dass es jemand merkt.
-    function pinSwatch(style) {
-      const box = PIN.radius * 2 + PIN.weight * 2;
-      const dash = style.dashArray ? ` stroke-dasharray="${style.dashArray}"` : "";
-      return `<svg width="${box}" height="${box}" viewBox="0 0 ${box} ${box}" ` +
-             `aria-hidden="true" focusable="false">` +
-             `<circle cx="${box / 2}" cy="${box / 2}" r="${style.radius}" ` +
-             `fill="${style.fillColor}" fill-opacity="${style.fillOpacity}" ` +
-             `stroke="${style.color}" stroke-width="${style.weight}"${dash}/></svg>`;
-    }
-
-    function buildLegend() {
-      const t = pinTokens();
-      const muster = {
-        ja:        pinStyle({ delivery: true },  true,  t),
-        nein:      pinStyle({ delivery: false }, true,  t),
-        unbekannt: pinStyle({ delivery: null },  true,  t),
-        zu:        pinStyle({ delivery: true },  false, t),
-      };
-      for (const el of document.querySelectorAll(".legende-swatch")) {
-        const s = muster[el.dataset.pin];
-        if (s) el.innerHTML = pinSwatch(s);
-      }
-    }
-
-    // Den Anteil „nicht eingetragen" aus den Daten beziffern statt hart im
-    // Text: er ändert sich mit jedem Sonntags-Scan.
-    function updateLegendShare() {
-      if (!restaurants.length) return;
-      const unbek = restaurants.filter(r => r.delivery !== true && r.delivery !== false).length;
-      $legendeUnbekannt.textContent =
-        `Lieferung nicht eingetragen (${Math.round(unbek / restaurants.length * 100)} %)`;
     }
 
     // ---- Küchenstil (OSM-Tag `cuisine`) ----
@@ -1323,10 +1158,10 @@
 
     // Aktuelle Zeit in Europe/Berlin – unabhängig von der Zeitzone des Nutzers
     // und inkl. korrekter Sommer-/Winterzeit (über Intl). day: 1=Mo … 7=So.
-    // Der Formatierer wird **einmal** gebaut und wiederverwendet: seit A-5
-    // fragt render() den Öffnungszustand für jeden Pin ab (885 statt nur der
-    // gefilterten), und das Erzeugen eines Intl.DateTimeFormat kostet mehr als
-    // das ganze Parsen der Zeiten. Gemessen für 885 Pins: 62,9 ms → 5,6 ms.
+    // Der Formatierer wird **einmal** gebaut und wiederverwendet: bei aktivem
+    // Filter „jetzt geöffnet" ruft render() berlinNow() je Restaurant auf, und
+    // das Erzeugen eines Intl.DateTimeFormat kostet mehr als das ganze Parsen
+    // der Zeiten. Gemessen über 885 Auswertungen: 62,9 ms → 5,6 ms.
     // Bewusst kein Zeit-Cache: der Zustand soll minutengenau stimmen.
     const BERLIN_FMT = new Intl.DateTimeFormat("en-US", {
       timeZone: "Europe/Berlin", weekday: "short",
@@ -1827,7 +1662,6 @@
       const q = $search.value.trim().toLowerCase();
       const f = currentFilters();
       const cuisine = $cuisine.value;
-      const tokens = pinTokens();
       layer.clearLayers();
       let shown = 0;
 
@@ -1850,19 +1684,22 @@
                        styles.map(cuisineLabel).join(" ")).toLowerCase();
           if (!hay.includes(q)) continue;
         }
-        // Öffnungszeiten bewusst **hier** auswerten, nach den billigen Filtern:
-        // openStateNow() ist der teuerste Schritt der Schleife und wird so nur
-        // noch für die Restaurants gerechnet, die alles andere überstanden
-        // haben. Das Ergebnis dient zwei Zwecken – dem Filter und dem Pin.
-        const offen = r.openingHours ? openStateNow(r.openingHours) : null;
         // Filter „nur jetzt geöffnet": nur sicher offene zeigen (unbekannt fällt raus).
-        if (f.open && offen !== true) continue;
+        // Die Zeitauswertung steht bewusst **hier**, nach den billigen Filtern:
+        // openStateNow() ist der teuerste Schritt der Schleife und wird so nur
+        // noch für die Restaurants gerechnet, die alles andere überstanden haben
+        // – und dank der Kurzschluss-Auswertung nur, wenn der Filter aktiv ist.
+        if (f.open && !(r.openingHours && openStateNow(r.openingHours) === true)) continue;
+        // Ein Pin sieht wie der andere aus, und das ist seit ADR-011 gewollt:
+        // die Zustände (Lieferung, Abholung, jetzt offen) trägt das Popup, die
+        // Vorauswahl trifft der Filter. Wer die Pins wieder einfärben will,
+        // braucht einen neuen ADR – nicht einen Patch an dieser Zeile.
+        //
         // Popup faul bauen (R7): ohne Filter sind das 885 Marker, und für jeden
         // vorab das komplette HTML samt openStateNow()-Parsing zu erzeugen war
         // der teuerste Teil von render(). Leaflet akzeptiert eine Funktion und
         // ruft sie erst beim Öffnen auf.
-        L.circleMarker([r.lat, r.lng], pinStyle(r, offen, tokens))
-          .bindPopup(() => popupHtml(r), POPUP_OPTS).addTo(layer);
+        L.marker([r.lat, r.lng]).bindPopup(() => popupHtml(r), POPUP_OPTS).addTo(layer);
         shown++;
       }
       updateCount(shown, restaurants.length);
@@ -1921,14 +1758,11 @@
           // Fallback-Literal: bewusst dieselbe Farbe wie --marke – wer die
           // Markenfarbe ändert, muss sie hier mitziehen (siehe :root).
           const marke = cssVar("--marke", "#d64541");
-          // Seit A-5 sind die Restaurants selbst Kreise. Der eigene Standort
-          // muss sich deshalb über die **Form** absetzen, nicht nur über die
-          // Farbe: Rot gegen Grün hat nur 1,03 Helligkeitsabstand – bei
-          // Rot-Grün-Blindheit wäre er sonst ein „liefert"-Pin. Also ein
-          // deutlich größerer, dünn gefüllter Ring (Halo) statt eines Punkts.
+          // Ein Kreis, keine Stecknadel: der eigene Standort setzt sich damit
+          // über die Form von den Restaurant-Pins ab (die seit ADR-011 wieder
+          // Leaflets blaue Tropfen sind), zusätzlich über die Markenfarbe.
           meMarker = L.circleMarker(here, {
-            radius: 13, weight: 3, opacity: 1,
-            color: marke, fillColor: marke, fillOpacity: 0.15,
+            radius: 8, color: marke, fillColor: marke, fillOpacity: 0.6,
           }).addTo(map).bindPopup("Dein Standort").openPopup();
         },
         () => alert("Standort konnte nicht ermittelt werden (Erlaubnis verweigert?)."),
@@ -2032,9 +1866,6 @@
 
     // ---- Layout festlegen, bevor irgendetwas gemessen oder geladen wird ----
     applyLayout();
-    // Die Legende erklärt die Pins und steht deshalb schon vor den Daten – der
-    // Anteil „nicht eingetragen" kommt später dazu (updateLegendShare).
-    buildLegend();
 
     // ---- Startparameter (App-Verknüpfungen aus dem Manifest, geteilte Links) ----
     const wantedCuisine = readUrlState();
@@ -2055,7 +1886,6 @@
         feedItems = (data.feed && data.feed.items) || [];
         $loading.remove();
         buildCuisineOptions();
-        updateLegendShare();
         // Erst jetzt existiert die Option – vorher würde die Zuweisung verpuffen.
         if (wantedCuisine) $cuisine.value = wantedCuisine;
         urlStateReady = true;

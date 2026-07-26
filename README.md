@@ -163,14 +163,16 @@ Die Doku liegt in [`docs/`](docs/PRD.md):
   ([`ADR-008`](docs/entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md)).
   Damit ist auch die Fußzeile mit Attribution und Datenschutz-Link nicht mehr
   unter der Browserleiste versteckt (`100dvh`).
-- [x] **Pins nach Zustand** – statt 885 gleicher blauer Tropfen sagt der Pin
-  jetzt, was OpenStreetMap über die Lieferung weiß (grün / slate / grau
-  gestrichelt) und was gerade geschlossen ist (kleiner und blasser), samt
-  Legende
-  ([`ADR-010`](docs/entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)).
-
 **Offen:**
 
+- [ ] **Zustand ohne Antippen sichtbar machen** – am 2026-07-26 einmal über
+  farbige Pins gebaut und am selben Tag zurückgenommen: die eingefärbten Kreise
+  sahen schlechter aus als Leaflets blaue Tropfen, und im Standardbild „Liefert
+  jetzt" sind alle sichtbaren Pins ohnehin gleich
+  ([`ADR-011`](docs/entscheidungen/ADR-011-pins-wieder-einheitlich.md) kehrt
+  [`ADR-010`](docs/entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)
+  um). Die Pins bleiben zustandslos; gelöst wird die Frage über die
+  Ergebnisliste, also in Worten statt in Farbe.
 - [ ] **UI/UX-Feinschliff** – Punkte aus dem Review vom Juli 2026, gesammelt in
   [`docs/BACKLOG.md`](docs/BACKLOG.md).
 - [ ] **Größere UX-Umbauten** als Anforderungen: Ergebnisliste neben der Karte
