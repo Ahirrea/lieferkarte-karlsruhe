@@ -24,7 +24,7 @@
  * werden die alten Caches beim Aktivieren aufgeräumt.
  */
 
-const CACHE_VERSION = "v4";
+const CACHE_VERSION = "v5";
 const SHELL_CACHE = `lieferkarte-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `lieferkarte-data-${CACHE_VERSION}`;
 const TILE_CACHE = `lieferkarte-tiles-${CACHE_VERSION}`;
@@ -50,14 +50,15 @@ const SHELL_FILES = [
 // Daten der Karte – gehören in den Daten-Cache (eigene Update-Strategie).
 const DATA_FILE = "./restaurants.json";
 
-// Fremddateien (Leaflet vom CDN, inkl. Marker-Grafiken). "Best effort":
-// scheitert der Abruf, wird die Installation trotzdem abgeschlossen.
+// Fremddateien (Leaflet vom CDN). "Best effort": scheitert der Abruf, wird die
+// Installation trotzdem abgeschlossen.
+// Die drei Marker-Grafiken (marker-icon.png, -2x, -shadow) sind seit A-5 raus:
+// die Pins sind SVG-Kreise (L.circleMarker), das Standard-Icon wird nirgends
+// mehr erzeugt. Sollte doch wieder ein L.marker entstehen, holt die
+// cacheFirst-Regel für unpkg das Bild zur Laufzeit nach.
 const CDN_FILES = [
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
-  "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 ];
 
 const TILE_HOST_RE = /(^|\.)tile\.openstreetmap\.org$/;

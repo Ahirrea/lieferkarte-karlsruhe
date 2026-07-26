@@ -153,15 +153,30 @@ Die Doku liegt in [`docs/`](docs/PRD.md):
   [`ADR-007`](docs/entscheidungen/ADR-007-standardfilter-liefert-jetzt.md) und
   [`docs/anforderungen/A-1`](docs/anforderungen/A-1-standardfilter-entschaerfen.md).
 
+- [x] **Farbsystem entflochten** – Marke, Interaktion und Datenzustand haben je
+  eigene Farbtokens; „geschlossen" ist Slate statt Rot, „unbekannt" ein
+  gestrichelter Umriss
+  ([`ADR-009`](docs/entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)).
+- [x] **Karte im Vollbild** – unter 640 px liegt die Bedienung als eine Zeile
+  über der Karte, Filter und Feed sind Bottom Sheets; die Karte wuchs von 70,9 %
+  auf 96,6 % des Bildschirms
+  ([`ADR-008`](docs/entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md)).
+  Damit ist auch die Fußzeile mit Attribution und Datenschutz-Link nicht mehr
+  unter der Browserleiste versteckt (`100dvh`).
+- [x] **Pins nach Zustand** – statt 885 gleicher blauer Tropfen sagt der Pin
+  jetzt, was OpenStreetMap über die Lieferung weiß (grün / slate / grau
+  gestrichelt) und was gerade geschlossen ist (kleiner und blasser), samt
+  Legende
+  ([`ADR-010`](docs/entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)).
+
 **Offen:**
 
 - [ ] **UI/UX-Feinschliff** – Punkte aus dem Review vom Juli 2026, gesammelt in
-  [`docs/BACKLOG.md`](docs/BACKLOG.md). Vorrang hat die Fußzeile: durch
-  `height: 100vh` liegen Attribution und Datenschutz-Link auf dem Handy unter der
-  Browserleiste.
-- [ ] **Größere UX-Umbauten** als Anforderungen: Ergebnisliste neben der Karte,
-  Header auf eine Zeile, Farbsystem entflechten, Pins nach Zustand unterscheiden —
-  siehe [`docs/anforderungen/`](docs/anforderungen/README.md).
+  [`docs/BACKLOG.md`](docs/BACKLOG.md).
+- [ ] **Größere UX-Umbauten** als Anforderungen: Ergebnisliste neben der Karte
+  (macht die Karte für Tastatur und Screenreader zugänglich), Telefonnummer in
+  der Pipeline, Marker-Clustering — siehe
+  [`docs/anforderungen/`](docs/anforderungen/README.md).
 
 *Bewusst gestrichen:* Manuelle Einträge für Restaurants ohne
 OpenStreetMap-Eintrag – OSM ist bereits eine gepflegte, kostenlose Datenbank;

@@ -92,6 +92,15 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   ~197 ms (gemessen mit `L`-Stub). Clustering/Canvas bleibt
   [A-6](./anforderungen/A-6-clustering-oder-canvas.md) – durch den engen Default
   aber nur noch „nice to have".
+  *Nachgemessen am 2026-07-26 mit
+  [A-5](./anforderungen/A-5-pins-nach-zustand.md) (885 Restaurants, `L`-Stub,
+  Median aus 20 Durchläufen nach 20 Aufwärmrunden, wiederholt in 5 Läufen): ohne Filter **5,6 ms**,
+  mit Standardfilter **0,8 ms** – vorher 0,4 bzw. 4,2 ms. Die Pins brauchen den
+  Öffnungszustand jedes Markers; bezahlt wird das dadurch, dass `berlinNow()` den
+  `Intl.DateTimeFormat` nur noch einmal baut (ohne diese Änderung 62,9 ms) und
+  die Zeitauswertung hinter den billigen Filtern steht. Die 197 ms von damals
+  sind mit dieser Methode nicht vergleichbar – sie wurden ohne Aufwärmrunden
+  gemessen.*
 
 ## Niedrig – Feinschliff
 
@@ -167,4 +176,7 @@ aktuelle Kompromiss nicht mehr reicht:
 > Diese Liste ersetzt seit 2026-07-25 `backlog/READY-FOR-DEV.md` sowie die Ideen 8
 > und 9 aus `backlog/IDEEN.md` — sie sind Aufgaben, keine Anforderungen. Die
 > UX-Umbauten aus derselben Datei (R6, R9, R12, R13) sind zu
-> [Anforderungen](./anforderungen/README.md) geworden.
+> [Anforderungen](./anforderungen/README.md) geworden. **R12** ist mit
+> [A-4](./anforderungen/A-4-farbsystem.md) erledigt, **R13** mit
+> [A-5](./anforderungen/A-5-pins-nach-zustand.md); R2/R3/R4 kamen mit
+> [A-3](./anforderungen/A-3-header-umbau.md) mit.

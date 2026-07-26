@@ -173,7 +173,7 @@ nicht mehr.
 |---|---|---|
 | **Marke** | `--marke` `#d64541` | Markenwort im `h1`, PWA-Icons, `manifest.theme_color`, `theme-color`-Metas. **Nie für einen Zustand.** |
 | **Interaktion** | `--aktion` `#b8352f`, `--aktion-hover`, `--aktion-schwach` | Links, Knöpfe, aktive Chips, `.pill`, Melde-Flag |
-| **Datenzustand** | `--zustand-ja` / `-ja-bg`, `--zustand-nein` / `-nein-bg`, `--zustand-unbekannt` | Badges, „geschlossen" in der Zeitentabelle, künftig die Pins ([A-5](./anforderungen/A-5-pins-nach-zustand.md)) |
+| **Datenzustand** | `--zustand-ja` / `-ja-bg`, `--zustand-nein` / `-nein-bg`, `--zustand-unbekannt` | Badges, „geschlossen" in der Zeitentabelle, die Karten-Pins ([A-5](./anforderungen/A-5-pins-nach-zustand.md)) |
 
 Dazu neutrale Tokens (`--bg`, `--panel`, `--text`, `--muted`, `--border`,
 `--flaeche-hover`, `--auf-farbe`, `--schatten-weich`, `--schatten-stark`) und
@@ -216,6 +216,40 @@ Manifest ↔ Meta.
 Dark Mode ist damit vorbereitet, aber **nicht gebaut** (P3 im
 [Backlog](./BACKLOG.md)): er wäre ein `@media (prefers-color-scheme: dark)`-Block,
 der ausschließlich `:root` überschreibt.
+
+### Pin-Grammatik auf der Karte
+
+Die Marker sind seit A-5 **SVG-Kreise** (`L.circleMarker`), kein Bild-Icon mehr,
+und tragen genau **zwei Achsen**
+([ADR-010](./entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)):
+
+| Lieferung | offen **oder** unbekannt | sicher geschlossen |
+|---|---|---|
+| **ja** | `--zustand-ja`, r 10, Füllung 0,85 | r 7, Füllung 0,2 |
+| **nein** | `--zustand-nein`, r 10, Füllung 0,85 | r 7, Füllung 0,2 |
+| **unbekannt** | `--zustand-unbekannt`, r 10, Füllung 0,12, **gestrichelt `3 3`** | r 7, Füllung 0, gestrichelt |
+
+Alles steht in **einer** Tabelle (`PIN`) und **einer** Funktion (`pinStyle()`)
+in `web/index.html`. Vier Dinge sind daran bindend:
+
+1. **Der Umriss ist immer voll deckend** (2 px, `opacity: 1`). „Blass" allein —
+   die naheliegende Umsetzung von „geschlossen" — erreicht gemessen 2,59:1 und
+   reißt die 3:1-Grenze für grafische Objekte (WCAG 1.4.11). Voll deckend sind
+   es 3,32–12,52:1 über die üblichen Kachelfarben.
+2. **Abgewertet wird nur, was sicher geschlossen ist.** `openStateNow() === null`
+   (gemessen 210 von 885) sieht aus wie „offen" — ein „unbekannt" darf nie wie
+   eine Absage aussehen ([ADR-007](./entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)).
+3. **Die Legende entsteht aus derselben Funktion** (`pinStyle()` → `pinSwatch()`
+   → `buildLegend()`), sonst laufen Karte und Erklärung auseinander. Sie liegt
+   im Filter-Sheet: unter 640 px als Liste, darüber als eigene Zeile mit
+   `order: 1` in der Bedienzeile.
+4. **Der Pin ist voll.** Eine dritte Achse braucht einen neuen ADR.
+
+`pinTokens()` liest die drei Farben einmal je `render()` (nicht je Marker —
+`getComputedStyle` ist teuer) und hält dieselben Fallbacks wie `:root`. Der
+Standort-Marker aus `locateMe()` ist deshalb ein großer, dünn gefüllter Ring
+statt eines Punkts: Marken-Rot gegen Zustands-Grün hat nur 1,03
+Helligkeitsabstand, die Unterscheidung muss über die Form laufen.
 
 ## Kostenübersicht
 
