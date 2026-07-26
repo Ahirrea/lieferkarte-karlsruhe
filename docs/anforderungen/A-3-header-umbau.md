@@ -622,8 +622,9 @@ tragen deshalb `#filterPanel`/`#feed` im Selektor.
 ARIA/Tab-Reihenfolge, Desktop-Vergleich gegen `origin/main`, Hinweisleiste,
 Ladefehler, URL-/Speicher-Versprechen, Wischen in beide Richtungen,
 `prefers-reduced-motion`, 200 % Zoom), gegen synthetische Daten mit allen neun
-`delivery × takeaway`-Kombinationen **und** die echte `restaurants.json` (883
-Marker, kein Popup mit „undefined", 362 von 400 mit „unbekannt"-Badge).
+`delivery × takeaway`-Kombinationen **und** die echte `restaurants.json` (885
+Marker nach dem Scan vom 2026-07-26, kein Popup mit „undefined", 362 von 400 mit
+„unbekannt"-Badge).
 59 Unittests unverändert grün. **Offen bleibt** — wie im Testplan angekündigt —
 die Gegenprobe mit echtem Leaflet: Gesten über den Pillen, Auto-Pan-Padding und
 die Position des Attribution-Controls sind hier nur gegen den `L`-Stub geprüft,

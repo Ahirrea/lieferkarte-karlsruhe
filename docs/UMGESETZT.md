@@ -373,7 +373,7 @@ Fokus-Verwaltung im Feed-Panel) aus dem UI/UX-Review vom Juli 2026 mit.
 - **Die Trefferzahl steht an zwei Orten, aber hat eine Quelle** (`updateCount`).
   `#count` bleibt der vorgelesene Volltext mit `role="status"` und ist auf Mobil
   nur *visuell* versteckt; sichtbar ist dort die Kurzform am Filter-Knopf. So
-  ist „0 von 883" ohne Öffnen des Sheets zu sehen — Voraussetzung dafür, dass
+  ist „0 von 885" ohne Öffnen des Sheets zu sehen — Voraussetzung dafür, dass
   der enge Standardfilter aus
   [ADR-007](./entscheidungen/ADR-007-standardfilter-liefert-jetzt.md) tragbar
   bleibt.
