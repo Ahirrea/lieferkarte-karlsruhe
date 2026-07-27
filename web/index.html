@@ -628,6 +628,16 @@
       #mapControls button { padding: 0; }
       #mapControls .btn-text { display: none; }
 
+      /* Leaflets Zoom-Control sitzt standardmäßig oben links – exakt dort, wo
+         jetzt die Bedienzeile (Suche · Filter · Feed) schwebt. Im Vollbild-
+         Layout zieht es deshalb nach unten links, spiegelbildlich zu
+         #mapControls unten rechts, und bleibt aus demselben Grund oberhalb
+         von Fußzeile und Attribution. */
+      .leaflet-top.leaflet-left {
+        top: auto;
+        bottom: calc(var(--footer-h, 2.5rem) + var(--attribution-h) + 0.5rem);
+      }
+
       /* ---- Bottom Sheets: Filter und Feed, eine Mechanik ----
          Nicht modal: kein Scrim, kein Fokus-Käfig. Die Filter wirken sofort,
          man *soll* die Karte dahinter sehen. Jedes Sheet endet oberhalb der
