@@ -6,7 +6,7 @@ offensichtlich. **Ausgearbeitete Anforderungen** stehen in
 festen [Refinement-Prozess](./PROZESS.md); die Trennlinie steht dort unter
 „Anforderung oder Aufgabe? Der Test".
 
-Stand: 2026-07-26. Reihenfolge = Priorität. Die Kürzel `R…`/`P…` stammen aus dem
+Stand: 2026-08-03. Reihenfolge = Priorität. Die Kürzel `R…`/`P…` stammen aus dem
 UI/UX-Review vom Juli 2026 (Mobil-Screenshot, Android/Chrome, 1080 × 2340, im
 Abgleich mit `web/index.html`) und bleiben erhalten, damit Rückfragen zuordenbar sind.
 
@@ -125,6 +125,48 @@ anderen — ohne sichtbare Attribution ist die Weiterverbreitung unzulässig
   veralten beim nächsten Scan still. Laut `CLAUDE.md` gehört jede den Nutzern
   gezeigte Quote in Code, der sie aus der geladenen `restaurants.json` rechnet.
   Kleine Aufgabe, kein Verhaltenswechsel.
+
+Die beiden folgenden Punkte gehören zusammen: sie stammen aus derselben
+Rückfrage vom 2026-08-03 („Die drei neuen Restaurants wurden schon beim
+vorherigen Scan angezeigt. Gibt es keine neuen?") und betreffen beide den
+„Diese Woche neu"-Feed. Der Befund war: **doch, es gab keine neuen** — Scan #7
+(`2026-08-02T08:24:28Z`, `full`, 885 Treffer) hat **null** Zeilen in `changes`
+geschrieben. Das Panel zeigte trotzdem die vier Änderungen vom 26.07., und zwar
+weil sie um **1 min 59 s** im Fenster lagen. Das ist kein Anzeigefehler,
+sondern ein Zufall, der wie ein Hängenbleiben aussieht.
+
+- [ ] **Feed-Fenster an der Scan-Grenze ausrichten statt an „minus 7 Tage".**
+  `build_feed()` (`export.py`) rechnet `since = MAX(scan_runs.started_at) −
+  FEED_WINDOW_DAYS`, also ein starres 7-Tage-Fenster ab dem jüngsten Scan. Weil
+  der Sonntags-Workflow von Woche zu Woche um Minuten versetzt startet,
+  entscheidet der Zufall, ob die Änderungen der Vorwoche ein zweites Mal
+  auftauchen: gemessen am 2026-08-03 lag `since` auf
+  `2026-07-26T08:24:28.402985+00:00`, die vier Änderungen des Vorwochen-Scans
+  auf `2026-07-26T08:26:27.839149+00:00` — **1 min 59 s** innerhalb. Zwei
+  Minuten später gestartet, und das Panel wäre leer gewesen. Fix: die Grenze aus
+  `scan_runs` selbst nehmen (Änderungen **seit dem vorletzten Scan**), dann ist
+  „Diese Woche neu" wörtlich wahr und von der Startzeit unabhängig.
+  **Fallstrick:** `scan_runs` enthält nicht nur Wochenläufe – am 2026-07-20
+  stehen drei Läufe an einem Tag (Einrichtung), zwei davon 15 Minuten
+  auseinander. „Vorletzter Scan" wäre dort ein 15-Minuten-Fenster. Die Grenze
+  braucht also eine Untergrenze (z. B. `max(vorletzter Scan, jüngster Scan −
+  7 Tage)`) oder eine Beschränkung auf Läufe, die mindestens einen Tag
+  auseinander liegen. `windowDays` in der JSON und `#feedRange` im Frontend
+  zeigen das Fenster schon an und müssen mitwandern. Pipeline-Änderung – vorher
+  `python3 -m unittest discover -s tests -v`, `build_feed()` ist dort abgedeckt.
+- [ ] **Leeren Scan sichtbar machen, statt stillschweigend die Vorwoche zu
+  zeigen.** Ein Leerzustand existiert (`web/index.html:1441-1446`), greift aber
+  nur bei `total === 0` – im beobachteten Fall (`total: 4`, alle vier vom
+  Vortermin) also gerade nicht. Nötig ist ein Hinweis über der Liste, der den
+  *jüngsten* Scan benennt, wenn er nichts gefunden hat: „Beim Scan am 2.8. gab
+  es keine Änderungen." Dazu gehört, dass die Zählpille am Feed-Knopf
+  (`counts.NEW`, hier `3`) nicht mehr Neuigkeit signalisiert, als es gibt – sie
+  war der Auslöser der Rückfrage. Außerdem ist der Text des bestehenden
+  Leerzustands sachlich falsch: „Seit dem **letzten Scan** gab es keine
+  Änderungen" beschreibt ein Fenster, das `build_feed()` nicht verwendet (es
+  sind 7 Tage). Beide Sätze auf dieselbe Grenze beziehen wie der Punkt darüber.
+  Braucht in der JSON den Zeitpunkt des jüngsten Scans; `generatedAt` ist der
+  Export-Zeitpunkt, nicht der Scan.
 
 ## Niedrig – Feinschliff
 
