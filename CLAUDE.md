@@ -118,3 +118,19 @@ this list stays as the quick reference.
 - **The PWA must never serve stale restaurant data.** ([ADR-006](docs/entscheidungen/ADR-006-pwa-network-first.md)) `restaurants.json` is network-first in `sw.js`; the cache is a fallback for offline only and is surfaced as such in the UI. Never switch it to cache-first — the data is replaced weekly. Same for HTML/manifest. **Bump `CACHE_VERSION` in `web/sw.js` whenever a precached file changes**, and keep the "no `skipWaiting()` on install" rule (the page asks before switching version).
 - **Attribution is mandatory (ODbL).** ([ADR-001](docs/entscheidungen/ADR-001-openstreetmap-statt-google-places.md)) "© OpenStreetMap-Mitwirkende" must stay visible in the frontend footer, the JSON `attribution` field, and DATENSCHUTZ.md. Don't remove it.
 - **No cookies, no tracking, no analytics, no server-side data collection** is a hard product promise (README + DATENSCHUTZ.md). Geolocation stays browser-only. Don't add anything that breaks this. UI state that should survive a link or a reload goes into **URL query params** via `history.replaceState` (`?delivery=0&open=0&cuisine=thai&q=…`) — never `localStorage`/`sessionStorage`. Write only what deviates from the default, and leave unknown params (e.g. `nearby`) untouched.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in this repo as markdown: `docs/BACKLOG.md` for tasks,
+`docs/anforderungen/` for requirements. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical labels, unchanged; the requirement Status column stays
+authoritative. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context; ADRs live in `docs/entscheidungen/`. See `docs/agents/domain.md`.
