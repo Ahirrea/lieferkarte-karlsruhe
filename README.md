@@ -176,8 +176,10 @@ Die Doku liegt in [`docs/`](docs/PRD.md):
 - [ ] **UI/UX-Feinschliff** – Punkte aus dem Review vom Juli 2026, gesammelt in
   [`docs/BACKLOG.md`](docs/BACKLOG.md).
 - [ ] **Größere UX-Umbauten** als Anforderungen: Ergebnisliste neben der Karte
-  (macht die Karte für Tastatur und Screenreader zugänglich), Telefonnummer in
-  der Pipeline, Marker-Clustering — siehe
+  (am 2026-08-09 verfeinert und **bereit** — sie wird der barrierefreie Hauptweg
+  zu den Daten; die Karte ist heute nicht etwa unzugänglich, sondern stellt 884
+  von 894 Tab-Stopps, alle „Marker" genannt), Telefonnummer in der Pipeline,
+  Marker-Clustering — siehe
   [`docs/anforderungen/`](docs/anforderungen/README.md).
 
 *Bewusst gestrichen:* Manuelle Einträge für Restaurants ohne

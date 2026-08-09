@@ -24,7 +24,7 @@ Reihenfolge = was als Nächstes sinnvoll wäre. Kein Zeitplan.
 | Nr. | Anforderung | Status | Worum es geht |
 |---|---|---|---|
 | A-1 | [Standardfilter entschärfen](./A-1-standardfilter-entschaerfen.md) | 🏁 erledigt | Entschieden am 2026-07-25 gegen die Empfehlung: Default ist **„Liefert jetzt"** (Lieferung **und** jetzt geöffnet) — die Karte ist ein Jetzt-Werkzeug, kein Verzeichnis ([ADR-007](../entscheidungen/ADR-007-standardfilter-liefert-jetzt.md)). Dazu Chips statt Checkboxen, eigener Abholung-Filter, „unbekannt"-Badges, Leerzustand. |
-| A-2 | [Ergebnisliste neben der Karte](./A-2-ergebnisliste.md) | 💡 Idee | Die Karte ist für Tastatur und Screenreader leer. Dieselben gefilterten Daten zusätzlich als Liste — löst gleichzeitig „was ist in der Nähe?". |
+| A-2 | [Ergebnisliste neben der Karte](./A-2-ergebnisliste.md) | ✅ bereit | Verfeinert am 2026-08-09: dieselben gefilterten Restaurants als Liste — mobil Bottom Sheet, auf dem Desktop dauerhaft neben der Karte (75 % Kartenbreite bei 1280 px), sortiert nach Entfernung zur Kartenmitte, Zustände in Worten ([ADR-013](../entscheidungen/ADR-013-ergebnisliste-ist-der-barrierefreie-hauptweg.md)). Der Ausgangstext ist widerlegt: die Karte ist **nicht** leer für die Tastatur, sondern **884 von 894 Tab-Stopps** — alle „Marker" genannt, und der Bestell-Link im offenen Popup liegt 884 Tabs entfernt. Die Marker verlassen dafür die Tab-Kette. Löst R6 **und** R13. |
 | A-3 | [Karte im Vollbild: Overlay + Bottom Sheets](./A-3-header-umbau.md) | 🏁 erledigt | Umgesetzt am 2026-07-26 gegen die Empfehlung, wie entschieden: **Karten-Overlay ohne Header** unter 640 px ([ADR-008](../entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md), jetzt `akzeptiert`). Bedienzeile 205,7 px → **68 px**, Karte 70,9 % → **96,6 %** (360 px: 62,3 % → 96,1 %), alle Bedienelemente **44 px** statt 32,4 px. Filter und Feed sind Bottom Sheets mit gemeinsamer Mechanik. R2/R3/R4 und zwei P3-Punkte mit erledigt. |
 | A-4 | [Farbsystem entflechten](./A-4-farbsystem.md) | 🏁 erledigt | Umgesetzt am 2026-07-25: drei Token-Ebenen **Marke / Interaktion / Zustand** ([ADR-009](../entscheidungen/ADR-009-farbrollen-marke-aktion-zustand.md)). `--accent` (fünf Rollen) und `--ok` (zwei) sind weg, kein Farbwert liegt mehr außerhalb von `:root`, „geschlossen" ist Slate statt Rot, „unbekannt" ein gestrichelter Umriss, alle Kontrastpaare ≥ 4,5:1. Entblockt A-5 und liefert A-3 die Tokens. |
 | A-5 | [Pins nach Zustand unterscheiden](./A-5-pins-nach-zustand.md) | 🗑 verworfen | Am 2026-07-26 umgesetzt (~~[ADR-010](../entscheidungen/ADR-010-pin-grammatik-lieferung-und-geschlossen.md)~~: Farbe + Strichart = Lieferung, Größe + Füllstärke = geschlossen) und **am selben Tag zurückgenommen** — die Kreise sahen schlechter aus als die blauen Tropfen ([ADR-011](../entscheidungen/ADR-011-pins-wieder-einheitlich.md)). Im Standardbild waren alle 53 Pins ohnehin identisch, aufgeweitet 774 von 885 „unbekannt". Die Messwerte in der Datei bleiben gültig; **R13 ist wieder offen** und wandert zu A-2. |
@@ -42,7 +42,7 @@ A-1 (Standardfilter) 🏁 ─┬──►  A-5 (Pins nach Zustand) 🗑 ◄─�
                          │     durch ADR-011 versperrt, geclustert wird ab 300
                          └──►  A-8 (Filter in der URL) 🏁 mitgebaut
 
-A-4 (Farbsystem) 🏁 ──────────►  A-3 (Overlay + Sheets) 🏁 ──►  A-2 (Ergebnisliste)
+A-4 (Farbsystem) 🏁 ──────────►  A-3 (Overlay + Sheets) 🏁 ──►  A-2 (Ergebnisliste) ✅
                                  erbt die Tokens               erbt die Sheet-Mechanik
                                                                — und erbt von A-5 🗑
                                                                den Befund R13 selbst
@@ -76,15 +76,35 @@ hatte die Pin-Grammatik auf zwei Achsen festgelegt;
 weil die Kreise schlechter aussahen als Leaflets blaue Tropfen — im Standardbild
 waren die 53 sichtbaren Pins ohnehin identisch. Die Pin-Achsen sind seither
 **geschlossen, nicht frei**: sie überhaupt wieder zu belegen — farbig, über die
-Größe, ganz oder teilweise — braucht einen neuen ADR. Damit sind **vier der acht
-Anforderungen erledigt**; offen sind A-2, A-6 (verfeinert, wartet auf Freigabe)
-und A-7, verworfen ist A-5.
+Größe, ganz oder teilweise — braucht einen neuen ADR. Damit sind **vier der neun
+Anforderungen erledigt**; offen sind A-2 und A-6 (beide verfeinert, warten auf
+Freigabe) sowie A-7 und A-9 (noch Ideen), verworfen ist A-5.
 
 **Befund R13 ist damit wieder offen** („welche Restaurants liefern / geöffnet
 sind, ist nur nach Antippen sichtbar") — und wird nicht erneut über die Pins
 gelöst, sondern über **A-2**. Das ist der nächste Schritt und der bessere Weg:
 eine Liste hat beliebig viele Worte, ein 20-px-Punkt vier Kanäle, und für
 Screenreader existieren farbige Kreise ohnehin nicht.
+
+**A-2 ist seit 2026-08-09 verfeinert und wartet auf grünes Licht**
+([ADR-013](../entscheidungen/ADR-013-ergebnisliste-ist-der-barrierefreie-hauptweg.md),
+noch `vorgeschlagen`). Die Verfeinerung hat den Ausgangstext in zwei Punkten
+widerlegt — gemessen gegen echtes Leaflet 1.9.4, nicht gegen den `L`-Stub, der
+weder Tab-Ketten noch Zeilenhöhen kennt: die Karte ist für die Tastatur **nicht
+leer**, sondern stellt **884 von 894 Tab-Stopps (98,9 %)**, alle mit demselben
+Namen „Marker"; und vom fokussierten Marker bis zum Inhalt seines eigenen
+offenen Popups sind es **884 Tabs**, weil Leaflets `popupPane` hinter dem
+`markerPane` liegt — der Bestell-Link aus Schritt 3 der Kernschleife ist per
+Tastatur unerreichbar. Die Liste wird deshalb der barrierefreie Hauptweg, und
+die Marker verlassen die Tab-Kette (`keyboard: false`, `alt: ""`) — eine
+benannte Ausnahme von ADR-011s Wortlaut, die dessen Gegenstand, das *Aussehen*
+der Pins, nicht anfasst. Zwei weitere Messwerte tragen die Form: ein viertes
+Element in der Bedienzeile bricht sie von 44 px auf **96 px** (der Öffner sitzt
+deshalb in `#mapControls`), und Tempo ist kein Argument — 884 Zeilen kosten
+42 ms gegen 386 ms für 884 Marker. **Eine Weiche ging gegen die Empfehlung:**
+die Liste deckelt bei 300 Zeilen, obwohl kein Tempo-Grund dafür gemessen wurde;
+mit der Entfernungssortierung ist der Deckel ein Radius von 1,72 km, und die
+Liste benennt den Unterschied zu `#count` selbst.
 
 **A-4 kam vor A-3**, weil beide denselben `<style>`-Block anfassen, A-4 aber kein
 Layout ändert: A-3 hat direkt auf den Farbrollen aufgebaut, statt die alten
@@ -101,7 +121,11 @@ eigenen Panel-Entwurf mehr
 ([ADR-008](../entscheidungen/ADR-008-karte-im-vollbild-overlay-und-sheets.md)).
 Mit dem Rückbau von A-5 kommt eine zweite Erbschaft dazu: A-2 ist jetzt der
 **einzige** geplante Weg, einen Zustand ohne Antippen zu zeigen — die drei
-Lieferzustände müssen dort in Worten stehen, nicht als Farbe.
+Lieferzustände müssen dort in Worten stehen, nicht als Farbe. Die Verfeinerung
+hat das eingelöst und die Mechanik an einer Stelle erweitert: über 640 px ist
+die Liste **kein** Sheet, sondern ein Panel mit eigenem Zustand — die Regel „nur
+eines gleichzeitig" bekommt dieselbe Breiten-Ausnahme, die `filter` dort schon
+hat.
 
 **Zwei Layout-Pfade, ab jetzt dauerhaft.** Unter und über 640 px sieht die Seite
 verschieden aus; jede künftige UI-Änderung ist in **beiden** zu prüfen. Die
